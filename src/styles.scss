@@ -1,0 +1,22 @@
+// src/styles.scss
+
+/* 1. Importación de Google Fonts (Debe ir siempre arriba) */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
+
+/* 2. Reseteo básico y aplicación de tipografía global */
+html, body {
+  margin: 0;
+  padding: 0;
+  /* Aplicamos Nunito como fuente principal, con fallbacks de sistema */
+  font-family: "Nunito", system-ui, -apple-system, sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+  background-color: #f8fafc;
+}
+
+
+/* Clase global para errores de validación (Basado en tu lógica) */
+.error {
+  color: rgb(245, 12, 12);
+  font-size: small;
+}
