@@ -4,19 +4,21 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
-// Importaciones Estratégicas de NG-Zorro (Tree-Shaking)
+// Importaciones de NG-Zorro
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-
+import { NzMessageService } from 'ng-zorro-antd/message';
 
 @Component({
   selector: 'app-auth',
   standalone: true,
-  imports: [ReactiveFormsModule,
+  imports: [
+    ReactiveFormsModule,
     NzInputModule,
     NzButtonModule,
-    NzIconModule],
+    NzIconModule
+  ],
   templateUrl: './auth.component.html',
   styleUrl: './auth.component.scss'
 })
@@ -24,53 +26,55 @@ export class AuthComponent {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly message = inject(NzMessageService);
 
-  // Estados reactivos locales
   readonly isLoginMode = signal<boolean>(true);
   readonly isLoading = signal<boolean>(false);
-  readonly errorMessage = signal<string | null>(null);
-  readonly successMessage = signal<string | null>(null);
 
-  // Formulario estrictamente tipado con RegEx de Alta Seguridad
   readonly authForm = this.fb.group({
-    fullName: ['', [Validators.minLength(4)]], // Mínimo 4 caracteres (solo activo en registro)
+    fullName: ['', [Validators.minLength(4)]],
     email: ['', [
       Validators.required,
       Validators.pattern(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)
     ]],
     password: ['', [
       Validators.required,
-      // Mínimo 8 caracteres, 1 mayúscula, 1 minúscula, 1 carácter especial
       Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/)
     ]]
   });
 
-  /**
-   * Helper (basado en tu lógica legacy) para limpiar el HTML.
-   * Verifica si un control específico es inválido y fue tocado por el usuario.
-   */
   invalidField(field: string): boolean {
     const control = this.authForm.get(field);
-    // Retorna true solo si el control existe, es inválido y el usuario interactuó con él
     return !!control && control.invalid && (control.dirty || control.touched);
   }
 
-
   toggleMode(): void {
     this.isLoginMode.update(mode => !mode);
-    this.errorMessage.set(null);
-    this.successMessage.set(null); // Limpiamos alertas de éxito al cambiar de modo
     this.authForm.reset();
 
     const fullNameControl = this.authForm.controls.fullName;
-
     if (this.isLoginMode()) {
       fullNameControl.removeValidators(Validators.required);
     } else {
       fullNameControl.addValidators(Validators.required);
     }
-
     fullNameControl.updateValueAndValidity();
+  }
+
+  /**
+   * DICCIONARIO DE ERRORES (Clean Code)
+   * Mapea los mensajes técnicos en inglés de Supabase a respuestas amigables en español.
+   */
+  private translateAuthError(errorMsg: string): string {
+    const errorTranslations: Record<string, string> = {
+      'User already registered': 'Este correo ya se encuentra registrado en el sistema.',
+      'Invalid login credentials': 'El correo electrónico o la contraseña son incorrectos.',
+      'Email not confirmed': 'Debes confirmar tu correo electrónico antes de iniciar sesión.',
+      // Puedes agregar más mapeos de Supabase aquí en el futuro
+    };
+
+    // Retorna la traducción si existe, o un mensaje genérico por defecto
+    return errorTranslations[errorMsg] || 'Ocurrió un error en la autenticación. Por favor, intenta de nuevo.';
   }
 
   async onSubmit(): Promise<void> {
@@ -80,35 +84,34 @@ export class AuthComponent {
     }
 
     this.isLoading.set(true);
-    this.errorMessage.set(null);
-    this.successMessage.set(null); // Limpiamos antes de procesar
-
     const { email, password, fullName } = this.authForm.getRawValue();
 
     try {
       if (this.isLoginMode()) {
-        // FLUJO 1: Iniciar Sesión
         const { error } = await this.authService.signIn(email, password);
         if (error) throw error;
+
+        // SOLUCIÓN UX: Feedback visual y limpieza de estado
+        this.message.success('¡Bienvenido de vuelta!');
+        this.authForm.reset();
+
+        // La navegación fallará silenciosamente si la ruta no existe, pero el usuario verá el éxito
         await this.router.navigate(['/dashboard']);
 
       } else {
-        // FLUJO 2: Registro (Mejora de UX)
         const { error } = await this.authService.signUp(email, password, fullName);
         if (error) throw error;
 
-        // Limpiamos el formulario y pasamos a modo Login automáticamente
         this.toggleMode();
-
-        // Disparamos la alerta de éxito
-        this.successMessage.set('¡Registro exitoso! Por favor, verifica tu bandeja de entrada o spam para confirmar tu cuenta.');
+        this.message.success('¡Registro exitoso! Por favor, verifica tu bandeja de entrada o spam para confirmar tu cuenta.', { nzDuration: 5000 });
       }
-
     } catch (err: unknown) {
       if (err instanceof Error) {
-        this.errorMessage.set(err.message);
+        // SOLUCIÓN ERRORES: Pasamos el error nativo por nuestro traductor
+        const localizedMessage = this.translateAuthError(err.message);
+        this.message.error(localizedMessage);
       } else {
-        this.errorMessage.set('Ocurrió un error inesperado al procesar la solicitud.');
+        this.message.error('Ocurrió un error inesperado al procesar la solicitud.');
       }
     } finally {
       this.isLoading.set(false);
@@ -117,17 +120,16 @@ export class AuthComponent {
 
   async onGoogleSignIn(): Promise<void> {
     this.isLoading.set(true);
-    this.errorMessage.set(null);
-    this.successMessage.set(null); // Limpiamos alertas aquí también
-
     try {
       await this.authService.signInWithGoogle();
     } catch (err: unknown) {
       if (err instanceof Error) {
-        this.errorMessage.set(err.message);
+        const localizedMessage = this.translateAuthError(err.message);
+        this.message.error(localizedMessage);
       } else {
-        this.errorMessage.set('Error inesperado al iniciar flujo con Google.');
+        this.message.error('Error inesperado al iniciar flujo con Google.');
       }
+    } finally {
       this.isLoading.set(false);
     }
   }

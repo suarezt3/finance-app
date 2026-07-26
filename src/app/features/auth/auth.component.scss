@@ -35,36 +35,7 @@
     }
   }
 
-  .alert-error {
-    background-color: #fef2f2;
-    border-left: 4px solid #ef4444;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    border-radius: 4px;
 
-    p {
-      margin: 0;
-      color: #991b1b;
-      font-size: 0.875rem;
-      font-weight: 500;
-    }
-  }
-
-  /* Agregado para soportar tu mensaje de éxito */
-  .alert-success {
-    background-color: #f0fdf4;
-    border-left: 4px solid #22c55e;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    border-radius: 4px;
-
-    p {
-      margin: 0;
-      color: #166534;
-      font-size: 0.875rem;
-      font-weight: 500;
-    }
-  }
 
   .auth-form {
     display: flex;

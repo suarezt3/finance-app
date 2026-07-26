@@ -6,20 +6,6 @@
       <p>Gestiona tus finanzas personales de forma segura</p>
     </div>
 
-    <!-- Alerta de Éxito Temporal (Próximamente NG-Zorro) -->
-    @if (successMessage()) {
-      <div class="alert-success">
-        <p>{{ successMessage() }}</p>
-      </div>
-    }
-
-    <!-- Alerta de Error General -->
-    @if (errorMessage()) {
-      <div class="alert-error">
-        <p>{{ errorMessage() }}</p>
-      </div>
-    }
-
     <form [formGroup]="authForm" (ngSubmit)="onSubmit()" class="auth-form">
 
       <!-- Campo Nombre Completo -->
@@ -58,9 +44,6 @@
           </div>
         }
       </div>
-
-      <!-- Campo Contraseña con NG-Zorro (Input Group) -->
-     <!-- src/app/features/auth/auth.component.html -->
 
       <!-- Campo Contraseña (API Nativa NG-Zorro v22) -->
       <div class="form-group">
