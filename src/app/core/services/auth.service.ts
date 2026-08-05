@@ -72,6 +72,20 @@ async signInWithGoogle(): Promise<void> {
   if (error) throw error;
 }
 
+/**
+   * Obtiene la sesión actual directamente de Supabase de forma asíncrona.
+   * Fundamental para los Guards para evitar condiciones de carrera (Race Conditions)
+   * al inicializar o recargar la aplicación.
+   */
+  async getSession() {
+    const { data, error } = await this.supabase.auth.getSession();
+    if (error) {
+      console.error('Error obteniendo la sesión:', error.message);
+      return null;
+    }
+    return data.session;
+  }
+
 
   /**
    * Destruye la sesión actual en el cliente y en el servidor.

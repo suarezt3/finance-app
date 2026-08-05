@@ -1,22 +1,29 @@
 // src/app/app.routes.ts
 import { Routes } from '@angular/router';
+import { AuthComponent } from './features/auth/auth.component';
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
-    path: '', // Ruta raíz (localhost:4200/)
-    // Carga perezosa del componente Standalone
-    loadComponent: () => import('./features/auth/auth.component').then(m => m.AuthComponent),
-    title: 'Autenticación | FinanceApp'
-  },
-  {
-    path: 'dashboard',
-    // Por ahora redirigimos al inicio hasta que creemos el componente del dashboard
-    redirectTo: '',
+    // 1. Ruta raíz: Redirige al login por defecto
+    path: '',
+    redirectTo: 'auth',
     pathMatch: 'full'
   },
   {
-    // Ruta comodín (Wildcard) para atrapar URLs que no existen (Error 404)
+    // 2. Ruta pública: Nuestro componente de Login/Registro
+    path: 'auth',
+    component: AuthComponent
+  },
+  {
+    // 3. Ruta privada: Protegida por el Guard y cargada de forma diferida (Lazy Loading)
+    path: 'dashboard',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)
+  },
+  {
+    // 4. Ruta comodín (Wildcard): Atrapa cualquier URL inválida
     path: '**',
-    redirectTo: ''
+    redirectTo: 'auth'
   }
 ];
