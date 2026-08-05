@@ -1,0 +1,61 @@
+// src/app/features/dashboard/dashboard.component.scss
+
+.app-layout {
+  height: 100vh;
+}
+
+.menu-sidebar {
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  box-shadow: 2px 0 6px rgba(0,21,41,.35);
+}
+
+.sidebar-logo {
+  position: relative;
+  height: 64px;
+  padding-left: 24px;
+  overflow: hidden;
+  line-height: 64px;
+  background: #001529;
+  transition: all .3s;
+
+  h1 {
+    color: #fff;
+    font-size: 20px;
+    margin: 0;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+}
+
+nz-header {
+  background: #fff;
+  padding: 0;
+  box-shadow: 0 1px 4px rgba(0,21,41,.08);
+  z-index: 9;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  height: 100%;
+}
+
+.header-trigger {
+  font-size: 20px;
+  cursor: pointer;
+  transition: color .3s;
+
+  &:hover {
+    color: #1890ff; // Azul nativo de Zorro
+  }
+}
+
+.inner-content {
+  padding: 24px;
+  background: #f0f2f5;
+  min-height: calc(100vh - 64px); // Altura total menos la cabecera
+}
