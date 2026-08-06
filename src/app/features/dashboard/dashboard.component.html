@@ -19,11 +19,12 @@
     <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed()">
       <li nz-submenu nzOpen nzTitle="Panel Principal" nzIcon="dashboard">
         <ul>
+          <!-- Agregamos routerLink hacia nuestra ruta hija -->
           <li nz-menu-item nzMatchRouter>
-            <a>Resumen Financiero</a>
+            <a routerLink="/dashboard/resumen">Resumen Financiero</a>
           </li>
           <li nz-menu-item nzMatchRouter>
-            <a>Transacciones</a>
+            <a routerLink="/dashboard/transacciones">Transacciones</a>
           </li>
         </ul>
       </li>
@@ -38,19 +39,38 @@
   <nz-layout>
 
     <!-- CABECERA (Header) -->
-    <nz-header>
+   <nz-header>
       <div class="app-header">
         <!-- Botón para colapsar/expandir menú -->
         <span class="header-trigger" (click)="toggleSidebar()">
           <span nz-icon [nzType]="isCollapsed() ? 'menu-unfold' : 'menu-fold'"></span>
         </span>
 
-        <!-- Acciones de usuario -->
+        <!-- Acciones de usuario (Dropdown Profesional) -->
         <div class="header-actions">
-          <button nz-button nzType="text" nzDanger (click)="onLogout()">
-            <span nz-icon nzType="logout"></span>
-            Cerrar Sesión
-          </button>
+          @if (user()) {
+            <a nz-dropdown [nzDropdownMenu]="userMenu" class="user-dropdown">
+              <!-- Avatar: Toma la primera letra del correo y la pone en mayúscula -->
+              <nz-avatar [nzText]="(user()?.email?.charAt(0) || '') | uppercase" nzSize="default" style="background-color: #1890ff;"></nz-avatar>
+
+              <!-- Nombre: Si guardamos el full_name en Supabase lo mostramos, si no, mostramos el email -->
+              <span class="user-name">{{ user()?.user_metadata?.['full_name'] || user()?.email }}</span>
+              <span nz-icon nzType="down"></span>
+            </a>
+
+            <!-- Menú Desplegable de NG-Zorro -->
+            <nz-dropdown-menu #userMenu="nzDropdownMenu">
+              <ul nz-menu>
+                <li nz-menu-item>
+                  <span nz-icon nzType="user"></span> Mi Perfil
+                </li>
+                <li nz-menu-divider></li>
+                <li nz-menu-item nzDanger (click)="onLogout()">
+                  <span nz-icon nzType="logout"></span> Cerrar Sesión
+                </li>
+              </ul>
+            </nz-dropdown-menu>
+          }
         </div>
       </div>
     </nz-header>
@@ -58,14 +78,9 @@
     <!-- ÁREA DE TRABAJO (Content) -->
     <nz-content>
       <div class="inner-content">
-        <!--
-          Aquí inyectaremos mediante rutas hijas los componentes
-          pesados (gráficos, tablas) usando @defer más adelante.
-        -->
-        <h3>Área de trabajo preparada</h3>
+        <!-- Eliminamos el <h3> temporal. El router-outlet ahora es el único responsable de renderizar aquí -->
         <router-outlet></router-outlet>
       </div>
     </nz-content>
-
   </nz-layout>
 </nz-layout>

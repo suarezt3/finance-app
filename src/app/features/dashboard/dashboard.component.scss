@@ -59,3 +59,31 @@ nz-header {
   background: #f0f2f5;
   min-height: calc(100vh - 64px); // Altura total menos la cabecera
 }
+
+.user-dropdown {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.85);
+  padding: 0 12px;
+  height: 100%;
+  transition: background-color 0.3s;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.025); // Efecto sutil de botón
+  }
+
+  .user-name {
+    font-weight: 500;
+    font-size: 14px;
+    display: none; // Por defecto oculto en móviles
+  }
+}
+
+// Media query para mostrar el nombre solo en pantallas grandes (Responsive Design)
+@media (min-width: 768px) {
+  .user-dropdown .user-name {
+    display: block;
+  }
+}
