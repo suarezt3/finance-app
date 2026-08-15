@@ -22,4 +22,26 @@
       </nz-card>
     </nz-col>
   </nz-row>
+  <!-- SECCIÓN DEL GRÁFICO CON @defer -->
+  <div class="chart-section" style="margin-top: 24px;">
+    <nz-card nzTitle="Evolución del Saldo (Últimos 7 días)">
+
+      <!-- Magia de Angular: Carga Diferida -->
+     @defer (on viewport) {
+
+        <!-- Usamos 'as options' para inferir el tipo estricto excluyendo null -->
+        @if (balanceChartOptions(); as options) {
+          <div echarts [options]="options" style="height: 350px;"></div>
+        }
+
+      } @placeholder {
+
+        <!-- UI Placeholder inmediato y de bajo costo -->
+        <div style="height: 350px; display: flex; justify-content: center; align-items: center; background-color: #fafafa; border-radius: 4px;">
+          <span style="color: #8c8c8c;">Preparando gráfico interactivo...</span>
+        </div>
+
+      }
+    </nz-card>
+  </div>
 </div>
