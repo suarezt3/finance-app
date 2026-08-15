@@ -1,47 +1,129 @@
 <!-- src/app/features/dashboard/summary/summary.component.html -->
 <div class="summary-container">
-  <nz-row [nzGutter]="16">
+
+  <!-- CABECERA CON BOTÓN DE ACCIÓN -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <h2 style="margin: 0; color: #262626;">Panel Principal</h2>
+    <button nz-button nzType="primary" (click)="openModal()">
+      <span nz-icon nzType="plus"></span>
+      Nueva Transacción
+    </button>
+  </div>
+
+ <nz-row [nzGutter]="16">
     <!-- Tarjeta de Saldo Total -->
     <nz-col nzSpan="8">
       <nz-card>
-        <nz-statistic [nzValue]="summary().totalBalance" [nzTitle]="'Saldo Total'" nzPrefix="$"></nz-statistic>
+        <!-- Usamos el pipe 'number' con formato estándar y localización 'es' -->
+        <nz-statistic [nzValue]="(summary().totalBalance | number:'1.0-2':'es') || '0'" [nzTitle]="'Saldo Total'" nzPrefix="$"></nz-statistic>
       </nz-card>
     </nz-col>
 
     <!-- Tarjeta de Ingresos -->
     <nz-col nzSpan="8">
       <nz-card>
-        <nz-statistic [nzValue]="summary().totalIncome" [nzTitle]="'Ingresos'" nzPrefix="$" [nzValueStyle]="{ color: '#3f8600' }"></nz-statistic>
+        <nz-statistic [nzValue]="(summary().totalIncome | number:'1.0-2':'es') || '0'" [nzTitle]="'Ingresos'" nzPrefix="$" [nzValueStyle]="{ color: '#3f8600' }"></nz-statistic>
       </nz-card>
     </nz-col>
 
     <!-- Tarjeta de Gastos -->
     <nz-col nzSpan="8">
       <nz-card>
-        <nz-statistic [nzValue]="summary().totalExpenses" [nzTitle]="'Gastos'" nzPrefix="$" [nzValueStyle]="{ color: '#cf1322' }"></nz-statistic>
+        <nz-statistic [nzValue]="(summary().totalExpenses | number:'1.0-2':'es') || '0'" [nzTitle]="'Gastos'" nzPrefix="$" [nzValueStyle]="{ color: '#cf1322' }"></nz-statistic>
       </nz-card>
     </nz-col>
   </nz-row>
-  <!-- SECCIÓN DEL GRÁFICO CON @defer -->
+
+  <!-- SECCIÓN DEL GRÁFICO (Intacta) -->
   <div class="chart-section" style="margin-top: 24px;">
+    <!-- ... @defer y gráfico de echarts ... -->
     <nz-card nzTitle="Evolución del Saldo (Últimos 7 días)">
-
-      <!-- Magia de Angular: Carga Diferida -->
-     @defer (on viewport) {
-
-        <!-- Usamos 'as options' para inferir el tipo estricto excluyendo null -->
+      @defer (on viewport) {
         @if (balanceChartOptions(); as options) {
           <div echarts [options]="options" style="height: 350px;"></div>
         }
-
       } @placeholder {
-
-        <!-- UI Placeholder inmediato y de bajo costo -->
-        <div style="height: 350px; display: flex; justify-content: center; align-items: center; background-color: #fafafa; border-radius: 4px;">
+        <div style="height: 350px; display: flex; justify-content: center; align-items: center; background-color: #fafafa;">
           <span style="color: #8c8c8c;">Preparando gráfico interactivo...</span>
         </div>
-
       }
     </nz-card>
   </div>
+
+  <!-- ============================================== -->
+  <!-- MODAL DE FORMULARIO REACTIVO                   -->
+  <!-- ============================================== -->
+ <nz-modal
+    [nzVisible]="isModalVisible()"
+    nzTitle="Registrar Nueva Transacción"
+    (nzOnCancel)="closeModal()"
+    (nzOnOk)="onSubmitTransaction()"
+    [nzOkLoading]="isSubmitting()"
+    nzOkText="Guardar"
+    nzCancelText="Cancelar"
+  >
+    <ng-container *nzModalContent>
+      <!-- El [formGroup] enlaza nuestra lógica TS con la vista -->
+<form nz-form [formGroup]="transactionForm" nzLayout="vertical">
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Tipo</nz-form-label>
+          <nz-form-control nzErrorTip="Seleccione el tipo de transacción">
+            <nz-select formControlName="type">
+              <nz-option nzValue="EXPENSE" nzLabel="Gasto"></nz-option>
+              <nz-option nzValue="INCOME" nzLabel="Ingreso"></nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Monto a registrar</nz-form-label>
+          <nz-form-control nzErrorTip="Ingrese un valor válido mayor a cero">
+            <nz-input-number formControlName="amount" [nzMin]="0.01" [nzStep]="1" style="width: 100%;"></nz-input-number>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Fecha de transacción</nz-form-label>
+          <nz-form-control nzErrorTip="Seleccione una fecha">
+            <nz-date-picker formControlName="date" style="width: 100%;"></nz-date-picker>
+          </nz-form-control>
+        </nz-form-item>
+
+        <!-- NUEVO: Selector Dinámico de Categoría -->
+        <nz-form-item>
+          <nz-form-label>Categoría</nz-form-label>
+          <nz-form-control>
+            <nz-select formControlName="category_id" nzPlaceHolder="Seleccione una categoría..." nzAllowClear>
+              <!-- Iteración de ultra alto rendimiento con @for -->
+              @for (category of categories(); track category.id) {
+                <nz-option [nzValue]="category.id" [nzLabel]="category.name"></nz-option>
+              }
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <!-- NUEVO: Selector Dinámico de Método de Pago -->
+        <nz-form-item>
+          <nz-form-label>Método de Pago</nz-form-label>
+          <nz-form-control>
+            <nz-select formControlName="payment_method_id" nzPlaceHolder="Seleccione un método de pago..." nzAllowClear>
+              @for (method of paymentMethods(); track method.id) {
+                <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
+              }
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label>Descripción (Opcional)</nz-form-label>
+          <nz-form-control>
+            <input nz-input formControlName="description" placeholder="Ej. Compra de suministros..." />
+          </nz-form-control>
+        </nz-form-item>
+
+      </form>
+    </ng-container>
+  </nz-modal>
+
 </div>
