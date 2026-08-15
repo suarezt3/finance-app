@@ -1,15 +1,25 @@
-import { Component } from '@angular/core';
+// src/app/features/dashboard/summary/summary.component.ts
+import { Component, signal } from '@angular/core';
+import { NzGridModule } from 'ng-zorro-antd/grid';
+import { NzCardModule } from 'ng-zorro-antd/card';
+import { NzStatisticModule } from 'ng-zorro-antd/statistic';
+import { FinancialSummary } from './summary.model';
 
 @Component({
   selector: 'app-summary',
   standalone: true,
-  template: `
-    <div style="background: white; padding: 24px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-      <h2 style="margin-top: 0; color: #262626;">Resumen Financiero</h2>
-      <p style="color: #595959;">Aquí integraremos las métricas y los gráficos de balance.</p>
-    </div>
-  `
+  imports: [NzGridModule, NzCardModule, NzStatisticModule],
+  templateUrl: './summary.component.html', // <-- Cambiado a archivo externo
+  styleUrl: './summary.component.scss'     // <-- Vinculamos la hoja de estilos
 })
 export class SummaryComponent {
-  // Próximamente: Inyección de servicios financieros y gestión de estado
+
+  readonly summary = signal<FinancialSummary>({
+    totalBalance: 12500.50,
+    totalIncome: 5000.00,
+    totalExpenses: 2500.00,
+    currency: 'USD',
+    lastUpdated: new Date()
+  });
+
 }

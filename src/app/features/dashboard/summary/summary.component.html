@@ -1,0 +1,25 @@
+<!-- src/app/features/dashboard/summary/summary.component.html -->
+<div class="summary-container">
+  <nz-row [nzGutter]="16">
+    <!-- Tarjeta de Saldo Total -->
+    <nz-col nzSpan="8">
+      <nz-card>
+        <nz-statistic [nzValue]="summary().totalBalance" [nzTitle]="'Saldo Total'" nzPrefix="$"></nz-statistic>
+      </nz-card>
+    </nz-col>
+
+    <!-- Tarjeta de Ingresos -->
+    <nz-col nzSpan="8">
+      <nz-card>
+        <nz-statistic [nzValue]="summary().totalIncome" [nzTitle]="'Ingresos'" nzPrefix="$" [nzValueStyle]="{ color: '#3f8600' }"></nz-statistic>
+      </nz-card>
+    </nz-col>
+
+    <!-- Tarjeta de Gastos -->
+    <nz-col nzSpan="8">
+      <nz-card>
+        <nz-statistic [nzValue]="summary().totalExpenses" [nzTitle]="'Gastos'" nzPrefix="$" [nzValueStyle]="{ color: '#cf1322' }"></nz-statistic>
+      </nz-card>
+    </nz-col>
+  </nz-row>
+</div>
