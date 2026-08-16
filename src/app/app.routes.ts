@@ -17,7 +17,7 @@ export const routes: Routes = [
     path: 'dashboard',
     canActivate: [authGuard],
     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
-    // Definición de Rutas Hijas (Se renderizan en el <router-outlet> del padre)
+    // Definición de Rutas Hijas (Se renderizan en el <router-outlet> del layout principal)
     children: [
       {
         path: '',
@@ -26,8 +26,13 @@ export const routes: Routes = [
       },
       {
         path: 'resumen',
-        // Carga perezosa del componente interno
+        // Carga perezosa del componente de KPIs y Gráficos
         loadComponent: () => import('./features/dashboard/summary/summary.component').then(m => m.SummaryComponent)
+      },
+      // NUEVA RUTA: Módulo de Configuración de Catálogos
+      {
+        path: 'configuracion',
+        loadComponent: () => import('./features/dashboard/config/config.component').then(m => m.ConfigComponent)
       }
     ]
   },

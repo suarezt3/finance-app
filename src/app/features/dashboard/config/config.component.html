@@ -1,0 +1,139 @@
+<!-- src/app/features/dashboard/config/config.component.html -->
+<div class="config-container">
+
+  <div style="margin-bottom: 24px;">
+    <h2 style="margin: 0; color: #262626;">Configuración del Espacio de Trabajo</h2>
+    <p style="color: #8c8c8c; margin-top: 4px;">Administra tus catálogos de categorías y métodos de pago.</p>
+  </div>
+
+  <nz-tabs>
+    <!-- ============================================== -->
+    <!-- PESTAÑA 1: CATEGORÍAS                          -->
+    <!-- ============================================== -->
+    <nz-tab nzTitle="Categorías">
+      <div style="margin-bottom: 16px; text-align: right;">
+        <!-- Conectamos la apertura del modal -->
+        <button nz-button nzType="primary" (click)="openCategoryModal()">
+          <span nz-icon nzType="plus"></span> Nueva Categoría
+        </button>
+      </div>
+
+      <nz-table #categoryTable [nzData]="categories()" [nzLoading]="isLoading()" nzSize="small">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Naturaleza</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (cat of categoryTable.data; track cat.id) {
+            <tr>
+              <td>{{ cat.name }}</td>
+              <td>
+                @if (cat.type === 'INCOME') {
+                  <nz-tag nzColor="success">Ingreso</nz-tag>
+                } @else {
+                  <nz-tag nzColor="error">Gasto</nz-tag>
+                }
+              </td>
+              <td>
+                <!-- Conectamos el borrado enviando el ID -->
+                <button nz-button nzType="text" nzDanger (click)="onDeleteCategory(cat.id)">Eliminar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    </nz-tab>
+
+    <!-- ============================================== -->
+    <!-- PESTAÑA 2: MÉTODOS DE PAGO                     -->
+    <!-- ============================================== -->
+    <nz-tab nzTitle="Métodos de Pago">
+      <div style="margin-bottom: 16px; text-align: right;">
+        <button nz-button nzType="primary" (click)="openMethodModal()">
+          <span nz-icon nzType="plus"></span> Nuevo Método
+        </button>
+      </div>
+
+      <nz-table #methodsTable [nzData]="paymentMethods()" [nzLoading]="isLoading()" nzSize="small">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (method of methodsTable.data; track method.id) {
+            <tr>
+              <td>{{ method.name }}</td>
+              <td>
+                <button nz-button nzType="text" nzDanger (click)="onDeleteMethod(method.id)">Eliminar</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    </nz-tab>
+  </nz-tabs>
+
+  <!-- ============================================== -->
+  <!-- MODAL: CREAR CATEGORÍA                         -->
+  <!-- ============================================== -->
+  <nz-modal
+    [nzVisible]="isCategoryModalVisible()"
+    nzTitle="Nueva Categoría"
+    (nzOnCancel)="closeCategoryModal()"
+    (nzOnOk)="onSubmitCategory()"
+    [nzOkLoading]="isSubmitting()"
+    nzOkText="Guardar"
+    nzCancelText="Cancelar"
+  >
+    <ng-container *nzModalContent>
+      <form nz-form [formGroup]="categoryForm" nzLayout="vertical">
+        <nz-form-item>
+          <nz-form-label nzRequired>Nombre</nz-form-label>
+          <nz-form-control nzErrorTip="Ingrese un nombre válido (Mínimo 3 caracteres)">
+            <input nz-input formControlName="name" placeholder="Ej. Transporte, Nómina..." />
+          </nz-form-control>
+        </nz-form-item>
+
+        <nz-form-item>
+          <nz-form-label nzRequired>Naturaleza</nz-form-label>
+          <nz-form-control nzErrorTip="Seleccione si es ingreso o gasto">
+            <nz-select formControlName="type">
+              <nz-option nzValue="EXPENSE" nzLabel="Gasto"></nz-option>
+              <nz-option nzValue="INCOME" nzLabel="Ingreso"></nz-option>
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+      </form>
+    </ng-container>
+  </nz-modal>
+
+  <!-- ============================================== -->
+  <!-- MODAL: CREAR MÉTODO DE PAGO                    -->
+  <!-- ============================================== -->
+  <nz-modal
+    [nzVisible]="isMethodModalVisible()"
+    nzTitle="Nuevo Método de Pago"
+    (nzOnCancel)="closeMethodModal()"
+    (nzOnOk)="onSubmitMethod()"
+    [nzOkLoading]="isSubmitting()"
+    nzOkText="Guardar"
+    nzCancelText="Cancelar"
+  >
+    <ng-container *nzModalContent>
+      <form nz-form [formGroup]="methodForm" nzLayout="vertical">
+        <nz-form-item>
+          <nz-form-label nzRequired>Nombre del Método</nz-form-label>
+          <nz-form-control nzErrorTip="Ingrese un nombre válido (Mínimo 3 caracteres)">
+            <input nz-input formControlName="name" placeholder="Ej. Tarjeta de Crédito, Transferencia..." />
+          </nz-form-control>
+        </nz-form-item>
+      </form>
+    </ng-container>
+  </nz-modal>
+
+</div>

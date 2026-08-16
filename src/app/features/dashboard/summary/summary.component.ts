@@ -1,5 +1,6 @@
 // src/app/features/dashboard/summary/summary.component.ts
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
+import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop'; // <-- Interoperabilidad moderna
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { NzGridModule } from 'ng-zorro-antd/grid';
@@ -40,13 +41,14 @@ export class SummaryComponent implements OnInit {
   private readonly chartService = inject(FinancialChartService);
   private readonly transactionService = inject(TransactionService);
   private readonly catalogService = inject(CatalogService);
+  private readonly destroyRef = inject(DestroyRef); // <-- Para manejar desuscripciones seguras
 
   // -- ESTADO BASE DE DATOS --
   readonly transactions = signal<TransactionWithDetails[]>([]);
   readonly categories = signal<Category[]>([]);
   readonly paymentMethods = signal<PaymentMethod[]>([]);
 
-  // -- ESTADOS DERIVADOS (Reactivos) --
+  // -- ESTADOS DERIVADOS (KPIs y Gráfico) --
   readonly summary = computed<FinancialSummary>(() => {
     const txs = this.transactions();
     const totalIncome = txs.filter(t => t.type === 'INCOME').reduce((sum, t) => sum + Number(t.amount), 0);
@@ -62,32 +64,26 @@ export class SummaryComponent implements OnInit {
 
   readonly balanceChartOptions = computed<EChartsOption | null>(() => {
     const txs = this.transactions();
-
-    // Si no hay transacciones, retornamos null (el HTML mostrará el placeholder)
     if (txs.length === 0) return null;
 
-    // 1. Ordenamos las transacciones cronológicamente (de más antigua a más reciente)
     const sortedTxs = [...txs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    // 2. Agrupamos el balance neto por día usando un Map
     const dailyNet = new Map<string, number>();
+
     for (const tx of sortedTxs) {
       const net = tx.type === 'INCOME' ? Number(tx.amount) : -Number(tx.amount);
       dailyNet.set(tx.date, (dailyNet.get(tx.date) || 0) + net);
     }
 
-    // 3. Calculamos el saldo acumulado (Running Balance) a lo largo del tiempo
     const dates: string[] = [];
     const values: number[] = [];
     let runningBalance = 0;
 
     for (const [date, net] of dailyNet.entries()) {
       runningBalance += net;
-      dates.push(date); // Eje X
-      values.push(runningBalance); // Eje Y
+      dates.push(date);
+      values.push(runningBalance);
     }
 
-    // 4. Inyectamos los datos procesados a nuestro servicio de gráficos
     return this.chartService.getBalanceHistoryOptions(dates, values);
   });
 
@@ -104,12 +100,32 @@ export class SummaryComponent implements OnInit {
     payment_method_id: [null]
   });
 
+  // -- FILTRADO REACTIVO DE CATEGORÍAS --
+
+  // 1. Convertimos el flujo de RxJS (valueChanges) a una Signal de Angular
+  readonly selectedType = toSignal(
+    this.transactionForm.controls['type'].valueChanges,
+    { initialValue: this.transactionForm.controls['type'].value }
+  );
+
+  // 2. Estado derivado: Filtra las categorías basándose en la selección actual
+  readonly filteredCategories = computed(() => {
+    const currentType = this.selectedType();
+    return this.categories().filter(c => c.type === currentType);
+  });
+
   async ngOnInit(): Promise<void> {
     await Promise.all([
       this.loadRealTransactions(),
       this.loadCatalogs()
     ]);
-    // Eliminamos this.loadMockChartData() porque ya no existe ni se necesita
+
+    // 3. Efecto Secundario Seguro: Si el usuario cambia el tipo, limpiamos la categoría seleccionada
+    this.transactionForm.controls['type'].valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.transactionForm.controls['category_id'].setValue(null);
+      });
   }
 
   async loadRealTransactions(): Promise<void> {
@@ -149,7 +165,6 @@ export class SummaryComponent implements OnInit {
   async onSubmitTransaction(): Promise<void> {
     if (this.transactionForm.valid) {
       this.isSubmitting.set(true);
-
       try {
         const rawValues = this.transactionForm.getRawValue();
         const formattedData = {
@@ -166,7 +181,6 @@ export class SummaryComponent implements OnInit {
       } finally {
         this.isSubmitting.set(false);
       }
-
     } else {
       Object.values(this.transactionForm.controls).forEach(control => {
         if (control.invalid) {
