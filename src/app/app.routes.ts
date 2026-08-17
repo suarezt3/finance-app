@@ -33,6 +33,11 @@ export const routes: Routes = [
       {
         path: 'configuracion',
         loadComponent: () => import('./features/dashboard/config/config.component').then(m => m.ConfigComponent)
+      },
+      // NUEVA RUTA: Módulo de Transacciones
+      {
+        path: 'transacciones',
+        loadComponent: () => import('./features/dashboard/transactions/transactions.component').then(m => m.TransactionsComponent)
       }
     ]
   },
