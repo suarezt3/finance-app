@@ -1,7 +1,7 @@
 // src/app/app.routes.ts
 import { Routes } from '@angular/router';
-import { AuthComponent } from './features/auth/auth.component';
 import { authGuard } from './core/guards/auth.guard';
+// NOTA: Eliminamos el 'import { AuthComponent }...' estático de aquí arriba
 
 export const routes: Routes = [
   {
@@ -11,11 +11,12 @@ export const routes: Routes = [
   },
   {
     path: 'auth',
-    component: AuthComponent
+    // Optimización: Carga perezosa (Lazy Loading) aplicada al Login
+    loadComponent: () => import('./features/auth/auth.component').then(m => m.AuthComponent)
   },
   {
     path: 'dashboard',
-    canActivate: [authGuard],
+    canActivate: [authGuard], // El candado está perfecto
     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
     // Definición de Rutas Hijas (Se renderizan en el <router-outlet> del layout principal)
     children: [
@@ -26,15 +27,12 @@ export const routes: Routes = [
       },
       {
         path: 'resumen',
-        // Carga perezosa del componente de KPIs y Gráficos
         loadComponent: () => import('./features/dashboard/summary/summary.component').then(m => m.SummaryComponent)
       },
-      // NUEVA RUTA: Módulo de Configuración de Catálogos
       {
         path: 'configuracion',
         loadComponent: () => import('./features/dashboard/config/config.component').then(m => m.ConfigComponent)
       },
-      // NUEVA RUTA: Módulo de Transacciones
       {
         path: 'transacciones',
         loadComponent: () => import('./features/dashboard/transactions/transactions.component').then(m => m.TransactionsComponent)

@@ -14,27 +14,60 @@
 
   <!-- RESUMEN DE KPIs -->
   <nz-row [nzGutter]="16" style="margin-bottom: 24px;">
+
+    <!-- Saldo Global Inmutable -->
     <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" style="margin-bottom: 16px;">
       <nz-card nzSize="small" style="background-color: #f0f5ff; border-color: #adc6ff;">
-        <nz-statistic [nzValue]="(absoluteBalance() | number:'1.0-2':'es') || '0'" [nzTitle]="'Saldo Actual (Global)'" nzPrefix="$" [nzValueStyle]="{ color: '#1d39c4', fontWeight: 'bold' }"></nz-statistic>
+        <nz-statistic
+          [nzTitle]="'Saldo Actual (Global)'"
+          [nzValue]="absoluteBalance()"
+          [nzValueTemplate]="txFormatter"
+          nzPrefix="$"
+          [nzValueStyle]="{ color: '#1d39c4', fontWeight: 'bold' }">
+        </nz-statistic>
       </nz-card>
     </nz-col>
+
     <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" style="margin-bottom: 16px;">
       <nz-card nzSize="small">
-        <nz-statistic [nzValue]="(filteredSummary().totalBalance | number:'1.0-2':'es') || '0'" [nzTitle]="'Saldo (Filtrado)'" nzPrefix="$"></nz-statistic>
+        <nz-statistic
+          [nzTitle]="'Saldo (Filtrado)'"
+          [nzValue]="filteredSummary().totalBalance"
+          [nzValueTemplate]="txFormatter"
+          nzPrefix="$">
+        </nz-statistic>
       </nz-card>
     </nz-col>
+
     <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" style="margin-bottom: 16px;">
       <nz-card nzSize="small">
-        <nz-statistic [nzValue]="(filteredSummary().totalIncome | number:'1.0-2':'es') || '0'" [nzTitle]="'Ingresos'" nzPrefix="$" [nzValueStyle]="{ color: '#3f8600' }"></nz-statistic>
+        <nz-statistic
+          [nzTitle]="'Ingresos'"
+          [nzValue]="filteredSummary().totalIncome"
+          [nzValueTemplate]="txFormatter"
+          nzPrefix="$"
+          [nzValueStyle]="{ color: '#3f8600' }">
+        </nz-statistic>
       </nz-card>
     </nz-col>
+
     <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" style="margin-bottom: 16px;">
       <nz-card nzSize="small">
-        <nz-statistic [nzValue]="(filteredSummary().totalExpenses | number:'1.0-2':'es') || '0'" [nzTitle]="'Gastos'" nzPrefix="$" [nzValueStyle]="{ color: '#cf1322' }"></nz-statistic>
+        <nz-statistic
+          [nzTitle]="'Gastos'"
+          [nzValue]="filteredSummary().totalExpenses"
+          [nzValueTemplate]="txFormatter"
+          nzPrefix="$"
+          [nzValueStyle]="{ color: '#cf1322' }">
+        </nz-statistic>
       </nz-card>
     </nz-col>
   </nz-row>
+
+  <!-- PLANTILLA REUTILIZABLE PARA FORMATEAR LOS NÚMEROS -->
+  <ng-template #txFormatter let-value>
+    {{ (value || 0) | number:'1.0-2':'es' }}
+  </ng-template>
 
   <!-- BARRA DE FILTROS -->
   <form [formGroup]="filterForm" style="margin-bottom: 24px; padding: 16px; background-color: #fafafa; border-radius: 8px;">

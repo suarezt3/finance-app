@@ -1,37 +1,61 @@
 <!-- src/app/features/dashboard/summary/summary.component.html -->
 <div class="summary-container">
 
-  <!-- CABECERA -->
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+  <!-- CABECERA E INTERACTIVIDAD TEMPORAL -->
+<div class="summary-container">
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
     <div>
       <h2 style="margin: 0; color: #262626;">Resumen Financiero</h2>
       <p style="color: #8c8c8c; margin-top: 4px;">Última actualización: {{ summary().lastUpdated | date:'mediumTime' }}</p>
     </div>
 
-    <button nz-button nzType="primary" nzSize="large" (click)="openModal()">
-      <span nz-icon nzType="plus"></span>
-      Nueva Transacción
-    </button>
+    <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+
+      <!-- Selector de Marco Temporal Relativo -->
+      <nz-radio-group [ngModel]="timeframe()" (ngModelChange)="timeframe.set($event)" nzButtonStyle="solid">
+        <label nz-radio-button nzValue="7d">7 Días</label>
+        <label nz-radio-button nzValue="30d">30 Días</label>
+        <label nz-radio-button nzValue="1y">1 Año</label>
+        <label nz-radio-button nzValue="all">Todo</label>
+      </nz-radio-group>
+
+      <!-- NUEVO: Selector de Año Específico -->
+      <nz-date-picker
+        nzMode="year"
+        [ngModel]="selectedYear()"
+        (ngModelChange)="onYearSelected($event)"
+        nzPlaceHolder="Año Histórico"
+        style="width: 140px;">
+      </nz-date-picker>
+
+      <button nz-button nzType="primary" nzSize="large" (click)="openModal()">
+        <span nz-icon nzType="plus"></span>
+        Nueva Transacción
+      </button>
+    </div>
   </div>
 
-  <!-- TARJETAS DE KPIs (Métricas Principales) -->
-  <nz-row [nzGutter]="[16, 16]">
-    <nz-col [nzXs]="24" [nzSm]="8">
+  <!-- ... El resto de tu HTML (Tarjetas y Gráficos) se mantiene exactamente igual ... -->
+
+  <!-- TARJETAS DE KPIs (Con inyección de texto dinámico) -->
+ <nz-row [nzGutter]="[16, 16]">
+    <nz-col [nzXs]="24" [nzMd]="8">
       <nz-card nzHoverable class="kpi-card balance-card">
         <nz-statistic
-          [nzValue]="(summary().totalBalance | number:'1.0-2':'es') || '0'"
-          [nzTitle]="'Saldo Total'"
+          [nzTitle]="'Flujo Neto (' + timeframeText() + ')'"
+          [nzValue]="summary().totalBalance"
+          [nzValueTemplate]="kpiFormatter"
           nzPrefix="$"
         ></nz-statistic>
       </nz-card>
     </nz-col>
 
-    <nz-col [nzXs]="24" [nzSm]="8">
+    <nz-col [nzXs]="24" [nzMd]="8">
       <nz-card nzHoverable class="kpi-card income-card">
         <nz-statistic
-          [nzValue]="(summary().totalIncome | number:'1.0-2':'es') || '0'"
-          [nzTitle]="'Ingresos Totales'"
-          nzPrefix="$"
+          [nzTitle]="'Ingresos (' + timeframeText() + ')'"
+          [nzValue]="summary().totalIncome"
+          [nzValueTemplate]="kpiFormatter"
           [nzValueStyle]="{ color: '#3f8600' }"
           [nzPrefix]="iconIncome"
         ></nz-statistic>
@@ -39,12 +63,12 @@
       </nz-card>
     </nz-col>
 
-    <nz-col [nzXs]="24" [nzSm]="8">
+    <nz-col [nzXs]="24" [nzMd]="8">
       <nz-card nzHoverable class="kpi-card expense-card">
         <nz-statistic
-          [nzValue]="(summary().totalExpenses | number:'1.0-2':'es') || '0'"
-          [nzTitle]="'Gastos Totales'"
-          nzPrefix="$"
+          [nzTitle]="'Gastos (' + timeframeText() + ')'"
+          [nzValue]="summary().totalExpenses"
+          [nzValueTemplate]="kpiFormatter"
           [nzValueStyle]="{ color: '#cf1322' }"
           [nzPrefix]="iconExpense"
         ></nz-statistic>
@@ -53,26 +77,53 @@
     </nz-col>
   </nz-row>
 
-  <!-- ÁREA DE GRÁFICOS (Implementación con @defer para rendimiento) -->
-  <div style="margin-top: 24px;">
-    <nz-card nzTitle="Evolución del Balance" [nzBordered]="false">
-      @defer (when balanceChartOptions() !== null) {
-        @if (balanceChartOptions(); as options) {
-          <div echarts [options]="options" class="chart-container"></div>
-        } @else {
-          <div class="empty-chart">
-            <span nz-icon nzType="line-chart" style="font-size: 32px; color: #d9d9d9;"></span>
-            <p style="color: #8c8c8c; margin-top: 16px;">No hay datos suficientes para graficar.</p>
-          </div>
-        }
-      } @placeholder {
-        <div class="chart-skeleton">Cargando motor gráfico...</div>
-      }
-    </nz-card>
-  </div>
+  <!-- PLANTILLA REUTILIZABLE PARA FORMATEAR LOS NÚMEROS DE LAS TARJETAS -->
+  <ng-template #kpiFormatter let-value>
+    {{ (value || 0) | number:'1.0-2':'es' }}
+  </ng-template>
 
-  <!-- INTEGRACIÓN DEL MODAL COMPARTIDO -->
-  <!-- Como el Summary solo "Crea", no le pasamos el input [transactionToEdit] -->
+  <!-- ÁREA DE GRÁFICOS (Layout Grid Responsivo) -->
+  <nz-row [nzGutter]="[16, 16]" style="margin-top: 24px;">
+
+    <!-- Gráfico de Evolución del Balance -->
+    <nz-col [nzXs]="24" [nzLg]="14">
+      <nz-card [nzTitle]="'Evolución del Balance (' + timeframeText() + ')'" [nzBordered]="false">
+        @defer (when balanceChartOptions() !== null) {
+          @if (balanceChartOptions(); as options) {
+            <div echarts [options]="options" class="chart-container" style="height: 350px;"></div>
+          } @else {
+            <div class="empty-chart" style="height: 350px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+              <span nz-icon nzType="line-chart" style="font-size: 32px; color: #d9d9d9;"></span>
+              <p style="color: #8c8c8c; margin-top: 16px;">Sin transacciones en este periodo.</p>
+            </div>
+          }
+        } @placeholder {
+          <div class="chart-skeleton" style="height: 350px; display: flex; align-items: center; justify-content: center; background: #fafafa;">Cargando motor gráfico...</div>
+        }
+      </nz-card>
+    </nz-col>
+
+    <!-- Gráfico Top 5 Categorías de Gasto -->
+    <nz-col [nzXs]="24" [nzLg]="10">
+      <nz-card [nzTitle]="'Top 5 Categorías de Gasto'" [nzBordered]="false">
+        @defer (when expensesChartOptions() !== null) {
+          @if (expensesChartOptions(); as options) {
+            <div echarts [options]="options" class="chart-container" style="height: 350px;"></div>
+          } @else {
+            <div class="empty-chart" style="height: 350px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+              <span nz-icon nzType="pie-chart" style="font-size: 32px; color: #d9d9d9;"></span>
+              <p style="color: #8c8c8c; margin-top: 16px;">Sin gastos registrados en este periodo.</p>
+            </div>
+          }
+        } @placeholder {
+          <div class="chart-skeleton" style="height: 350px; display: flex; align-items: center; justify-content: center; background: #fafafa;">Cargando motor gráfico...</div>
+        }
+      </nz-card>
+    </nz-col>
+
+  </nz-row>
+
+  <!-- MODAL DE TRANSACCIONES CENTRALIZADO -->
   <app-transaction-modal
     [isVisible]="isModalVisible()"
     (closeModal)="closeModal()"
