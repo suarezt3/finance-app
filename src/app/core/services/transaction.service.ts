@@ -69,4 +69,35 @@ export class TransactionService {
     }
   }
 
+  /**
+   * NUEVO: Actualiza una transacción existente por su ID.
+   */
+  async updateTransaction(id: string, transactionData: {
+    type: string;
+    amount: number;
+    date: string;
+    description?: string;
+    category_id?: string;
+    payment_method_id?: string;
+  }): Promise<void> {
+    const { error } = await this.supabase
+      .from('transactions')
+      .update(transactionData)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error actualizando transacción:', error.message);
+      throw new Error(error.message);
+    }
+  }
+
+  async deleteTransaction(id: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('transactions')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw new Error(error.message);
+  }
+
 }

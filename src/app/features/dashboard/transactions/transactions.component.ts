@@ -1,5 +1,5 @@
 // src/app/features/dashboard/transactions/transactions.component.ts
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, viewChild } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -19,6 +19,9 @@ import { NzCardModule } from 'ng-zorro-antd/card';
 import { TransactionService } from '../../../core/services/transaction.service';
 import { TransactionWithDetails } from '../../../core/models/transaction.model';
 
+// NUEVO: Importamos nuestro Componente Compartido
+import { TransactionModalComponent } from '../../../shared/components/transaction-modal/transaction-modal.component';
+
 @Component({
   selector: 'app-transactions',
   standalone: true,
@@ -26,7 +29,8 @@ import { TransactionWithDetails } from '../../../core/models/transaction.model';
     ReactiveFormsModule, DatePipe, DecimalPipe,
     NzTableModule, NzTagModule, NzButtonModule, NzIconModule,
     NzInputModule, NzDatePickerModule, NzSelectModule, NzGridModule,
-    NzStatisticModule, NzCardModule
+    NzStatisticModule, NzCardModule,
+    TransactionModalComponent // <-- Lo inyectamos en el ecosistema
   ],
   templateUrl: './transactions.component.html',
   styleUrl: './transactions.component.scss'
@@ -36,9 +40,16 @@ export class TransactionsComponent implements OnInit {
   private readonly message = inject(NzMessageService);
   private readonly fb = inject(FormBuilder);
 
+  // -- REFERENCIA AL COMPONENTE HIJO (Moderno Angular 17+) --
+  readonly transactionModal = viewChild(TransactionModalComponent);
+
   // -- ESTADOS BASE --
   readonly transactions = signal<TransactionWithDetails[]>([]);
   readonly isLoading = signal<boolean>(true);
+
+  // -- ESTADOS DEL MODAL --
+  readonly isModalVisible = signal<boolean>(false);
+  readonly currentTxToEdit = signal<TransactionWithDetails | null>(null);
 
   // -- FORMULARIO DE FILTROS --
   readonly filterForm: FormGroup = this.fb.group({
@@ -49,7 +60,7 @@ export class TransactionsComponent implements OnInit {
 
   private readonly filters = toSignal(this.filterForm.valueChanges, { initialValue: this.filterForm.value });
 
-  // -- ESTADO DERIVADO 1: El motor de búsqueda --
+  // -- ESTADOS DERIVADOS (Buscador y KPIs) --
   readonly filteredTransactions = computed(() => {
     const txs = this.transactions();
     const currentFilters = this.filters();
@@ -74,19 +85,13 @@ export class TransactionsComponent implements OnInit {
     });
   });
 
-  // -- ESTADO DERIVADO 2: KPIs Filtrados --
   readonly filteredSummary = computed(() => {
     const txs = this.filteredTransactions();
     const totalIncome = txs.filter(t => t.type === 'INCOME').reduce((sum, t) => sum + Number(t.amount), 0);
     const totalExpenses = txs.filter(t => t.type === 'EXPENSE').reduce((sum, t) => sum + Number(t.amount), 0);
-    return {
-      totalBalance: totalIncome - totalExpenses,
-      totalIncome,
-      totalExpenses
-    };
+    return { totalBalance: totalIncome - totalExpenses, totalIncome, totalExpenses };
   });
 
-  // -- ESTADO DERIVADO 3: Saldo Global (Inmune a Filtros) --
   readonly absoluteBalance = computed(() => {
     const txs = this.transactions();
     const totalIncome = txs.filter(t => t.type === 'INCOME').reduce((sum, t) => sum + Number(t.amount), 0);
@@ -98,7 +103,8 @@ export class TransactionsComponent implements OnInit {
     await this.loadTransactions();
   }
 
-  private async loadTransactions(): Promise<void> {
+  // Ahora es público para que el Modal pueda ordenar la recarga al terminar
+  public async loadTransactions(): Promise<void> {
     this.isLoading.set(true);
     try {
       const data = await this.transactionService.getTransactions();
@@ -115,10 +121,33 @@ export class TransactionsComponent implements OnInit {
     this.filterForm.reset({ searchTerm: '', dateRange: [], type: null });
   }
 
-  onEdit(tx: TransactionWithDetails): void {
-    // Aquí invocaremos al Componente Compartido en nuestra próxima fase
-    this.message.info('Preparando la arquitectura para habilitar la edición centralizada.');
+  // ==========================================
+  // ORQUESTACIÓN DEL MODAL COMPARTIDO
+  // ==========================================
+
+  openNewModal(): void {
+    this.currentTxToEdit.set(null);
+    this.isModalVisible.set(true);
   }
+
+  openEditModal(tx: TransactionWithDetails): void {
+    this.currentTxToEdit.set(tx);
+    this.isModalVisible.set(true);
+    // Le indicamos al componente hijo que parchee el formulario con estos datos
+    this.transactionModal()?.openForEdit(tx);
+  }
+
+  closeModal(): void {
+    this.isModalVisible.set(false);
+    this.currentTxToEdit.set(null);
+  }
+
+  onTransactionSaved(): void {
+    // Cuando el hijo emite que guardó exitosamente, forzamos la recarga reactiva de los datos
+    this.loadTransactions();
+  }
+
+  // ==========================================
 
   onDelete(id: string): void {
     this.message.info('Funcionalidad de eliminación en construcción');

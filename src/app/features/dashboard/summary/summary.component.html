@@ -1,129 +1,82 @@
 <!-- src/app/features/dashboard/summary/summary.component.html -->
 <div class="summary-container">
 
-  <!-- CABECERA CON BOTÓN DE ACCIÓN -->
+  <!-- CABECERA -->
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-    <h2 style="margin: 0; color: #262626;">Panel Principal</h2>
-    <button nz-button nzType="primary" (click)="openModal()">
+    <div>
+      <h2 style="margin: 0; color: #262626;">Resumen Financiero</h2>
+      <p style="color: #8c8c8c; margin-top: 4px;">Última actualización: {{ summary().lastUpdated | date:'mediumTime' }}</p>
+    </div>
+
+    <button nz-button nzType="primary" nzSize="large" (click)="openModal()">
       <span nz-icon nzType="plus"></span>
       Nueva Transacción
     </button>
   </div>
 
- <nz-row [nzGutter]="16">
-    <!-- Tarjeta de Saldo Total -->
-    <nz-col nzSpan="8">
-      <nz-card>
-        <!-- Usamos el pipe 'number' con formato estándar y localización 'es' -->
-        <nz-statistic [nzValue]="(summary().totalBalance | number:'1.0-2':'es') || '0'" [nzTitle]="'Saldo Total'" nzPrefix="$"></nz-statistic>
+  <!-- TARJETAS DE KPIs (Métricas Principales) -->
+  <nz-row [nzGutter]="[16, 16]">
+    <nz-col [nzXs]="24" [nzSm]="8">
+      <nz-card nzHoverable class="kpi-card balance-card">
+        <nz-statistic
+          [nzValue]="(summary().totalBalance | number:'1.0-2':'es') || '0'"
+          [nzTitle]="'Saldo Total'"
+          nzPrefix="$"
+        ></nz-statistic>
       </nz-card>
     </nz-col>
 
-    <!-- Tarjeta de Ingresos -->
-    <nz-col nzSpan="8">
-      <nz-card>
-        <nz-statistic [nzValue]="(summary().totalIncome | number:'1.0-2':'es') || '0'" [nzTitle]="'Ingresos'" nzPrefix="$" [nzValueStyle]="{ color: '#3f8600' }"></nz-statistic>
+    <nz-col [nzXs]="24" [nzSm]="8">
+      <nz-card nzHoverable class="kpi-card income-card">
+        <nz-statistic
+          [nzValue]="(summary().totalIncome | number:'1.0-2':'es') || '0'"
+          [nzTitle]="'Ingresos Totales'"
+          nzPrefix="$"
+          [nzValueStyle]="{ color: '#3f8600' }"
+          [nzPrefix]="iconIncome"
+        ></nz-statistic>
+        <ng-template #iconIncome><span nz-icon nzType="arrow-up"></span> $ </ng-template>
       </nz-card>
     </nz-col>
 
-    <!-- Tarjeta de Gastos -->
-    <nz-col nzSpan="8">
-      <nz-card>
-        <nz-statistic [nzValue]="(summary().totalExpenses | number:'1.0-2':'es') || '0'" [nzTitle]="'Gastos'" nzPrefix="$" [nzValueStyle]="{ color: '#cf1322' }"></nz-statistic>
+    <nz-col [nzXs]="24" [nzSm]="8">
+      <nz-card nzHoverable class="kpi-card expense-card">
+        <nz-statistic
+          [nzValue]="(summary().totalExpenses | number:'1.0-2':'es') || '0'"
+          [nzTitle]="'Gastos Totales'"
+          nzPrefix="$"
+          [nzValueStyle]="{ color: '#cf1322' }"
+          [nzPrefix]="iconExpense"
+        ></nz-statistic>
+        <ng-template #iconExpense><span nz-icon nzType="arrow-down"></span> $ </ng-template>
       </nz-card>
     </nz-col>
   </nz-row>
 
-  <!-- SECCIÓN DEL GRÁFICO (Intacta) -->
-  <div class="chart-section" style="margin-top: 24px;">
-    <!-- ... @defer y gráfico de echarts ... -->
-    <nz-card nzTitle="Evolución del Saldo (Últimos 7 días)">
-      @defer (on viewport) {
+  <!-- ÁREA DE GRÁFICOS (Implementación con @defer para rendimiento) -->
+  <div style="margin-top: 24px;">
+    <nz-card nzTitle="Evolución del Balance" [nzBordered]="false">
+      @defer (when balanceChartOptions() !== null) {
         @if (balanceChartOptions(); as options) {
-          <div echarts [options]="options" style="height: 350px;"></div>
+          <div echarts [options]="options" class="chart-container"></div>
+        } @else {
+          <div class="empty-chart">
+            <span nz-icon nzType="line-chart" style="font-size: 32px; color: #d9d9d9;"></span>
+            <p style="color: #8c8c8c; margin-top: 16px;">No hay datos suficientes para graficar.</p>
+          </div>
         }
       } @placeholder {
-        <div style="height: 350px; display: flex; justify-content: center; align-items: center; background-color: #fafafa;">
-          <span style="color: #8c8c8c;">Preparando gráfico interactivo...</span>
-        </div>
+        <div class="chart-skeleton">Cargando motor gráfico...</div>
       }
     </nz-card>
   </div>
 
-  <!-- ============================================== -->
-  <!-- MODAL DE FORMULARIO REACTIVO                   -->
-  <!-- ============================================== -->
- <nz-modal
-    [nzVisible]="isModalVisible()"
-    nzTitle="Registrar Nueva Transacción"
-    (nzOnCancel)="closeModal()"
-    (nzOnOk)="onSubmitTransaction()"
-    [nzOkLoading]="isSubmitting()"
-    nzOkText="Guardar"
-    nzCancelText="Cancelar"
-  >
-    <ng-container *nzModalContent>
-      <!-- El [formGroup] enlaza nuestra lógica TS con la vista -->
-<form nz-form [formGroup]="transactionForm" nzLayout="vertical">
-
-        <nz-form-item>
-          <nz-form-label nzRequired>Tipo</nz-form-label>
-          <nz-form-control nzErrorTip="Seleccione el tipo de transacción">
-            <nz-select formControlName="type">
-              <nz-option nzValue="EXPENSE" nzLabel="Gasto"></nz-option>
-              <nz-option nzValue="INCOME" nzLabel="Ingreso"></nz-option>
-            </nz-select>
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label nzRequired>Monto a registrar</nz-form-label>
-          <nz-form-control nzErrorTip="Ingrese un valor válido mayor a cero">
-            <nz-input-number formControlName="amount" [nzMin]="0.01" [nzStep]="1" style="width: 100%;"></nz-input-number>
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label nzRequired>Fecha de transacción</nz-form-label>
-          <nz-form-control nzErrorTip="Seleccione una fecha">
-            <nz-date-picker formControlName="date" style="width: 100%;"></nz-date-picker>
-          </nz-form-control>
-        </nz-form-item>
-
-       <!-- Selector Dinámico de Categoría -->
-        <nz-form-item>
-          <nz-form-label>Categoría</nz-form-label>
-          <nz-form-control>
-            <nz-select formControlName="category_id" nzPlaceHolder="Seleccione una categoría..." nzAllowClear>
-              <!-- Iteramos sobre la NUEVA SEÑAL DERIVADA -->
-              @for (category of filteredCategories(); track category.id) {
-                <nz-option [nzValue]="category.id" [nzLabel]="category.name"></nz-option>
-              }
-            </nz-select>
-          </nz-form-control>
-        </nz-form-item>
-
-        <!-- NUEVO: Selector Dinámico de Método de Pago -->
-        <nz-form-item>
-          <nz-form-label>Método de Pago</nz-form-label>
-          <nz-form-control>
-            <nz-select formControlName="payment_method_id" nzPlaceHolder="Seleccione un método de pago..." nzAllowClear>
-              @for (method of paymentMethods(); track method.id) {
-                <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
-              }
-            </nz-select>
-          </nz-form-control>
-        </nz-form-item>
-
-        <nz-form-item>
-          <nz-form-label>Descripción (Opcional)</nz-form-label>
-          <nz-form-control>
-            <input nz-input formControlName="description" placeholder="Ej. Compra de suministros..." />
-          </nz-form-control>
-        </nz-form-item>
-
-      </form>
-    </ng-container>
-  </nz-modal>
+  <!-- INTEGRACIÓN DEL MODAL COMPARTIDO -->
+  <!-- Como el Summary solo "Crea", no le pasamos el input [transactionToEdit] -->
+  <app-transaction-modal
+    [isVisible]="isModalVisible()"
+    (closeModal)="closeModal()"
+    (transactionSaved)="onTransactionSaved()">
+  </app-transaction-modal>
 
 </div>
