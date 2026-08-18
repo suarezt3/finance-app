@@ -1,7 +1,8 @@
 // src/app/features/dashboard/summary/summary.component.ts
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop'; // <-- NUEVO: Para evitar memory leaks
 
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -11,7 +12,7 @@ import { EChartsOption } from 'echarts';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
-import { NzDatePickerModule } from 'ng-zorro-antd/date-picker'; // <-- NUEVO: Para el selector de año
+import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 
 import { FinancialSummary } from './summary.model';
 import { TransactionWithDetails } from '../../../core/models/transaction.model';
@@ -38,11 +39,14 @@ export class SummaryComponent implements OnInit {
   private readonly chartService = inject(FinancialChartService);
   private readonly transactionService = inject(TransactionService);
 
+  // NUEVA INYECCIÓN: Gestor de ciclo de vida
+  private readonly destroyRef = inject(DestroyRef);
+
   readonly transactions = signal<TransactionWithDetails[]>([]);
   readonly isModalVisible = signal<boolean>(false);
 
   readonly timeframe = signal<Timeframe>('30d');
-  readonly selectedYear = signal<Date | null>(null); // <-- NUEVO: Guarda el año elegido del calendario
+  readonly selectedYear = signal<Date | null>(null);
 
   // -- FILTRO TEMPORAL MAESTRO ACTUALIZADO --
   readonly filteredTransactionsByTime = computed(() => {
@@ -66,7 +70,7 @@ export class SummaryComponent implements OnInit {
     return txs.filter(tx => new Date(tx.date).getTime() >= limitDate.getTime());
   });
 
-  // -- KPIs (Sin cambios) --
+  // -- KPIs --
   readonly summary = computed<FinancialSummary>(() => {
     const txs = this.filteredTransactionsByTime();
     const totalIncome = txs.filter(t => t.type === 'INCOME').reduce((sum, t) => sum + Number(t.amount), 0);
@@ -83,7 +87,6 @@ export class SummaryComponent implements OnInit {
     const tf = this.timeframe();
     if (txs.length === 0) return null;
 
-    // Si es un periodo largo, agrupamos por mes. Si es corto, por día.
     const isMonthly = tf === '1y' || tf === 'all' || tf === 'custom-year';
 
     const sortedTxs = [...txs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -94,11 +97,9 @@ export class SummaryComponent implements OnInit {
       let key = '';
 
       if (isMonthly) {
-        // Agrupación mensual: "2026-01", "2026-02"
         const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        key = `${dateObj.getFullYear()}-${month}-01`; // Fijamos al día 1 para estandarizar
+        key = `${dateObj.getFullYear()}-${month}-01`;
       } else {
-        // Agrupación diaria
         key = tx.date;
       }
 
@@ -110,17 +111,13 @@ export class SummaryComponent implements OnInit {
     const values: number[] = [];
     let runningBalance = 0;
 
-    // Formateador nativo para nombres de meses en español (ej. "Ene 2026")
     const monthFormatter = new Intl.DateTimeFormat('es-CO', { month: 'short', year: 'numeric' });
 
     for (const [dateString, net] of groupedNet.entries()) {
       runningBalance += net;
 
       if (isMonthly) {
-        // Convertimos el string "YYYY-MM-01" de vuelta a fecha para formatearlo
-        // Añadimos 'T00:00:00' para evitar desfases de zona horaria
         const dateObj = new Date(`${dateString}T00:00:00`);
-        // Capitalizamos la primera letra (ej. "ene 2026" -> "Ene 2026")
         const formatted = monthFormatter.format(dateObj).replace(/^\w/, (c) => c.toUpperCase());
         dates.push(formatted);
       } else {
@@ -133,7 +130,7 @@ export class SummaryComponent implements OnInit {
     return this.chartService.getBalanceHistoryOptions(dates, values);
   });
 
-  // -- TOP 5 GASTOS (Sin cambios estructurales) --
+  // -- TOP 5 GASTOS --
   readonly expensesChartOptions = computed<EChartsOption | null>(() => {
     const txs = this.filteredTransactionsByTime();
     const expenses = txs.filter(t => t.type === 'EXPENSE' && t.categories?.name);
@@ -165,7 +162,18 @@ export class SummaryComponent implements OnInit {
     return 'Histórico completo';
   });
 
-  async ngOnInit(): Promise<void> { await this.loadRealTransactions(); }
+  async ngOnInit(): Promise<void> {
+    await this.loadRealTransactions();
+
+    // NUEVO: Escucha activa en tiempo real de los WebSockets de Supabase
+    this.transactionService.transactionsChanged$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        // La recarga actualizará la señal 'transactions'.
+        // En cascada, Angular repintará los KPIs y Gráficos instantáneamente.
+        this.loadRealTransactions();
+      });
+  }
 
   async loadRealTransactions(): Promise<void> {
     try {
@@ -174,7 +182,6 @@ export class SummaryComponent implements OnInit {
     } catch (error) { console.error('Error al cargar:', error); }
   }
 
-  // Interceptamos la selección del calendario para cambiar el timeframe automáticamente
   onYearSelected(date: Date): void {
     if (date) {
       this.selectedYear.set(date);

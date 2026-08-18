@@ -1,5 +1,6 @@
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
+import { DatePipe } from '@angular/common';
 
 import { routes } from './app.routes';
 import { es_ES, provideNzI18n } from 'ng-zorro-antd/i18n';
@@ -13,6 +14,7 @@ registerLocaleData(es);
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    DatePipe,
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideNzI18n(es_ES),

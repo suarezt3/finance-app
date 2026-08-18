@@ -1,5 +1,6 @@
 // src/app/core/services/transaction.service.ts
 import { Injectable, inject } from '@angular/core';
+import { Subject } from 'rxjs'; // <-- ADICIÓN 1: Importamos Subject para los eventos
 import { SupabaseService } from './supabase.service';
 import { Transaction, TransactionWithDetails } from '../models/transaction.model';
 
@@ -8,6 +9,32 @@ import { Transaction, TransactionWithDetails } from '../models/transaction.model
 })
 export class TransactionService {
   private readonly supabase = inject(SupabaseService).client;
+
+  // <-- ADICIÓN 2: Bus de eventos reactivo para notificar cambios a la app
+  public readonly transactionsChanged$ = new Subject<void>();
+
+  constructor() {
+    this.setupRealtimeSubscription(); // Iniciamos la escucha al arrancar el servicio
+  }
+
+  /**
+   * <-- ADICIÓN 3: Configuración del canal en tiempo real de Supabase
+   * Escucha eventos de Inserción, Actualización o Borrado directamente en la base de datos.
+   */
+  private setupRealtimeSubscription(): void {
+    this.supabase
+      .channel('public:transactions')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'transactions' },
+        (payload) => {
+          console.log('Cambio en BD detectado vía WebSocket:', payload);
+          // Cuando hay un cambio, notificamos a todos los componentes suscritos
+          this.transactionsChanged$.next();
+        }
+      )
+      .subscribe();
+  }
 
   /**
    * Obtiene las transacciones del usuario logueado.
@@ -32,7 +59,7 @@ export class TransactionService {
     return data as TransactionWithDetails[];
   }
 
-/**
+  /**
    * Inserta una nueva transacción en la base de datos.
    * Resuelve automáticamente el user_id y el workspace_id del usuario autenticado.
    */
@@ -99,5 +126,4 @@ export class TransactionService {
 
     if (error) throw new Error(error.message);
   }
-
 }

@@ -1,15 +1,21 @@
-<!-- src/app/features/dashboard/transactions/transactions.component.html -->
+
 <div class="transactions-container">
 
-  <!-- CABECERA CON BOTÓN INTEGRADO -->
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
     <div>
       <h2 style="margin: 0; color: #262626;">Historial de Transacciones</h2>
       <p style="color: #8c8c8c; margin-top: 4px;">Audita y administra tu libro mayor.</p>
     </div>
-    <button nz-button nzType="primary" (click)="openNewModal()">
-      <span nz-icon nzType="plus"></span> Nueva Transacción
-    </button>
+
+    <div style="display: flex; gap: 12px;">
+      <button nz-button nzType="default" (click)="exportToCSV()" [disabled]="filteredTransactions().length === 0">
+        <span nz-icon nzType="download"></span> Exportar CSV
+      </button>
+
+      <button nz-button nzType="primary" (click)="openNewModal()">
+        <span nz-icon nzType="plus"></span> Nueva Transacción
+      </button>
+    </div>
   </div>
 
   <!-- RESUMEN DE KPIs -->
@@ -122,15 +128,20 @@
           <td [style.color]="tx.type === 'INCOME' ? '#3f8600' : '#cf1322'" style="font-weight: 500;">
             {{ tx.type === 'INCOME' ? '+' : '-' }} $ {{ tx.amount | number:'1.0-2':'es' }}
           </td>
+
+          <!-- ACTUALIZACIÓN: Contenedor Flex con Gap para separar las acciones -->
           <td>
-            <!-- ACTUALIZADO: Dispara la función openEditModal enviando la transacción -->
-            <button nz-button nzType="text" nzSize="small" (click)="openEditModal(tx)">
-              <span nz-icon nzType="edit" nzTheme="outline" style="color: #1890ff;"></span>
-            </button>
-            <button nz-button nzType="text" nzDanger nzSize="small" (click)="onDelete(tx.id)">
-              <span nz-icon nzType="delete" nzTheme="outline"></span>
-            </button>
+            <div style="display: flex; gap: 16px; align-items: center;">
+              <button nz-button nzType="text" nzSize="small" (click)="openEditModal(tx)">
+                <span nz-icon nzType="edit" nzTheme="outline" style="color: #1890ff;"></span>
+              </button>
+
+              <button nz-button nzType="text" nzDanger nzSize="small" (click)="onDelete(tx.id)">
+                <span nz-icon nzType="delete" nzTheme="outline"></span>
+              </button>
+            </div>
           </td>
+
         </tr>
       }
     </tbody>

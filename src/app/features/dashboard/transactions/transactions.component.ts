@@ -1,8 +1,8 @@
 // src/app/features/dashboard/transactions/transactions.component.ts
-import { Component, inject, signal, computed, OnInit, viewChild } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, viewChild, DestroyRef } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
@@ -19,7 +19,9 @@ import { NzCardModule } from 'ng-zorro-antd/card';
 import { TransactionService } from '../../../core/services/transaction.service';
 import { TransactionWithDetails } from '../../../core/models/transaction.model';
 
-// NUEVO: Importamos nuestro Componente Compartido
+import { ExportService } from '../../../core/services/export.service';
+
+// Importamos nuestro Componente Compartido
 import { TransactionModalComponent } from '../../../shared/components/transaction-modal/transaction-modal.component';
 
 @Component({
@@ -39,6 +41,10 @@ export class TransactionsComponent implements OnInit {
   private readonly transactionService = inject(TransactionService);
   private readonly message = inject(NzMessageService);
   private readonly fb = inject(FormBuilder);
+  private readonly exportService = inject(ExportService);
+
+  // NUEVA INYECCIÓN: Gestor de ciclo de vida para evitar fugas de memoria
+  private readonly destroyRef = inject(DestroyRef);
 
   // -- REFERENCIA AL COMPONENTE HIJO (Moderno Angular 17+) --
   readonly transactionModal = viewChild(TransactionModalComponent);
@@ -101,6 +107,15 @@ export class TransactionsComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.loadTransactions();
+
+    // NUEVO: Escucha activa en tiempo real de los WebSockets
+    this.transactionService.transactionsChanged$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        // Cuando alguien cambia algo en la base de datos (incluso desde otro dispositivo),
+        // recargamos la tabla silenciosamente.
+        this.loadTransactions();
+      });
   }
 
   // Ahora es público para que el Modal pueda ordenar la recarga al terminar
@@ -151,5 +166,19 @@ export class TransactionsComponent implements OnInit {
 
   onDelete(id: string): void {
     this.message.info('Funcionalidad de eliminación en construcción');
+  }
+
+  // ==========================================
+  // EXPORTACIÓN DE DATOS
+  // ==========================================
+  exportToCSV(): void {
+    const currentData = this.filteredTransactions();
+    if (currentData.length === 0) {
+      this.message.warning('No hay datos para exportar con los filtros actuales.');
+      return;
+    }
+
+    this.exportService.exportTransactionsToCSV(currentData, 'Libro_Mayor_FinanceApp');
+    this.message.success('Archivo exportado correctamente.');
   }
 }
