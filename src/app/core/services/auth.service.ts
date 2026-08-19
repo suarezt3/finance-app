@@ -1,38 +1,37 @@
 // src/app/core/services/auth.service.ts
-import { Injectable, inject, signal } from '@angular/core';
-import { AuthResponse, User } from '@supabase/supabase-js';
+import { Injectable, inject, signal, PLATFORM_ID } from '@angular/core';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { AuthResponse, Session, User, UserResponse } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  // Inyectamos el cliente estricto de Supabase
   private readonly supabase = inject(SupabaseService).client;
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly document = inject(DOCUMENT);
 
-  // Estado reactivo y protegido: encapsulamos el usuario actual
-  readonly currentUser = signal<User | null>(null);
+  // 1. Encapsulación estricta del estado: Privado para escritura, Público para lectura
+  private readonly _currentUser = signal<User | null>(null);
+  public readonly currentUser = this._currentUser.asReadonly();
 
   constructor() {
-    this.initializeAuthState();
+    // 2. Prevención de fugas de memoria en Server-Side Rendering (SSR)
+    if (isPlatformBrowser(this.platformId)) {
+      this.initializeAuthState();
+    }
   }
 
-  /**
-   * Inicializa el estado leyendo la sesión actual en caché y
-   * suscribiéndose a los eventos futuros (ej: cuando el token expira o el usuario sale).
-   */
   private async initializeAuthState(): Promise<void> {
     const { data } = await this.supabase.auth.getSession();
-    this.currentUser.set(data.session?.user ?? null);
+    this._currentUser.set(data.session?.user ?? null);
 
     this.supabase.auth.onAuthStateChange((_event, session) => {
-      this.currentUser.set(session?.user ?? null);
+      this._currentUser.set(session?.user ?? null);
     });
   }
 
-  /**
-   * Registra un nuevo usuario guardando metadatos adicionales (nombre).
-   */
   async signUp(email: string, password: string, fullName: string): Promise<AuthResponse> {
     return this.supabase.auth.signUp({
       email,
@@ -45,9 +44,6 @@ export class AuthService {
     });
   }
 
-  /**
-   * Inicia sesión con correo y contraseña.
-   */
   async signIn(email: string, password: string): Promise<AuthResponse> {
     return this.supabase.auth.signInWithPassword({
       email,
@@ -55,29 +51,20 @@ export class AuthService {
     });
   }
 
+  async signInWithGoogle(): Promise<void> {
+    // Uso de this.document en lugar de window directo para soporte nativo SSR
+    const redirectUrl = `${this.document.location.origin}/dashboard`;
+    const { error } = await this.supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: redirectUrl
+      }
+    });
 
-/**
- * Inicia el flujo de autenticación con Google (OAuth).
- * Esto redirigirá la página actual hacia el proveedor.
- */
-async signInWithGoogle(): Promise<void> {
-  const { error } = await this.supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      // Redirige dinámicamente al entorno actual
-      redirectTo: `${window.location.origin}/dashboard`
-    }
-  });
+    if (error) throw error;
+  }
 
-  if (error) throw error;
-}
-
-/**
-   * Obtiene la sesión actual directamente de Supabase de forma asíncrona.
-   * Fundamental para los Guards para evitar condiciones de carrera (Race Conditions)
-   * al inicializar o recargar la aplicación.
-   */
-  async getSession() {
+  async getSession(): Promise<Session | null> {
     const { data, error } = await this.supabase.auth.getSession();
     if (error) {
       console.error('Error obteniendo la sesión:', error.message);
@@ -86,11 +73,29 @@ async signInWithGoogle(): Promise<void> {
     return data.session;
   }
 
-
-  /**
-   * Destruye la sesión actual en el cliente y en el servidor.
-   */
   async signOut(): Promise<{ error: Error | null }> {
     return this.supabase.auth.signOut();
+  }
+
+  // ==========================================
+  // GESTIÓN DE PERFIL (FASE 1)
+  // ==========================================
+
+  /**
+   * Actualiza el nombre del usuario en los metadatos JSONB de Supabase.
+   */
+  async updateProfileName(fullName: string): Promise<UserResponse> {
+    return this.supabase.auth.updateUser({
+      data: { full_name: fullName }
+    });
+  }
+
+  /**
+   * Actualiza la contraseña del usuario autenticado.
+   */
+  async updatePassword(newPassword: string): Promise<UserResponse> {
+    return this.supabase.auth.updateUser({
+      password: newPassword
+    });
   }
 }

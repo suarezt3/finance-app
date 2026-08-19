@@ -1,0 +1,86 @@
+<!-- src/app/shared/components/profile-modal/profile-modal.component.html -->
+<nz-modal
+  [nzVisible]="isVisible()"
+  nzTitle="Configuración de Perfil"
+  (nzOnCancel)="closeModal()"
+  [nzFooter]="null"
+  nzWidth="500px"
+>
+  <ng-container *nzModalContent>
+    <nz-tabs>
+
+      <!-- PESTAÑA 1: DATOS PERSONALES -->
+      <nz-tab nzTitle="Datos Personales">
+        <form nz-form [formGroup]="profileForm" (ngSubmit)="updateProfile()" nzLayout="vertical">
+          <nz-form-item>
+            <nz-form-label nzRequired nzFor="fullName">Nombre Completo</nz-form-label>
+            <nz-form-control nzErrorTip="Por favor ingresa un nombre válido (mín. 3 caracteres).">
+              <nz-input-group nzPrefixIcon="user">
+                <input type="text" nz-input formControlName="fullName" id="fullName" placeholder="Ej. Eyder Suárez" />
+              </nz-input-group>
+            </nz-form-control>
+          </nz-form-item>
+          <div style="text-align: right; margin-top: 24px;">
+            <button nz-button type="button" (click)="closeModal()" style="margin-right: 8px;">Cancelar</button>
+            <button nz-button nzType="primary" type="submit" [nzLoading]="isSavingProfile()">
+              Guardar Cambios
+            </button>
+          </div>
+        </form>
+      </nz-tab>
+
+      <!-- PESTAÑA 2: SEGURIDAD (CONTRASEÑA) -->
+      <nz-tab nzTitle="Seguridad">
+        <form nz-form [formGroup]="securityForm" (ngSubmit)="updatePassword()" nzLayout="vertical">
+
+          <nz-form-item>
+            <nz-form-label nzRequired nzFor="newPassword">Nueva Contraseña</nz-form-label>
+            <nz-form-control nzErrorTip="Debe contener al menos 8 caracteres, una mayúscula, una minúscula y un carácter especial.">
+              <!-- Se añade el sufijo para el ojito -->
+              <nz-input-password nzPrefixIcon="lock">
+                <input [type]="passVisible() ? 'text' : 'password'" nz-input formControlName="newPassword" id="newPassword" placeholder="Mínimo 8 caracteres" />
+              </nz-input-password>
+              <!-- Template del icono interactivo -->
+              <ng-template #suffixPassIcon>
+                <span nz-icon [nzType]="passVisible() ? 'eye' : 'eye-invisible'"
+                      (click)="passVisible.set(!passVisible())"
+                      style="cursor: pointer; color: #8c8c8c;"></span>
+              </ng-template>
+            </nz-form-control>
+          </nz-form-item>
+
+          <nz-form-item>
+            <nz-form-label nzRequired nzFor="confirmPassword">Confirmar Contraseña</nz-form-label>
+            <nz-form-control [nzErrorTip]="passwordErrorTpl">
+              <nz-input-password nzPrefixIcon="lock">
+                <input [type]="confirmVisible() ? 'text' : 'password'" nz-input formControlName="confirmPassword" id="confirmPassword" placeholder="Repite la nueva contraseña" />
+              </nz-input-password>
+              <!-- Template del icono interactivo -->
+              <ng-template #suffixConfirmIcon>
+                <span nz-icon [nzType]="confirmVisible() ? 'eye' : 'eye-invisible'"
+                      (click)="confirmVisible.set(!confirmVisible())"
+                      style="cursor: pointer; color: #8c8c8c;"></span>
+              </ng-template>
+
+              <ng-template #passwordErrorTpl let-control>
+                @if (securityForm.get('confirmPassword')?.hasError('passwordMismatch')) {
+                  Las contraseñas no coinciden.
+                } @else {
+                  Por favor confirma tu contraseña.
+                }
+              </ng-template>
+            </nz-form-control>
+          </nz-form-item>
+
+          <div style="text-align: right; margin-top: 24px;">
+            <button nz-button type="button" (click)="closeModal()" style="margin-right: 8px;">Cancelar</button>
+            <button nz-button nzType="primary" nzDanger type="submit" [nzLoading]="isSavingPassword()">
+              Actualizar Contraseña
+            </button>
+          </div>
+        </form>
+      </nz-tab>
+
+    </nz-tabs>
+  </ng-container>
+</nz-modal>
