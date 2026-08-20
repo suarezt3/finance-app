@@ -1,3 +1,163 @@
+// src/app/features/dashboard/summary/summary.component.scss
+
 .summary-container {
-  padding: 24px;
+  // Eliminamos el padding estático. El padre (.inner-content) ya gestiona los márgenes generales.
+  width: 100%;
+}
+
+/* ==========================================
+   1. CABECERA Y CONTROLES
+   ========================================== */
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+
+  @media (max-width: 767px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.summary-title {
+  h2 {
+    margin: 0;
+    color: #262626;
+    font-size: 24px;
+    font-weight: 600;
+  }
+  p {
+    margin: 0;
+    color: #8c8c8c;
+    margin-top: 4px;
+    font-size: 14px;
+  }
+}
+
+.summary-actions {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 100%;
+
+  @media (min-width: 768px) {
+    width: auto;
+    flex-wrap: nowrap;
+  }
+}
+
+/* ==========================================
+   2. UX MÓVIL: SCROLL HORIZONTAL OCULTO
+   ========================================== */
+.timeframe-scroll-container {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* Suavidad nativa en iOS */
+
+  /* Ocultamos el scrollbar para una UI más limpia */
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  scrollbar-width: none; /* Firefox */
+
+  nz-radio-group {
+    display: inline-flex;
+    white-space: nowrap;
+  }
+}
+
+.year-picker {
+  width: 140px;
+  @media (max-width: 767px) {
+    flex: 1; /* En móvil, ocupa el espacio sobrante junto al botón */
+  }
+}
+
+.btn-new-transaction {
+  @media (max-width: 767px) {
+    width: 100%; /* Botón de bloque completo para fácil acceso con el pulgar */
+  }
+}
+
+/* ==========================================
+   3. OPTIMIZACIÓN DE TARJETAS (Zorro Overrides)
+   ========================================== */
+.dashboard-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  margin-bottom: 16px;
+}
+
+/*
+  Arquitectura: Usamos :host para anclar el ::ng-deep y evitar
+  que esta regla de padding se fugue a otras vistas de la app.
+*/
+:host ::ng-deep {
+  .dashboard-card {
+    .ant-card-head {
+      @media (max-width: 767px) {
+        padding: 0 12px;
+        min-height: 40px;
+      }
+    }
+
+    .ant-card-head-title {
+      @media (max-width: 767px) {
+        padding: 12px 0;
+        font-size: 14px;
+      }
+    }
+
+    .ant-card-body {
+      @media (max-width: 767px) {
+        padding: 12px; /* Recuperamos 12px de espacio en cada lado para los gráficos */
+      }
+    }
+  }
+}
+
+/* ==========================================
+   4. ÁREA DE GRÁFICOS
+   ========================================== */
+.charts-row {
+  margin-top: 8px;
+}
+
+.chart-container, .empty-chart, .chart-skeleton {
+  width: 100%;
+  height: 350px;
+
+  @media (max-width: 767px) {
+    height: 280px; /* Reducimos altura para mejorar la visibilidad en móviles */
+  }
+}
+
+.empty-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  .empty-icon {
+    font-size: 32px;
+    color: #d9d9d9;
+  }
+
+  p {
+    color: #8c8c8c;
+    margin-top: 16px;
+  }
+}
+
+.chart-skeleton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+  color: #bfbfbf;
+  border-radius: 4px;
 }

@@ -1,74 +1,98 @@
 <!-- src/app/features/dashboard/dashboard.component.html -->
+
+<!-- 1. TEMPLATE DEL MENÚ (DRY Principle) -->
+<!-- Definimos el menú una sola vez para inyectarlo en el Desktop Sider y en el Mobile Drawer -->
+<ng-template #menuItemsTemplate>
+  <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isDesktopCollapsed()">
+
+    <li nz-submenu nzOpen nzTitle="Panel Principal" nzIcon="dashboard">
+      <ul>
+        <!-- Agregamos (click)="closeMobileMenu()" para auto-cerrar el Drawer al navegar en celular -->
+        <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()">
+          <a routerLink="/dashboard/resumen">Resumen Financiero</a>
+        </li>
+        <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()">
+          <a routerLink="/dashboard/transacciones">Transacciones</a>
+        </li>
+      </ul>
+    </li>
+
+    <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()">
+      <a routerLink="/dashboard/configuracion">
+        <span nz-icon nzType="setting"></span>
+        <span>Configuración</span>
+      </a>
+    </li>
+  </ul>
+</ng-template>
+
+
 <nz-layout class="app-layout">
 
-  <!-- BARRA LATERAL (Sidebar) -->
+  <!-- 2. SIDEBAR DESKTOP (Solo visible en pantallas >= 768px) -->
   <nz-sider
-    class="menu-sidebar"
+    class="desktop-sidebar"
     nzCollapsible
     nzWidth="256px"
-    nzBreakpoint="md"
-    [nzCollapsed]="isCollapsed()"
-    (nzCollapsedChange)="isCollapsed.set($event)"
+    [nzCollapsed]="isDesktopCollapsed()"
+    (nzCollapsedChange)="isDesktopCollapsed.set($event)"
     [nzTrigger]="null">
 
     <div class="sidebar-logo">
-      <h1>{{ isCollapsed() ? 'FA' : 'FinanceApp' }}</h1>
+      <h1>{{ isDesktopCollapsed() ? 'FA' : 'FinanceApp' }}</h1>
     </div>
 
-    <!-- Menú de navegación principal -->
-    <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed()">
-      <li nz-submenu nzOpen nzTitle="Panel Principal" nzIcon="dashboard">
-        <ul>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/dashboard/resumen">Resumen Financiero</a>
-          </li>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/dashboard/transacciones">Transacciones</a>
-          </li>
-        </ul>
-      </li>
-      <li nz-menu-item nzMatchRouter>
-        <a routerLink="/dashboard/configuracion">
-          <span nz-icon nzType="setting"></span>
-          <span>Configuración</span>
-        </a>
-      </li>
-    </ul>
+    <!-- Renderizamos la plantilla del menú -->
+    <ng-container *ngTemplateOutlet="menuItemsTemplate"></ng-container>
   </nz-sider>
 
-  <!-- CONTENEDOR PRINCIPAL -->
+  <!-- 3. DRAWER MÓVIL (Menú Off-Canvas para pantallas < 768px) -->
+  <nz-drawer
+    [nzVisible]="isMobileMenuOpen()"
+    nzPlacement="left"
+    nzTitle="FinanceApp"
+    (nzOnClose)="closeMobileMenu()"
+    class="mobile-drawer"
+    [nzClosable]="true"
+    [nzBodyStyle]="{ padding: '0' }">
+    <ng-container *nzDrawerContent>
+      <!-- Renderizamos exactamente la misma plantilla del menú -->
+      <ng-container *ngTemplateOutlet="menuItemsTemplate"></ng-container>
+    </ng-container>
+  </nz-drawer>
+
+  <!-- 4. CONTENEDOR PRINCIPAL -->
   <nz-layout>
 
     <!-- CABECERA (Header) -->
     <nz-header>
       <div class="app-header">
-        <!-- Botón para colapsar/expandir menú -->
-        <span class="header-trigger" (click)="toggleSidebar()">
-          <span nz-icon [nzType]="isCollapsed() ? 'menu-unfold' : 'menu-fold'"></span>
+
+        <!-- Botón Toggle Inteligente (Abre Drawer en Móvil, Colapsa Sider en Desktop) -->
+        <span class="header-trigger" (click)="toggleMenu()">
+          <span nz-icon [nzType]="getMenuIcon()"></span>
         </span>
 
-        <!-- Acciones de usuario (Dropdown Profesional) -->
+        <!-- Acciones de usuario -->
         <div class="header-actions">
           @if (user()) {
             <a nz-dropdown [nzDropdownMenu]="userMenu" class="user-dropdown">
-              <!-- Avatar: Consume la Signal Computada userInitial() -->
               <nz-avatar
                 [nzText]="userInitial()"
                 nzSize="default"
                 style="background-color: #1890ff;">
               </nz-avatar>
 
-              <!-- Nombre: Consume la Signal Computada userName() -->
-              <span class="user-name">{{ userName() }}</span>
+              <!-- Clase 'hide-on-mobile' añadida para ahorrar espacio en la barra superior táctil -->
+              <span class="user-name hide-on-mobile">{{ userName() }}</span>
               <span nz-icon nzType="down"></span>
             </a>
 
-            <!-- Menú Desplegable de NG-Zorro -->
             <nz-dropdown-menu #userMenu="nzDropdownMenu">
               <ul nz-menu>
                 <li nz-menu-item (click)="openProfile()">
-  <span nz-icon nzType="user"></span> Mi Perfil
-</li>
+                  <span nz-icon nzType="user"></span> Mi Perfil
+                </li>
                 <li nz-menu-divider></li>
                 <li nz-menu-item nzDanger (click)="onLogout()">
                   <span nz-icon nzType="logout"></span> Cerrar Sesión
@@ -86,6 +110,9 @@
         <router-outlet></router-outlet>
       </div>
     </nz-content>
+
   </nz-layout>
+
+  <!-- MODAL COMPARTIDO -->
   <app-profile-modal></app-profile-modal>
 </nz-layout>
