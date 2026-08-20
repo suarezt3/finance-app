@@ -1,7 +1,6 @@
 // src/app/app.routes.ts
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
-// NOTA: Eliminamos el 'import { AuthComponent }...' estático de aquí arriba
 
 export const routes: Routes = [
   {
@@ -11,14 +10,22 @@ export const routes: Routes = [
   },
   {
     path: 'auth',
-    // Optimización: Carga perezosa (Lazy Loading) aplicada al Login
-    loadComponent: () => import('./features/auth/auth.component').then(m => m.AuthComponent)
+    // Transformamos 'auth' en una agrupación lógica de rutas hijas
+    children: [
+      {
+        path: '', // Coincide exactamente con '/auth'
+        loadComponent: () => import('./features/auth/auth.component').then(m => m.AuthComponent)
+      },
+      {
+        path: 'update-password', // Coincide con '/auth/update-password'
+        loadComponent: () => import('./features/auth/update-password/update-password.component').then(m => m.UpdatePasswordComponent)
+      }
+    ]
   },
   {
     path: 'dashboard',
-    canActivate: [authGuard], // El candado está perfecto
+    canActivate: [authGuard],
     loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
-    // Definición de Rutas Hijas (Se renderizan en el <router-outlet> del layout principal)
     children: [
       {
         path: '',

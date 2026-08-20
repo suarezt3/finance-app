@@ -1,6 +1,7 @@
 // src/app/core/services/auth.service.ts
 import { Injectable, inject, signal, PLATFORM_ID } from '@angular/core';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { Router } from '@angular/router'; // <-- NUEVO IMPORT: Para dominar la navegación
 import { AuthResponse, Session, User, UserResponse } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 
@@ -12,12 +13,13 @@ export class AuthService {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly document = inject(DOCUMENT);
 
-  // 1. Encapsulación estricta del estado: Privado para escritura, Público para lectura
+  // NUEVO: Inyectamos el Router para tomar el control de los flujos de seguridad
+  private readonly router = inject(Router);
+
   private readonly _currentUser = signal<User | null>(null);
   public readonly currentUser = this._currentUser.asReadonly();
 
   constructor() {
-    // 2. Prevención de fugas de memoria en Server-Side Rendering (SSR)
     if (isPlatformBrowser(this.platformId)) {
       this.initializeAuthState();
     }
@@ -27,8 +29,18 @@ export class AuthService {
     const { data } = await this.supabase.auth.getSession();
     this._currentUser.set(data.session?.user ?? null);
 
-    this.supabase.auth.onAuthStateChange((_event, session) => {
+    this.supabase.auth.onAuthStateChange((event, session) => {
       this._currentUser.set(session?.user ?? null);
+
+      // ==============================================================
+      // LÓGICA DE INTERCEPCIÓN DE EVENTOS DE SEGURIDAD
+      // ==============================================================
+      if (event === 'PASSWORD_RECOVERY') {
+        // El usuario hizo clic en el enlace del correo.
+        // Supabase ya creó una sesión temporal, ahora lo capturamos
+        // y lo forzamos a ir a la vista de cambio de contraseña.
+        this.router.navigate(['/auth/update-password']);
+      }
     });
   }
 
@@ -38,7 +50,7 @@ export class AuthService {
       password,
       options: {
         data: {
-          full_name: fullName // Se guarda en la columna JSONB raw_user_meta_data
+          full_name: fullName
         }
       }
     });
@@ -52,7 +64,6 @@ export class AuthService {
   }
 
   async signInWithGoogle(): Promise<void> {
-    // Uso de this.document en lugar de window directo para soporte nativo SSR
     const redirectUrl = `${this.document.location.origin}/dashboard`;
     const { error } = await this.supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -77,25 +88,24 @@ export class AuthService {
     return this.supabase.auth.signOut();
   }
 
-  // ==========================================
-  // GESTIÓN DE PERFIL (FASE 1)
-  // ==========================================
-
-  /**
-   * Actualiza el nombre del usuario en los metadatos JSONB de Supabase.
-   */
   async updateProfileName(fullName: string): Promise<UserResponse> {
     return this.supabase.auth.updateUser({
       data: { full_name: fullName }
     });
   }
 
-  /**
-   * Actualiza la contraseña del usuario autenticado.
-   */
   async updatePassword(newPassword: string): Promise<UserResponse> {
     return this.supabase.auth.updateUser({
       password: newPassword
+    });
+  }
+
+  async resetPassword(email: string): Promise<{ error: Error | null }> {
+    // ACTUALIZADO: Obligamos al correo a enviar al usuario a nuestra futura vista de recuperación
+    const redirectUrl = `${this.document.location.origin}/auth/update-password`;
+
+    return this.supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectUrl
     });
   }
 }

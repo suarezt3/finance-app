@@ -28,7 +28,9 @@ export class AuthComponent {
   private readonly router = inject(Router);
   private readonly message = inject(NzMessageService);
 
+  // Estados de la vista
   readonly isLoginMode = signal<boolean>(true);
+  readonly isRecoveryMode = signal<boolean>(false); // NUEVO: Estado para recuperar contraseña
   readonly isLoading = signal<boolean>(false);
 
   readonly authForm = this.fb.group({
@@ -48,32 +50,73 @@ export class AuthComponent {
     return !!control && control.invalid && (control.dirty || control.touched);
   }
 
+  // ==========================================
+  // MANEJO DE ESTADOS Y VALIDACIONES
+  // ==========================================
+
   toggleMode(): void {
     this.isLoginMode.update(mode => !mode);
+    this.isRecoveryMode.set(false); // Si cambia entre login/registro, apaga la recuperación
     this.authForm.reset();
+    this.updateValidators();
+  }
 
-    const fullNameControl = this.authForm.controls.fullName;
-    if (this.isLoginMode()) {
-      fullNameControl.removeValidators(Validators.required);
-    } else {
-      fullNameControl.addValidators(Validators.required);
-    }
-    fullNameControl.updateValueAndValidity();
+  toggleRecoveryMode(): void {
+    this.isRecoveryMode.update(mode => !mode);
+    this.authForm.reset();
+    this.updateValidators();
   }
 
   /**
-   * DICCIONARIO DE ERRORES (Clean Code)
-   * Mapea los mensajes técnicos en inglés de Supabase a respuestas amigables en español.
+   * Ajusta los validadores requeridos según el modo activo.
+   * Evita errores de validación en campos ocultos.
    */
+  private updateValidators(): void {
+    const fullNameControl = this.authForm.controls.fullName;
+    const passwordControl = this.authForm.controls.password;
+
+    // 1. Limpiamos validadores condicionales
+    fullNameControl.clearValidators();
+    passwordControl.clearValidators();
+
+    // 2. Base de validadores fijos
+    fullNameControl.addValidators([Validators.minLength(4)]);
+    const passwordValidators = [
+      Validators.required,
+      Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/)
+    ];
+
+    // 3. Aplicamos lógica según el estado actual
+    if (this.isRecoveryMode()) {
+      // Recuperación: Ningún validador extra requerido (solo el email importa)
+    } else if (this.isLoginMode()) {
+      // Login: Contraseña requerida
+      passwordControl.addValidators(passwordValidators);
+    } else {
+      // Registro: Todo requerido
+      fullNameControl.addValidators([Validators.required, Validators.minLength(4)]);
+      passwordControl.addValidators(passwordValidators);
+    }
+
+    // 4. Refrescamos el estado del formulario
+    fullNameControl.updateValueAndValidity();
+    passwordControl.updateValueAndValidity();
+  }
+
+  // ==========================================
+  // INTEGRACIÓN CON API
+  // ==========================================
+
   private translateAuthError(errorMsg: string): string {
     const errorTranslations: Record<string, string> = {
       'User already registered': 'Este correo ya se encuentra registrado en el sistema.',
       'Invalid login credentials': 'El correo electrónico o la contraseña son incorrectos.',
       'Email not confirmed': 'Debes confirmar tu correo electrónico antes de iniciar sesión.',
-      // Puedes agregar más mapeos de Supabase aquí en el futuro
+      // NUEVOS: Manejo de errores para la recuperación
+      'For security purposes, you can only request this once every 60 seconds': 'Por seguridad, debes esperar 60 segundos antes de solicitar otro correo.',
+      'User not found': 'No existe un usuario registrado con este correo electrónico.'
     };
 
-    // Retorna la traducción si existe, o un mensaje genérico por defecto
     return errorTranslations[errorMsg] || 'Ocurrió un error en la autenticación. Por favor, intenta de nuevo.';
   }
 
@@ -87,27 +130,33 @@ export class AuthComponent {
     const { email, password, fullName } = this.authForm.getRawValue();
 
     try {
-      if (this.isLoginMode()) {
+      if (this.isRecoveryMode()) {
+        // FLUJO DE RECUPERACIÓN
+        const { error } = await this.authService.resetPassword(email);
+        if (error) throw error;
+
+        this.message.success('Te hemos enviado un enlace al correo para recuperar tu contraseña.', { nzDuration: 6000 });
+        this.toggleRecoveryMode(); // Regresamos al login tras el éxito
+
+      } else if (this.isLoginMode()) {
+        // FLUJO DE LOGIN
         const { error } = await this.authService.signIn(email, password);
         if (error) throw error;
 
-        // SOLUCIÓN UX: Feedback visual y limpieza de estado
         this.message.success('¡Bienvenido de vuelta!');
         this.authForm.reset();
-
-        // La navegación fallará silenciosamente si la ruta no existe, pero el usuario verá el éxito
         await this.router.navigate(['/dashboard']);
 
       } else {
+        // FLUJO DE REGISTRO
         const { error } = await this.authService.signUp(email, password, fullName);
         if (error) throw error;
 
         this.toggleMode();
-        this.message.success('¡Registro exitoso! Por favor, verifica tu bandeja de entrada o spam para confirmar tu cuenta.', { nzDuration: 5000 });
+        this.message.success('¡Registro exitoso! Por favor, verifica tu bandeja de entrada o spam para confirmar tu cuenta.', { nzDuration: 6000 });
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
-        // SOLUCIÓN ERRORES: Pasamos el error nativo por nuestro traductor
         const localizedMessage = this.translateAuthError(err.message);
         this.message.error(localizedMessage);
       } else {
