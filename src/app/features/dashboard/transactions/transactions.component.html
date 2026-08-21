@@ -1,43 +1,46 @@
-
+<!-- src/app/features/dashboard/transactions/transactions.component.html -->
 <div class="transactions-container">
 
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-    <div>
-      <h2 style="margin: 0; color: #262626;">Historial de Transacciones</h2>
-      <p style="color: #8c8c8c; margin-top: 4px;">Audita y administra tu libro mayor.</p>
+  <!-- CABECERA -->
+  <header class="transactions-header">
+    <div class="header-title">
+      <h2>Historial de Transacciones</h2>
+      <p>Audita y administra tu libro mayor.</p>
     </div>
 
-    <div style="display: flex; gap: 12px;">
+    <div class="header-actions">
       <button nz-button nzType="default" (click)="exportToCSV()" [disabled]="filteredTransactions().length === 0">
-        <span nz-icon nzType="download"></span> Exportar CSV
+        <span nz-icon nzType="download"></span>
+        <span class="btn-text">Exportar CSV</span>
       </button>
 
       <button nz-button nzType="primary" (click)="openNewModal()">
-        <span nz-icon nzType="plus"></span> Nueva Transacción
+        <span nz-icon nzType="plus"></span>
+        <span class="btn-text">Nueva Transacción</span>
       </button>
     </div>
-  </div>
+  </header>
 
-  <!-- RESUMEN DE KPIs -->
-  <nz-row [nzGutter]="16" style="margin-bottom: 24px;">
+  <!-- RESUMEN DE KPIs (Grid Responsivo 2x2 en Móviles) -->
+  <nz-row [nzGutter]="{ xs: 8, sm: 16, md: 16 }" class="kpi-row">
 
-    <!-- Saldo Global Inmutable -->
-    <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" style="margin-bottom: 16px;">
-      <nz-card nzSize="small" style="background-color: #f0f5ff; border-color: #adc6ff;">
+    <!-- Saldo Global -->
+    <nz-col [nzXs]="12" [nzMd]="6" class="kpi-col">
+      <nz-card nzSize="small" class="kpi-card highlight-card">
         <nz-statistic
-          [nzTitle]="'Saldo Actual (Global)'"
+          [nzTitle]="'Saldo Global'"
           [nzValue]="absoluteBalance()"
           [nzValueTemplate]="txFormatter"
-          nzPrefix="$"
-          [nzValueStyle]="{ color: '#1d39c4', fontWeight: 'bold' }">
+          nzPrefix="$">
         </nz-statistic>
       </nz-card>
     </nz-col>
 
-    <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" style="margin-bottom: 16px;">
-      <nz-card nzSize="small">
+    <!-- Saldo Filtrado -->
+    <nz-col [nzXs]="12" [nzMd]="6" class="kpi-col">
+      <nz-card nzSize="small" class="kpi-card">
         <nz-statistic
-          [nzTitle]="'Saldo (Filtrado)'"
+          [nzTitle]="'Saldo (Filtro)'"
           [nzValue]="filteredSummary().totalBalance"
           [nzValueTemplate]="txFormatter"
           nzPrefix="$">
@@ -45,8 +48,9 @@
       </nz-card>
     </nz-col>
 
-    <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" style="margin-bottom: 16px;">
-      <nz-card nzSize="small">
+    <!-- Ingresos -->
+    <nz-col [nzXs]="12" [nzMd]="6" class="kpi-col">
+      <nz-card nzSize="small" class="kpi-card">
         <nz-statistic
           [nzTitle]="'Ingresos'"
           [nzValue]="filteredSummary().totalIncome"
@@ -57,8 +61,9 @@
       </nz-card>
     </nz-col>
 
-    <nz-col [nzXs]="24" [nzSm]="12" [nzMd]="6" style="margin-bottom: 16px;">
-      <nz-card nzSize="small">
+    <!-- Gastos -->
+    <nz-col [nzXs]="12" [nzMd]="6" class="kpi-col">
+      <nz-card nzSize="small" class="kpi-card">
         <nz-statistic
           [nzTitle]="'Gastos'"
           [nzValue]="filteredSummary().totalExpenses"
@@ -76,76 +81,87 @@
   </ng-template>
 
   <!-- BARRA DE FILTROS -->
-  <form [formGroup]="filterForm" style="margin-bottom: 24px; padding: 16px; background-color: #fafafa; border-radius: 8px;">
-    <nz-row [nzGutter]="16">
+  <form [formGroup]="filterForm" class="filters-container">
+    <nz-row [nzGutter]="[16, 16]">
       <nz-col [nzXs]="24" [nzMd]="8">
-        <nz-input-wrapper nzPrefix="search">
-          <input type="text" nz-input formControlName="searchTerm" placeholder="Buscar por descripción o categoría..." />
+        <nz-input-wrapper nzPrefix="Buscar" nzPrefixIcon="search" class="full-width">
+          <input type="text" nz-input formControlName="searchTerm" placeholder="Descripción o categoria." />
         </nz-input-wrapper>
       </nz-col>
       <nz-col [nzXs]="24" [nzMd]="8">
-        <nz-range-picker formControlName="dateRange" style="width: 100%;"></nz-range-picker>
+        <nz-range-picker
+        formControlName="dateRange"
+        class="full-width"
+        nzDropdownClassName="mobile-range-dropdown"
+        [nzInputReadOnly]="true"
+        [nzPlaceHolder]="['Fecha inicial', 'Fecha final']"
+        ></nz-range-picker>
       </nz-col>
       <nz-col [nzXs]="24" [nzMd]="5">
-        <nz-select formControlName="type" nzPlaceHolder="Naturaleza" nzAllowClear style="width: 100%;">
+        <nz-select formControlName="type" nzPlaceHolder="Naturaleza" nzAllowClear class="full-width">
           <nz-option nzValue="INCOME" nzLabel="Ingresos"></nz-option>
           <nz-option nzValue="EXPENSE" nzLabel="Gastos"></nz-option>
         </nz-select>
       </nz-col>
-      <nz-col [nzXs]="24" [nzMd]="3" style="display: flex; align-items: center;">
+      <nz-col [nzXs]="24" [nzMd]="3" class="filter-actions">
         <button nz-button nzType="default" (click)="clearFilters()" nzBlock>Limpiar</button>
       </nz-col>
     </nz-row>
   </form>
 
-  <!-- TABLA -->
-  <nz-table #txTable [nzData]="filteredTransactions()" [nzLoading]="isLoading()" nzSize="middle" nzShowPagination [nzPageSize]="10">
-    <thead>
-      <tr>
-        <th>Fecha</th>
-        <th>Descripción</th>
-        <th>Categoría</th>
-        <th>Método</th>
-        <th>Naturaleza</th>
-        <th>Monto</th>
-        <th>Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (tx of txTable.data; track tx.id) {
+  <!-- TABLA (Con scroll horizontal nativo para móviles) -->
+  <div class="table-container">
+    <nz-table
+      #txTable
+      [nzData]="filteredTransactions()"
+      [nzLoading]="isLoading()"
+      nzSize="middle"
+      nzShowPagination
+      [nzPageSize]="10"
+      [nzScroll]="{ x: '800px' }">
+      <thead>
         <tr>
-          <td>{{ tx.date | date:'dd/MM/yyyy' }}</td>
-          <td>{{ tx.description || '---' }}</td>
-          <td>{{ tx.categories?.name || '---' }}</td>
-          <td>{{ tx.payment_methods?.name || '---' }}</td>
-          <td>
-            @if (tx.type === 'INCOME') {
-              <nz-tag nzColor="success">Ingreso</nz-tag>
-            } @else {
-              <nz-tag nzColor="error">Gasto</nz-tag>
-            }
-          </td>
-          <td [style.color]="tx.type === 'INCOME' ? '#3f8600' : '#cf1322'" style="font-weight: 500;">
-            {{ tx.type === 'INCOME' ? '+' : '-' }} $ {{ tx.amount | number:'1.0-2':'es' }}
-          </td>
-
-          <!-- ACTUALIZACIÓN: Contenedor Flex con Gap para separar las acciones -->
-          <td>
-            <div style="display: flex; gap: 16px; align-items: center;">
-              <button nz-button nzType="text" nzSize="small" (click)="openEditModal(tx)">
-                <span nz-icon nzType="edit" nzTheme="outline" style="color: #1890ff;"></span>
-              </button>
-
-              <button nz-button nzType="text" nzDanger nzSize="small" (click)="onDelete(tx.id)">
-                <span nz-icon nzType="delete" nzTheme="outline"></span>
-              </button>
-            </div>
-          </td>
-
+          <th>Fecha</th>
+          <th>Descripción</th>
+          <th>Categoría</th>
+          <th>Método</th>
+          <th>Naturaleza</th>
+          <th>Monto</th>
+          <th>Acciones</th>
         </tr>
-      }
-    </tbody>
-  </nz-table>
+      </thead>
+      <tbody>
+        @for (tx of txTable.data; track tx.id) {
+          <tr>
+            <td>{{ tx.date | date:'dd/MM/yyyy' }}</td>
+            <td>{{ tx.description || '---' }}</td>
+            <td>{{ tx.categories?.name || '---' }}</td>
+            <td>{{ tx.payment_methods?.name || '---' }}</td>
+            <td>
+              @if (tx.type === 'INCOME') {
+                <nz-tag nzColor="success">Ingreso</nz-tag>
+              } @else {
+                <nz-tag nzColor="error">Gasto</nz-tag>
+              }
+            </td>
+            <td [style.color]="tx.type === 'INCOME' ? '#3f8600' : '#cf1322'" style="font-weight: 500;">
+              {{ tx.type === 'INCOME' ? '+' : '-' }} $ {{ tx.amount | number:'1.0-2':'es' }}
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button nz-button nzType="text" nzSize="small" (click)="openEditModal(tx)" class="btn-edit">
+                  <span nz-icon nzType="edit" nzTheme="outline"></span>
+                </button>
+                <button nz-button nzType="text" nzDanger nzSize="small" (click)="onDelete(tx.id)">
+                  <span nz-icon nzType="delete" nzTheme="outline"></span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </nz-table>
+  </div>
 
   <!-- INTEGRACIÓN DEL COMPONENTE COMPARTIDO -->
   <app-transaction-modal

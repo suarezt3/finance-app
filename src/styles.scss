@@ -20,3 +20,29 @@ html, body {
   color: rgb(245, 12, 12);
   font-size: small;
 }
+
+/* ==========================================
+   FIX RESPONSIVO: NG-ZORRO RANGE PICKER
+   ========================================== */
+@media (max-width: 767px) {
+  /* Apunta a la clase personalizada que inyectamos desde el HTML */
+  .mobile-range-dropdown {
+    .ant-picker-panel-container {
+      /* Obliga a los dos paneles del calendario a apilarse verticalmente */
+      .ant-picker-panels {
+        display: flex !important;
+        flex-direction: column !important;
+      }
+
+      /* Oculta el divisor vertical entre los dos calendarios (ya no es necesario) */
+      .ant-picker-panel-separator {
+        display: none !important;
+      }
+
+      /* Ajuste estético para el panel inferior */
+      .ant-picker-panel:last-child {
+        border-top: 1px solid #f0f0f0;
+      }
+    }
+  }
+}

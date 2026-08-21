@@ -2,7 +2,8 @@
 import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop'; // <-- NUEVO: Para evitar memory leaks
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { BreakpointObserver } from '@angular/cdk/layout'; // <-- NUEVO: Para detectar móvil
 
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -20,7 +21,6 @@ import { FinancialChartService } from '../../../core/services/charts/financial-c
 import { TransactionService } from '../../../core/services/transaction.service';
 import { TransactionModalComponent } from '../../../shared/components/transaction-modal/transaction-modal.component';
 
-// Ampliamos el tipado para soportar años específicos
 type Timeframe = '7d' | '30d' | '1y' | 'all' | 'custom-year';
 
 @Component({
@@ -38,17 +38,17 @@ type Timeframe = '7d' | '30d' | '1y' | 'all' | 'custom-year';
 export class SummaryComponent implements OnInit {
   private readonly chartService = inject(FinancialChartService);
   private readonly transactionService = inject(TransactionService);
-
-  // NUEVA INYECCIÓN: Gestor de ciclo de vida
   private readonly destroyRef = inject(DestroyRef);
+  private readonly breakpointObserver = inject(BreakpointObserver); // <-- INYECTADO
 
   readonly transactions = signal<TransactionWithDetails[]>([]);
   readonly isModalVisible = signal<boolean>(false);
-
   readonly timeframe = signal<Timeframe>('30d');
   readonly selectedYear = signal<Date | null>(null);
 
-  // -- FILTRO TEMPORAL MAESTRO ACTUALIZADO --
+  // NUEVO: Bandera reactiva de espacio visual
+  readonly isMobileView = signal<boolean>(false);
+
   readonly filteredTransactionsByTime = computed(() => {
     const txs = this.transactions();
     const tf = this.timeframe();
@@ -70,7 +70,6 @@ export class SummaryComponent implements OnInit {
     return txs.filter(tx => new Date(tx.date).getTime() >= limitDate.getTime());
   });
 
-  // -- KPIs --
   readonly summary = computed<FinancialSummary>(() => {
     const txs = this.filteredTransactionsByTime();
     const totalIncome = txs.filter(t => t.type === 'INCOME').reduce((sum, t) => sum + Number(t.amount), 0);
@@ -81,14 +80,13 @@ export class SummaryComponent implements OnInit {
     };
   });
 
-  // -- ALGORITMO DE AGRUPACIÓN DINÁMICA (Días vs Meses) --
   readonly balanceChartOptions = computed<EChartsOption | null>(() => {
     const txs = this.filteredTransactionsByTime();
     const tf = this.timeframe();
+    const isMobile = this.isMobileView(); // <-- Extraemos el estado reactivo
     if (txs.length === 0) return null;
 
     const isMonthly = tf === '1y' || tf === 'all' || tf === 'custom-year';
-
     const sortedTxs = [...txs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     const groupedNet = new Map<string, number>();
 
@@ -110,12 +108,10 @@ export class SummaryComponent implements OnInit {
     const dates: string[] = [];
     const values: number[] = [];
     let runningBalance = 0;
-
     const monthFormatter = new Intl.DateTimeFormat('es-CO', { month: 'short', year: 'numeric' });
 
     for (const [dateString, net] of groupedNet.entries()) {
       runningBalance += net;
-
       if (isMonthly) {
         const dateObj = new Date(`${dateString}T00:00:00`);
         const formatted = monthFormatter.format(dateObj).replace(/^\w/, (c) => c.toUpperCase());
@@ -123,16 +119,16 @@ export class SummaryComponent implements OnInit {
       } else {
         dates.push(dateString);
       }
-
       values.push(runningBalance);
     }
 
-    return this.chartService.getBalanceHistoryOptions(dates, values);
+    // PASAMOS EL TERCER PARÁMETRO: isMobile
+    return this.chartService.getBalanceHistoryOptions(dates, values, isMobile);
   });
 
-  // -- TOP 5 GASTOS --
   readonly expensesChartOptions = computed<EChartsOption | null>(() => {
     const txs = this.filteredTransactionsByTime();
+    const isMobile = this.isMobileView(); // <-- Extraemos el estado reactivo
     const expenses = txs.filter(t => t.type === 'EXPENSE' && t.categories?.name);
     if (expenses.length === 0) return null;
 
@@ -146,13 +142,14 @@ export class SummaryComponent implements OnInit {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
+    // PASAMOS EL TERCER PARÁMETRO: isMobile
     return this.chartService.getExpensesByCategoryOptions(
       sortedCategories.map(item => item[0]),
-      sortedCategories.map(item => item[1])
+      sortedCategories.map(item => item[1]),
+      isMobile
     );
   });
 
-  // Texto dinámico
   readonly timeframeText = computed(() => {
     const tf = this.timeframe();
     if (tf === '7d') return 'Últimos 7 días';
@@ -165,13 +162,18 @@ export class SummaryComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     await this.loadRealTransactions();
 
-    // NUEVO: Escucha activa en tiempo real de los WebSockets de Supabase
+    // 1. Listeners de Supabase
     this.transactionService.transactionsChanged$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
-        // La recarga actualizará la señal 'transactions'.
-        // En cascada, Angular repintará los KPIs y Gráficos instantáneamente.
         this.loadRealTransactions();
+      });
+
+    // 2. NUEVO: Listeners de Diseño Responsivo
+    this.breakpointObserver.observe(['(max-width: 767px)'])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(result => {
+        this.isMobileView.set(result.matches);
       });
   }
 

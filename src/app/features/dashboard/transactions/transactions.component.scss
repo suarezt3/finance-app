@@ -1,7 +1,176 @@
 // src/app/features/dashboard/transactions/transactions.component.scss
+
 .transactions-container {
+  /* En escritorio usamos padding normal, en móvil lo reducimos al mínimo */
   padding: 24px;
   background-color: #ffffff;
   border-radius: 8px;
   min-height: calc(100vh - 150px);
+
+  @media (max-width: 767px) {
+    padding: 12px;
+  }
+}
+
+/* ==========================================
+   1. CABECERA Y ACCIONES
+   ========================================== */
+.transactions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.header-title {
+  h2 {
+    margin: 0;
+    color: #262626;
+    font-size: 24px;
+    font-weight: 600;
+
+    @media (max-width: 767px) {
+      font-size: 20px;
+    }
+  }
+  p {
+    color: #8c8c8c;
+    margin-top: 4px;
+    margin-bottom: 0;
+  }
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+
+  /* Transformación de botones: Oculta el texto en pantallas muy pequeñas */
+  .btn-text {
+    @media (max-width: 575px) {
+      display: none;
+    }
+  }
+}
+
+/* ==========================================
+   2. TARJETAS KPI (Zorro Overrides)
+   ========================================== */
+.kpi-row {
+  margin-bottom: 24px;
+}
+
+.kpi-col {
+  margin-bottom: 16px;
+}
+
+/* Restauración del estilo de la tarjeta de Saldo Global */
+.highlight-card {
+  background-color: #f0f5ff !important;
+  border-color: #adc6ff !important;
+}
+
+/* Modificamos los estilos internos de NG-Zorro sin afectar la app global */
+:host ::ng-deep {
+  .kpi-card {
+    .ant-card-body {
+      @media (max-width: 767px) {
+        padding: 12px; /* Recuperamos espacio interno */
+      }
+    }
+
+    .ant-statistic-title {
+      @media (max-width: 767px) {
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+    }
+
+    .ant-statistic-content-value {
+      @media (max-width: 767px) {
+        font-size: 16px; /* Evita que cifras millonarias desborden el 2x2 */
+      }
+    }
+  }
+}
+
+/* ==========================================
+   3. BARRA DE FILTROS
+   ========================================== */
+.filters-container {
+  margin-bottom: 24px;
+  padding: 16px;
+  background-color: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+
+  @media (max-width: 767px) {
+    padding: 12px;
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: flex-end;
+
+  @media (max-width: 767px) {
+    margin-top: 8px; /* Separación extra cuando los filtros se apilan en móvil */
+  }
+}
+
+/* ==========================================
+   4. TABLA RESPONSIVA Y ACCIONES
+   ========================================== */
+.table-container {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden; /* Delega el scroll horizontal al componente interno de Zorro */
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+
+  .btn-edit {
+    color: #1890ff;
+
+    &:hover {
+      color: #40a9ff;
+      background-color: rgba(24, 144, 255, 0.1);
+    }
+  }
+}
+
+/* ==========================================
+   5. PERSONALIZACIÓN DE TABLA (Header UI)
+   ========================================== */
+:host ::ng-deep {
+  .ant-table-thead > tr > th {
+    /* Fondo azul hielo para separar visualmente la cabecera del contenido */
+    background-color: #f0f5ff !important;
+
+    /* Texto azul oscuro para mantener contraste y legibilidad (A11y) */
+    color: #1d39c4 !important;
+
+    /* Micro-tipografía moderna para datos tabulares */
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+
+    /* Borde inferior sólido para anclar la cabecera visualmente */
+    border-bottom: 2px solid #adc6ff !important;
+  }
+
+  /* Opcional: Un sutil efecto hover en las filas para mejorar la lectura en móvil */
+  .ant-table-tbody > tr:hover > td {
+    background-color: rgba(24, 144, 255, 0.02) !important;
+  }
 }

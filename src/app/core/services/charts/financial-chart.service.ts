@@ -1,44 +1,61 @@
-
+// src/app/core/services/charts/financial-chart.service.ts
 import { Injectable } from '@angular/core';
 import { EChartsOption } from 'echarts';
+
+interface ChartFormatterParams {
+  name: string;
+  value: number;
+  dataIndex: number;
+  seriesName?: string;
+  [key: string]: unknown;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class FinancialChartService {
 
-  /**
-   * Genera la configuración (EChartsOption) para el gráfico de balance histórico.
-   * Centralizamos aquí los colores, ejes y comportamiento visual.
-   */
-  getBalanceHistoryOptions(dates: string[], values: number[]): EChartsOption {
+  getBalanceHistoryOptions(dates: string[], values: number[], isMobile: boolean): EChartsOption {
     return {
       tooltip: {
         trigger: 'axis',
         axisPointer: { type: 'cross' }
       },
       grid: {
-        left: '3%', right: '4%', bottom: '3%', containLabel: true
+        left: isMobile ? '2%' : '3%',
+        right: isMobile ? '5%' : '4%',
+        bottom: isMobile ? '8%' : '3%',
+        top: '10%',
+        containLabel: true
       },
       xAxis: {
         type: 'category',
         boundaryGap: false,
         data: dates,
-        axisLine: { lineStyle: { color: '#d9d9d9' } }
+        axisLine: { lineStyle: { color: '#d9d9d9' } },
+        axisLabel: {
+          hideOverlap: true,
+          rotate: isMobile ? 45 : 0,
+          fontSize: isMobile ? 10 : 12,
+          color: '#8c8c8c'
+        }
       },
       yAxis: {
         type: 'value',
-        axisLabel: { formatter: '${value}' },
+        axisLabel: {
+          formatter: '${value}',
+          fontSize: isMobile ? 10 : 12
+        },
         splitLine: { lineStyle: { type: 'dashed', color: '#f0f0f0' } }
       },
       series: [
         {
           name: 'Saldo',
           type: 'line',
-          smooth: true, // Hace que la línea sea curva en lugar de recta
+          smooth: true,
           areaStyle: {
             opacity: 0.2,
-            color: '#1890ff' // Azul corporativo de NG-Zorro
+            color: '#1890ff'
           },
           itemStyle: { color: '#1890ff' },
           data: values
@@ -46,32 +63,61 @@ export class FinancialChartService {
       ]
     };
   }
-/**
-   * Configuración para el gráfico de barras horizontales (Top Gastos)
-   * Aislamos esta lógica del componente para mantenerlo enfocado en la vista.
-   */
-  getExpensesByCategoryOptions(categories: string[], values: number[]): EChartsOption {
+
+  getExpensesByCategoryOptions(categories: string[], values: number[], isMobile: boolean): EChartsOption {
     return {
       tooltip: {
         trigger: 'axis',
         axisPointer: { type: 'shadow' },
-        formatter: (params: any) => {
-          const val = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(params[0].value);
-          return `${params[0].name}<br/><strong>${val}</strong>`;
+        formatter: (params: unknown) => {
+          const paramObj = (params as ChartFormatterParams[])[0];
+          const val = new Intl.NumberFormat('es-CO', {
+            style: 'currency',
+            currency: 'COP',
+            maximumFractionDigits: 0
+          }).format(paramObj.value);
+
+          return `${paramObj.name}<br/><strong>${val}</strong>`;
         }
       },
-      grid: { left: '3%', right: '8%', bottom: '3%', containLabel: true },
+      grid: {
+        left: isMobile ? '0%' : '3%',
+        right: isMobile ? '12%' : '8%',
+        top: isMobile ? '12%' : '5%',
+        bottom: '3%',
+        containLabel: true
+      },
       xAxis: {
         type: 'value',
         axisLabel: {
-          formatter: (value: number) => `$${value / 1000}k` // Formato compacto para evitar superposición
-        }
+          formatter: (value: number) => `$${value / 1000}k`,
+          fontSize: isMobile ? 10 : 12
+        },
+        splitLine: { lineStyle: { type: 'dashed', color: '#f0f0f0' } }
       },
       yAxis: {
         type: 'category',
         data: categories,
-        inverse: true, // Invierte el eje para que el valor mayor quede en la parte superior
-        axisLabel: { width: 100, overflow: 'truncate' }
+        inverse: true,
+        axisTick: { show: false },
+        axisLine: { show: !isMobile },
+
+        // CORRECCIÓN ARQUITECTÓNICA: Elevamos el componente raíz (Z-Index)
+        z: 10,
+
+        axisLabel: {
+          inside: isMobile,
+          verticalAlign: isMobile ? 'bottom' : 'middle',
+          padding: isMobile ? [0, 0, 28, 0] : 0,
+          width: isMobile ? 250 : 100,
+          overflow: 'truncate',
+          color: '#262626',
+          fontWeight: isMobile ? 600 : 400,
+          textShadowColor: '#ffffff',
+          textShadowBlur: 4,
+          textShadowOffsetX: 1,
+          textShadowOffsetY: 1
+        }
       },
       series: [
         {
@@ -80,17 +126,21 @@ export class FinancialChartService {
           data: values,
           itemStyle: {
             color: '#cf1322',
-            borderRadius: [0, 4, 4, 0] // Bordes redondeados para un look moderno
+            borderRadius: [0, 4, 4, 0]
           },
+          barWidth: isMobile ? '35%' : '60%',
           label: {
             show: true,
             position: 'right',
-            formatter: (params: any) => `$${new Intl.NumberFormat('es-CO').format(params.value)}`
+            fontSize: isMobile ? 10 : 12,
+            fontWeight: 600,
+            formatter: (params: unknown) => {
+              const val = (params as ChartFormatterParams).value;
+              return `$${new Intl.NumberFormat('es-CO', { notation: 'compact' }).format(val)}`;
+            }
           }
         }
       ]
     };
   }
-
-
 }
