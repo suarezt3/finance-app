@@ -9,6 +9,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzMessageService } from 'ng-zorro-antd/message';
+import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal'; // <-- IMPORTAMOS EL MÓDULO Y SERVICIO DE MODALES
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzSelectModule } from 'ng-zorro-antd/select';
@@ -32,7 +33,8 @@ import { TransactionModalComponent } from '../../../shared/components/transactio
     NzTableModule, NzTagModule, NzButtonModule, NzIconModule,
     NzInputModule, NzDatePickerModule, NzSelectModule, NzGridModule,
     NzStatisticModule, NzCardModule,
-    TransactionModalComponent // <-- Lo inyectamos en el ecosistema
+    NzModalModule, // <-- REGISTRAMOS EL MÓDULO EN EL ENTORNO STANDALONE
+    TransactionModalComponent
   ],
   templateUrl: './transactions.component.html',
   styleUrl: './transactions.component.scss'
@@ -40,24 +42,19 @@ import { TransactionModalComponent } from '../../../shared/components/transactio
 export class TransactionsComponent implements OnInit {
   private readonly transactionService = inject(TransactionService);
   private readonly message = inject(NzMessageService);
+  private readonly modalService = inject(NzModalService); // <-- INYECTAMOS EL SERVICIO
   private readonly fb = inject(FormBuilder);
   private readonly exportService = inject(ExportService);
-
-  // NUEVA INYECCIÓN: Gestor de ciclo de vida para evitar fugas de memoria
   private readonly destroyRef = inject(DestroyRef);
 
-  // -- REFERENCIA AL COMPONENTE HIJO (Moderno Angular 17+) --
   readonly transactionModal = viewChild(TransactionModalComponent);
 
-  // -- ESTADOS BASE --
   readonly transactions = signal<TransactionWithDetails[]>([]);
   readonly isLoading = signal<boolean>(true);
 
-  // -- ESTADOS DEL MODAL --
   readonly isModalVisible = signal<boolean>(false);
   readonly currentTxToEdit = signal<TransactionWithDetails | null>(null);
 
-  // -- FORMULARIO DE FILTROS --
   readonly filterForm: FormGroup = this.fb.group({
     searchTerm: [''],
     dateRange: [[]],
@@ -66,7 +63,6 @@ export class TransactionsComponent implements OnInit {
 
   private readonly filters = toSignal(this.filterForm.valueChanges, { initialValue: this.filterForm.value });
 
-  // -- ESTADOS DERIVADOS (Buscador y KPIs) --
   readonly filteredTransactions = computed(() => {
     const txs = this.transactions();
     const currentFilters = this.filters();
@@ -108,17 +104,13 @@ export class TransactionsComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     await this.loadTransactions();
 
-    // NUEVO: Escucha activa en tiempo real de los WebSockets
     this.transactionService.transactionsChanged$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
-        // Cuando alguien cambia algo en la base de datos (incluso desde otro dispositivo),
-        // recargamos la tabla silenciosamente.
         this.loadTransactions();
       });
   }
 
-  // Ahora es público para que el Modal pueda ordenar la recarga al terminar
   public async loadTransactions(): Promise<void> {
     this.isLoading.set(true);
     try {
@@ -148,7 +140,6 @@ export class TransactionsComponent implements OnInit {
   openEditModal(tx: TransactionWithDetails): void {
     this.currentTxToEdit.set(tx);
     this.isModalVisible.set(true);
-    // Le indicamos al componente hijo que parchee el formulario con estos datos
     this.transactionModal()?.openForEdit(tx);
   }
 
@@ -158,14 +149,36 @@ export class TransactionsComponent implements OnInit {
   }
 
   onTransactionSaved(): void {
-    // Cuando el hijo emite que guardó exitosamente, forzamos la recarga reactiva de los datos
     this.loadTransactions();
   }
 
   // ==========================================
+  // LÓGICA DE ELIMINACIÓN CON CONFIRMACIÓN UX
+  // ==========================================
 
   onDelete(id: string): void {
-    this.message.info('Funcionalidad de eliminación en construcción');
+    this.modalService.confirm({
+      nzTitle: '¿Estás seguro de eliminar esta transacción?',
+      nzContent: 'Esta acción no se puede deshacer. Tus saldos y gráficos se actualizarán inmediatamente.',
+      nzOkText: 'Sí, eliminar',
+      nzOkType: 'primary',
+      nzOkDanger: true,
+      nzOnOk: async () => {
+        try {
+          this.isLoading.set(true);
+          // Asumo que tu servicio tiene este método implementado hacia Supabase
+          await this.transactionService.deleteTransaction(id);
+          this.message.success('Transacción eliminada con éxito');
+          await this.loadTransactions(); // Recarga y actualiza signals
+        } catch (error) {
+          console.error('Error eliminando la transacción:', error);
+          this.message.error('Ocurrió un error al intentar eliminar la transacción');
+        } finally {
+          this.isLoading.set(false);
+        }
+      },
+      nzCancelText: 'Cancelar'
+    });
   }
 
   // ==========================================

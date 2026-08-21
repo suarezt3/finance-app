@@ -101,14 +101,14 @@ export class FinancialChartService {
         inverse: true,
         axisTick: { show: false },
         axisLine: { show: !isMobile },
-
-        // CORRECCIÓN ARQUITECTÓNICA: Elevamos el componente raíz (Z-Index)
         z: 10,
-
         axisLabel: {
           inside: isMobile,
           verticalAlign: isMobile ? 'bottom' : 'middle',
-          padding: isMobile ? [0, 0, 28, 0] : 0,
+
+          // FIX UX 1: Reducimos de 28 a 16 para anclar el texto a su barra correspondiente
+          padding: isMobile ? [0, 0, 16, 0] : 0,
+
           width: isMobile ? 250 : 100,
           overflow: 'truncate',
           color: '#262626',
@@ -129,6 +129,10 @@ export class FinancialChartService {
             borderRadius: [0, 4, 4, 0]
           },
           barWidth: isMobile ? '35%' : '60%',
+
+          // FIX UX 2: Aumentamos la separación entre barras en móvil para dar respiro al texto
+          barCategoryGap: isMobile ? '45%' : '20%',
+
           label: {
             show: true,
             position: 'right',

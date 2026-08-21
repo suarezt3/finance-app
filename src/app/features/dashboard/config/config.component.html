@@ -1,80 +1,106 @@
 <!-- src/app/features/dashboard/config/config.component.html -->
 <div class="config-container">
 
-  <div style="margin-bottom: 24px;">
-    <h2 style="margin: 0; color: #262626;">Configuración del Espacio de Trabajo</h2>
-    <p style="color: #8c8c8c; margin-top: 4px;">Administra tus catálogos de categorías y métodos de pago.</p>
-  </div>
+  <!-- CABECERA -->
+  <header class="config-header">
+    <div class="header-title">
+      <h2>Configuración del Espacio de Trabajo</h2>
+      <p>Administra tus catálogos de categorías y métodos de pago.</p>
+    </div>
+  </header>
 
-  <nz-tabs>
+  <nz-tabs class="config-tabs">
     <!-- ============================================== -->
     <!-- PESTAÑA 1: CATEGORÍAS                          -->
     <!-- ============================================== -->
     <nz-tab nzTitle="Categorías">
-      <div style="margin-bottom: 16px; text-align: right;">
-        <!-- Conectamos la apertura del modal -->
+      <div class="tab-actions">
         <button nz-button nzType="primary" (click)="openCategoryModal()">
-          <span nz-icon nzType="plus"></span> Nueva Categoría
+          <span nz-icon nzType="plus"></span>
+          <span class="btn-text">Nueva Categoría</span>
         </button>
       </div>
 
-      <nz-table #categoryTable [nzData]="categories()" [nzLoading]="isLoading()" nzSize="small">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Naturaleza</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (cat of categoryTable.data; track cat.id) {
+      <div class="table-container">
+        <!-- FIX 1: Eliminamos [nzScroll] para permitir diseño fluido al 100% -->
+        <nz-table
+          #categoryTable
+          [nzData]="categories()"
+          [nzLoading]="isLoading()"
+          nzSize="small">
+          <thead>
             <tr>
-              <td>{{ cat.name }}</td>
-              <td>
-                @if (cat.type === 'INCOME') {
-                  <nz-tag nzColor="success">Ingreso</nz-tag>
-                } @else {
-                  <nz-tag nzColor="error">Gasto</nz-tag>
-                }
-              </td>
-              <td>
-                <!-- Conectamos el borrado enviando el ID -->
-                <button nz-button nzType="text" nzDanger (click)="onDeleteCategory(cat.id)">Eliminar</button>
-              </td>
+              <th>Nombre</th>
+              <!-- FIX 2: Ancho exacto para el Tag, centrado -->
+              <th nzWidth="100px" nzAlign="center">Naturaleza</th>
+              <!-- FIX 3: Eliminamos nzRight porque ya no hay scroll -->
+              <th nzWidth="80px" nzAlign="center">Acciones</th>
             </tr>
-          }
-        </tbody>
-      </nz-table>
+          </thead>
+          <tbody>
+            @for (cat of categoryTable.data; track cat.id) {
+              <tr>
+                <td>{{ cat.name }}</td>
+                <td nzAlign="center">
+                  @if (cat.type === 'INCOME') {
+                    <nz-tag nzColor="success">Ingreso</nz-tag>
+                  } @else {
+                    <nz-tag nzColor="error">Gasto</nz-tag>
+                  }
+                </td>
+                <td nzAlign="center">
+                  <button nz-button nzType="text" nzDanger nz-tooltip nzTooltipTitle="Eliminar" (click)="onDeleteCategory(cat.id)">
+                    <span nz-icon nzType="delete" nzTheme="outline"></span>
+                    <span class="action-text">Eliminar</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
     </nz-tab>
 
     <!-- ============================================== -->
     <!-- PESTAÑA 2: MÉTODOS DE PAGO                     -->
     <!-- ============================================== -->
     <nz-tab nzTitle="Métodos de Pago">
-      <div style="margin-bottom: 16px; text-align: right;">
+      <div class="tab-actions">
         <button nz-button nzType="primary" (click)="openMethodModal()">
-          <span nz-icon nzType="plus"></span> Nuevo Método
+          <span nz-icon nzType="plus"></span>
+          <span class="btn-text">Nuevo Método</span>
         </button>
       </div>
 
-      <nz-table #methodsTable [nzData]="paymentMethods()" [nzLoading]="isLoading()" nzSize="small">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (method of methodsTable.data; track method.id) {
+      <div class="table-container">
+        <!-- FIX 1: Eliminamos [nzScroll] -->
+        <nz-table
+          #methodsTable
+          [nzData]="paymentMethods()"
+          [nzLoading]="isLoading()"
+          nzSize="small">
+          <thead>
             <tr>
-              <td>{{ method.name }}</td>
-              <td>
-                <button nz-button nzType="text" nzDanger (click)="onDeleteMethod(method.id)">Eliminar</button>
-              </td>
+              <th>Nombre</th>
+              <!-- FIX 3: Eliminamos nzRight -->
+              <th nzWidth="80px" nzAlign="center">Acciones</th>
             </tr>
-          }
-        </tbody>
-      </nz-table>
+          </thead>
+          <tbody>
+            @for (method of methodsTable.data; track method.id) {
+              <tr>
+                <td>{{ method.name }}</td>
+                <td nzAlign="center">
+                  <button nz-button nzType="text" nzDanger nz-tooltip nzTooltipTitle="Eliminar" (click)="onDeleteMethod(method.id)">
+                    <span nz-icon nzType="delete" nzTheme="outline"></span>
+                    <span class="action-text">Eliminar</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </div>
     </nz-tab>
   </nz-tabs>
 
@@ -89,6 +115,8 @@
     [nzOkLoading]="isSubmitting()"
     nzOkText="Guardar"
     nzCancelText="Cancelar"
+    nzWidth="90%"
+    [nzStyle]="{ maxWidth: '500px' }"
   >
     <ng-container *nzModalContent>
       <form nz-form [formGroup]="categoryForm" nzLayout="vertical">
@@ -123,6 +151,8 @@
     [nzOkLoading]="isSubmitting()"
     nzOkText="Guardar"
     nzCancelText="Cancelar"
+    nzWidth="90%"
+    [nzStyle]="{ maxWidth: '500px' }"
   >
     <ng-container *nzModalContent>
       <form nz-form [formGroup]="methodForm" nzLayout="vertical">

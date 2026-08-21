@@ -6,7 +6,7 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTagModule } from 'ng-zorro-antd/tag';
-import { NzModalModule } from 'ng-zorro-antd/modal';
+import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal'; // <-- Inyectamos NzModalService
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzSelectModule } from 'ng-zorro-antd/select';
@@ -27,19 +27,17 @@ import { CatalogService, Category, PaymentMethod } from '../../../core/services/
 export class ConfigComponent implements OnInit {
   private readonly catalogService = inject(CatalogService);
   private readonly fb = inject(FormBuilder);
-  private readonly message = inject(NzMessageService); // Servicio de Notificaciones UX
+  private readonly message = inject(NzMessageService);
+  private readonly modalService = inject(NzModalService); // <-- NUEVO: Servicio para confirmaciones
 
-  // -- ESTADOS BASE --
   readonly categories = signal<Category[]>([]);
   readonly paymentMethods = signal<PaymentMethod[]>([]);
   readonly isLoading = signal<boolean>(true);
 
-  // -- ESTADOS DE MODALES Y CARGA --
   readonly isCategoryModalVisible = signal<boolean>(false);
   readonly isMethodModalVisible = signal<boolean>(false);
   readonly isSubmitting = signal<boolean>(false);
 
-  // -- FORMULARIOS REACTIVOS --
   readonly categoryForm: FormGroup = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(3)]],
     type: ['EXPENSE', [Validators.required]]
@@ -90,30 +88,39 @@ export class ConfigComponent implements OnInit {
         await this.catalogService.createCategory(this.categoryForm.getRawValue());
         this.message.success('Categoría creada exitosamente');
         this.closeCategoryModal();
-        await this.loadCatalogs(); // Refrescamos la tabla instantáneamente
+        await this.loadCatalogs();
       } catch (error) {
         this.message.error('No se pudo crear la categoría');
       } finally {
         this.isSubmitting.set(false);
       }
     } else {
-      // Fuerza la validación visual en rojo si el usuario intentó enviar vacío
       Object.values(this.categoryForm.controls).forEach(c => c.markAsDirty());
     }
   }
 
-  async onDeleteCategory(id: string): Promise<void> {
-    try {
-      this.isLoading.set(true);
-      await this.catalogService.deleteCategory(id);
-      this.message.success('Categoría eliminada');
-      await this.loadCatalogs();
-    } catch (error) {
-      // Supabase lanzará error si la categoría ya está asignada a una transacción (Integridad Referencial)
-      this.message.error('No se puede eliminar: La categoría está en uso');
-    } finally {
-      this.isLoading.set(false);
-    }
+  onDeleteCategory(id: string): void {
+    // NUEVO: Prevención de errores con diálogo de confirmación
+    this.modalService.confirm({
+      nzTitle: '¿Estás seguro de eliminar esta categoría?',
+      nzContent: 'Si esta categoría ya tiene transacciones asociadas, no se podrá borrar.',
+      nzOkText: 'Sí, eliminar',
+      nzOkType: 'primary',
+      nzOkDanger: true,
+      nzOnOk: async () => {
+        try {
+          this.isLoading.set(true);
+          await this.catalogService.deleteCategory(id);
+          this.message.success('Categoría eliminada');
+          await this.loadCatalogs();
+        } catch (error) {
+          this.message.error('No se puede eliminar: La categoría está en uso');
+        } finally {
+          this.isLoading.set(false);
+        }
+      },
+      nzCancelText: 'Cancelar'
+    });
   }
 
   // ==========================================
@@ -147,16 +154,27 @@ export class ConfigComponent implements OnInit {
     }
   }
 
-  async onDeleteMethod(id: string): Promise<void> {
-    try {
-      this.isLoading.set(true);
-      await this.catalogService.deletePaymentMethod(id);
-      this.message.success('Método de pago eliminado');
-      await this.loadCatalogs();
-    } catch (error) {
-      this.message.error('No se puede eliminar: El método está en uso');
-    } finally {
-      this.isLoading.set(false);
-    }
+  onDeleteMethod(id: string): void {
+    // NUEVO: Prevención de errores con diálogo de confirmación
+    this.modalService.confirm({
+      nzTitle: '¿Estás seguro de eliminar este método de pago?',
+      nzContent: 'No podrás deshacer esta acción.',
+      nzOkText: 'Sí, eliminar',
+      nzOkType: 'primary',
+      nzOkDanger: true,
+      nzOnOk: async () => {
+        try {
+          this.isLoading.set(true);
+          await this.catalogService.deletePaymentMethod(id);
+          this.message.success('Método de pago eliminado');
+          await this.loadCatalogs();
+        } catch (error) {
+          this.message.error('No se puede eliminar: El método está en uso');
+        } finally {
+          this.isLoading.set(false);
+        }
+      },
+      nzCancelText: 'Cancelar'
+    });
   }
 }

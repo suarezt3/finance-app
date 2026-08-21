@@ -1,7 +1,92 @@
 // src/app/features/dashboard/config/config.component.scss
+
 .config-container {
   padding: 24px;
   background-color: #ffffff;
   border-radius: 8px;
   min-height: calc(100vh - 150px);
+
+  @media (max-width: 767px) {
+    padding: 16px;
+  }
+}
+
+.config-header {
+  margin-bottom: 24px;
+
+  .header-title {
+    h2 {
+      margin: 0;
+      color: #262626;
+      font-size: 24px;
+      font-weight: 600;
+
+      @media (max-width: 767px) {
+        font-size: 20px;
+      }
+    }
+    p {
+      color: #8c8c8c;
+      margin-top: 4px;
+      margin-bottom: 0;
+    }
+  }
+}
+
+.tab-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+
+  .btn-text {
+    @media (max-width: 575px) {
+      display: none; // Oculta el texto en móviles, deja solo el icono de "+"
+    }
+  }
+}
+
+.table-container {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden; // Permite el scroll nativo x-axis de NG-Zorro
+}
+
+/* ==========================================
+   OPTIMIZACIÓN DE ZORRO PARA MÓVILES
+   ========================================== */
+:host ::ng-deep {
+  .config-tabs {
+    .ant-tabs-nav-list {
+      @media (max-width: 767px) {
+        width: 100%; // Las pestañas ocupan el 100% del ancho
+      }
+    }
+
+    .ant-tabs-tab {
+      @media (max-width: 767px) {
+        flex: 1; // Distribuye las pestañas de manera equitativa
+        justify-content: center;
+      }
+    }
+  }
+}
+
+/* ==========================================
+   OPTIMIZACIÓN DE TABLA PARA MÓVILES
+   ========================================== */
+.action-text {
+  /* En pantallas menores a 768px (Móviles y Tablets pequeñas) ocultamos el texto de las tablas */
+  @media (max-width: 767px) {
+    display: none;
+  }
+}
+
+/* Modificamos los estilos internos de NG-Zorro de la tabla */
+:host ::ng-deep {
+  .ant-table-cell-fix-right {
+    @media (max-width: 767px) {
+      /* Aseguramos que el botón del icono quede perfectamente centrado */
+      padding: 8px 4px !important;
+    }
+  }
 }
