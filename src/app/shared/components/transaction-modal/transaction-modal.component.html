@@ -15,9 +15,10 @@
       <nz-form-item>
         <nz-form-label nzRequired>Tipo</nz-form-label>
         <nz-form-control nzErrorTip="Seleccione el tipo de transacción">
-          <nz-select formControlName="type">
+          <nz-select formControlName="type" [nzDisabled]="!!transactionToEdit()">
             <nz-option nzValue="EXPENSE" nzLabel="Gasto"></nz-option>
             <nz-option nzValue="INCOME" nzLabel="Ingreso"></nz-option>
+            <nz-option nzValue="TRANSFER" nzLabel="Transferencia"></nz-option>
           </nz-select>
         </nz-form-control>
       </nz-form-item>
@@ -34,8 +35,6 @@
             [nzPrecision]="2"
           ></nz-input-number>
         </nz-form-control>
-
-        <!-- INTELIGENCIA UX: Manejo condicional de errores -->
         <ng-template #amountErrorTpl let-control>
           @if (control.errors?.['required']) {
             <span>Ingrese el monto de la transacción.</span>
@@ -54,35 +53,38 @@
 
       <!-- Fecha -->
       <nz-form-item>
-        <nz-form-label nzRequired>Fecha de transacción</nz-form-label>
+        <nz-form-label nzRequired>Fecha</nz-form-label>
         <nz-form-control nzErrorTip="Seleccione una fecha válida">
           <nz-date-picker formControlName="date" style="width: 100%;"></nz-date-picker>
         </nz-form-control>
       </nz-form-item>
 
-      <!-- Categoría (Filtrada reactivamente) -->
-      <nz-form-item>
-        <nz-form-label>Categoría</nz-form-label>
-        <nz-form-control>
-          <nz-select formControlName="category_id" nzPlaceHolder="Seleccione una categoría..." nzAllowClear>
-            @for (category of filteredCategories(); track category.id) {
-              <nz-option [nzValue]="category.id" [nzLabel]="category.name"></nz-option>
-            }
-          </nz-select>
-        </nz-form-control>
-      </nz-form-item>
+      <!-- Categoría (SE OCULTA EN TRANSFERENCIAS) -->
+      @if (selectedType() !== 'TRANSFER') {
+        <nz-form-item>
+          <nz-form-label>Categoría</nz-form-label>
+          <nz-form-control>
+            <nz-select formControlName="category_id" nzPlaceHolder="Seleccione una categoría..." nzAllowClear>
+              @for (category of filteredCategories(); track category.id) {
+                <nz-option [nzValue]="category.id" [nzLabel]="category.name"></nz-option>
+              }
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+      }
 
-      <!-- Método de Pago -->
+      <!-- Método de Pago / Cuenta Origen -->
       <nz-form-item>
-        <nz-form-label nzRequired>Método de Pago</nz-form-label>
-        <nz-form-control nzErrorTip="Seleccione de qué cuenta sale/entra el dinero">
-          <nz-select formControlName="payment_method_id" nzPlaceHolder="Seleccione un método de pago..." nzAllowClear>
+        <nz-form-label nzRequired>
+          {{ selectedType() === 'TRANSFER' ? 'Cuenta Origen' : 'Método de Pago' }}
+        </nz-form-label>
+        <nz-form-control nzErrorTip="Seleccione la cuenta">
+          <nz-select formControlName="payment_method_id" nzPlaceHolder="Seleccione una cuenta..." nzAllowClear>
             @for (method of paymentMethods(); track method.id) {
               <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
             }
           </nz-select>
 
-          <!-- INTELIGENCIA UX: Feedback del estado de fondos -->
           @if (isCheckingBalance()) {
             <div style="font-size: 12px; color: #1890ff; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
               <span nz-icon nzType="loading"></span> Consultando fondos...
@@ -97,11 +99,26 @@
         </nz-form-control>
       </nz-form-item>
 
-      <!-- Descripción Opcional -->
+      <!-- Cuenta Destino (NUEVO: SOLO VISIBLE EN TRANSFERENCIAS) -->
+      @if (selectedType() === 'TRANSFER') {
+        <nz-form-item>
+          <nz-form-label nzRequired>Cuenta Destino</nz-form-label>
+          <nz-form-control nzErrorTip="Seleccione a qué cuenta enviará el dinero">
+            <!-- Usamos la señal calculada availableDestinationMethods() -->
+            <nz-select formControlName="destination_method_id" nzPlaceHolder="Seleccione la cuenta destino..." nzAllowClear>
+              @for (method of availableDestinationMethods(); track method.id) {
+                <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
+              }
+            </nz-select>
+          </nz-form-control>
+        </nz-form-item>
+      }
+
+      <!-- Descripción -->
       <nz-form-item>
         <nz-form-label>Descripción (Opcional)</nz-form-label>
         <nz-form-control>
-          <input nz-input formControlName="description" placeholder="Ej. Compra de suministros, pago de cliente..." />
+          <input nz-input formControlName="description" placeholder="Ej. Ahorro quincenal, pago de tarjeta..." />
         </nz-form-control>
       </nz-form-item>
 

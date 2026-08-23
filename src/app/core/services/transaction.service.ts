@@ -60,7 +60,7 @@ export class TransactionService {
   }
 
   /**
-   * NUEVO: Regla de Negocio - Obtener saldo estricto por método de pago.
+   * Regla de Negocio - Obtener saldo estricto por método de pago.
    * Consulta directamente la BD para ignorar filtros locales y evitar sobregiros.
    */
   async getBalanceByPaymentMethod(methodId: string): Promise<number> {
@@ -83,16 +83,13 @@ export class TransactionService {
 
   /**
    * Inserta una nueva transacción en la base de datos.
-   * Resuelve automáticamente el user_id y el workspace_id del usuario autenticado.
    */
   async createTransaction(transactionData: Partial<Transaction>): Promise<void> {
-    // 1. Obtener la sesión activa para extraer el user_id de forma segura
     const { data: { session }, error: sessionError } = await this.supabase.auth.getSession();
     if (sessionError || !session) throw new Error('No hay sesión activa');
 
     const userId = session.user.id;
 
-    // 2. Consultar el perfil del usuario para obtener su workspace_id
     const { data: profile, error: profileError } = await this.supabase
       .from('profiles')
       .select('workspace_id')
@@ -103,7 +100,6 @@ export class TransactionService {
       throw new Error('No se pudo determinar el espacio de trabajo del usuario');
     }
 
-    // 3. Ejecutar el INSERT con la integridad referencial completa
     const { error: insertError } = await this.supabase
       .from('transactions')
       .insert({
@@ -114,6 +110,65 @@ export class TransactionService {
 
     if (insertError) {
       console.error('Error en Supabase insertando transacción:', insertError.message);
+      throw new Error(insertError.message);
+    }
+  }
+
+  /**
+   * NUEVO: Regla de Negocio - Partida Doble (Transferencias)
+   * Registra simultáneamente un GASTO en la cuenta origen y un INGRESO en la cuenta destino.
+   */
+  async createTransfer(transferData: {
+    amount: number;
+    date: string;
+    description?: string;
+    source_method_id: string;
+    destination_method_id: string;
+  }): Promise<void> {
+
+    // 1. Validaciones de sesión y workspace (reutilizamos lógica base)
+    const { data: { session }, error: sessionError } = await this.supabase.auth.getSession();
+    if (sessionError || !session) throw new Error('No hay sesión activa');
+    const userId = session.user.id;
+
+    const { data: profile, error: profileError } = await this.supabase
+      .from('profiles')
+      .select('workspace_id')
+      .eq('id', userId)
+      .single();
+
+    if (profileError || !profile?.workspace_id) throw new Error('Error al obtener el workspace');
+
+    // 2. Construcción de la Partida Doble
+    const expenseTx = {
+      type: 'EXPENSE',
+      amount: transferData.amount,
+      date: transferData.date,
+      description: transferData.description || 'Transferencia enviada',
+      payment_method_id: transferData.source_method_id,
+      user_id: userId,
+      workspace_id: profile.workspace_id,
+      category_id: null // Las transferencias por lo general no afectan el presupuesto por categorías
+    };
+
+    const incomeTx = {
+      type: 'INCOME',
+      amount: transferData.amount,
+      date: transferData.date,
+      description: transferData.description || 'Transferencia recibida',
+      payment_method_id: transferData.destination_method_id,
+      user_id: userId,
+      workspace_id: profile.workspace_id,
+      category_id: null
+    };
+
+    // 3. Ejecución en un solo lote (Array Insert)
+    const { error: insertError } = await this.supabase
+      .from('transactions')
+      .insert([expenseTx, incomeTx]); // <-- Enviamos ambas en una sola petición HTTP
+
+    if (insertError) {
+      console.error('Error al ejecutar la transferencia:', insertError.message);
       throw new Error(insertError.message);
     }
   }
