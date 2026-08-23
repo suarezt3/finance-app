@@ -1,6 +1,6 @@
 // src/app/core/services/transaction.service.ts
 import { Injectable, inject } from '@angular/core';
-import { Subject } from 'rxjs'; // <-- ADICIÓN 1: Importamos Subject para los eventos
+import { Subject } from 'rxjs';
 import { SupabaseService } from './supabase.service';
 import { Transaction, TransactionWithDetails } from '../models/transaction.model';
 
@@ -10,7 +10,7 @@ import { Transaction, TransactionWithDetails } from '../models/transaction.model
 export class TransactionService {
   private readonly supabase = inject(SupabaseService).client;
 
-  // <-- ADICIÓN 2: Bus de eventos reactivo para notificar cambios a la app
+  // Bus de eventos reactivo para notificar cambios a la app
   public readonly transactionsChanged$ = new Subject<void>();
 
   constructor() {
@@ -18,7 +18,7 @@ export class TransactionService {
   }
 
   /**
-   * <-- ADICIÓN 3: Configuración del canal en tiempo real de Supabase
+   * Configuración del canal en tiempo real de Supabase
    * Escucha eventos de Inserción, Actualización o Borrado directamente en la base de datos.
    */
   private setupRealtimeSubscription(): void {
@@ -60,6 +60,28 @@ export class TransactionService {
   }
 
   /**
+   * NUEVO: Regla de Negocio - Obtener saldo estricto por método de pago.
+   * Consulta directamente la BD para ignorar filtros locales y evitar sobregiros.
+   */
+  async getBalanceByPaymentMethod(methodId: string): Promise<number> {
+    const { data, error } = await this.supabase
+      .from('transactions')
+      .select('type, amount')
+      .eq('payment_method_id', methodId);
+
+    if (error) {
+      console.error('Error calculando saldo por método de pago:', error.message);
+      throw new Error(error.message);
+    }
+
+    // Calculamos el saldo neto: Ingresos - Gastos
+    return data.reduce((acc, tx) => {
+      const amount = Number(tx.amount);
+      return tx.type === 'INCOME' ? acc + amount : acc - amount;
+    }, 0);
+  }
+
+  /**
    * Inserta una nueva transacción en la base de datos.
    * Resuelve automáticamente el user_id y el workspace_id del usuario autenticado.
    */
@@ -97,7 +119,7 @@ export class TransactionService {
   }
 
   /**
-   * NUEVO: Actualiza una transacción existente por su ID.
+   * Actualiza una transacción existente por su ID.
    */
   async updateTransaction(id: string, transactionData: {
     type: string;

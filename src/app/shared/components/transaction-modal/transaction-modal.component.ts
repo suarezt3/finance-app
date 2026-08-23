@@ -1,7 +1,11 @@
 // src/app/shared/components/transaction-modal/transaction-modal.component.ts
 import { Component, inject, input, output, signal, computed, OnInit, DestroyRef } from '@angular/core';
+import { DecimalPipe } from '@angular/common'; // <-- FIX 1: Importamos el DecimalPipe
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { combineLatest } from 'rxjs';
+import { startWith } from 'rxjs/operators';
+
 import { NzModalModule } from 'ng-zorro-antd/modal';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -10,6 +14,7 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzMessageService } from 'ng-zorro-antd/message';
+import { NzIconModule } from 'ng-zorro-antd/icon'; // <-- FIX 2: Importamos el módulo de íconos de NG-Zorro
 
 import { CatalogService, Category, PaymentMethod } from '../../../core/services/catalog.service';
 import { TransactionService } from '../../../core/services/transaction.service';
@@ -20,6 +25,8 @@ import { TransactionWithDetails } from '../../../core/models/transaction.model';
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    DecimalPipe, // <-- REGISTRAMOS EL PIPE AQUÍ
+    NzIconModule, // <-- REGISTRAMOS EL MÓDULO DE ÍCONOS AQUÍ
     NzModalModule, NzFormModule, NzInputModule, NzInputNumberModule,
     NzSelectModule, NzDatePickerModule, NzButtonModule
   ],
@@ -33,16 +40,20 @@ export class TransactionModalComponent implements OnInit {
   private readonly message = inject(NzMessageService);
   private readonly destroyRef = inject(DestroyRef);
 
-  // -- INPUTS Y OUTPUTS (Comunicación con los componentes padres) --
+  // -- INPUTS Y OUTPUTS --
   readonly isVisible = input.required<boolean>();
-  readonly transactionToEdit = input<TransactionWithDetails | null>(null); // Si viene con datos, es Edición
+  readonly transactionToEdit = input<TransactionWithDetails | null>(null);
   readonly closeModal = output<void>();
-  readonly transactionSaved = output<void>(); // Emite señal para que el padre recargue su tabla/gráficos
+  readonly transactionSaved = output<void>();
 
   // -- ESTADOS BASE Y CATÁLOGOS --
   readonly categories = signal<Category[]>([]);
   readonly paymentMethods = signal<PaymentMethod[]>([]);
   readonly isSubmitting = signal<boolean>(false);
+
+  // <-- NUEVO: ESTADOS PARA LA VALIDACIÓN DE FONDOS -->
+  readonly availableBalance = signal<number | null>(null);
+  readonly isCheckingBalance = signal<boolean>(false);
 
   // -- FORMULARIO REACTIVO --
   readonly transactionForm: FormGroup = this.fb.nonNullable.group({
@@ -51,10 +62,10 @@ export class TransactionModalComponent implements OnInit {
     date: [new Date(), [Validators.required]],
     description: [''],
     category_id: [null],
-    payment_method_id: [null]
+    payment_method_id: [null, [Validators.required]] // <-- Aseguramos que siempre haya método
   });
 
-  // -- FILTRADO REACTIVO DE CATEGORÍAS (Patrón reutilizado) --
+  // -- FILTRADO REACTIVO DE CATEGORÍAS --
   readonly selectedType = toSignal(
     this.transactionForm.controls['type'].valueChanges,
     { initialValue: this.transactionForm.controls['type'].value }
@@ -67,16 +78,7 @@ export class TransactionModalComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.loadCatalogs();
-
-    // Limpia la categoría si cambia el tipo de transacción y no estamos inicializando
-    this.transactionForm.controls['type'].valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        // Solo reseteamos si el modal está abierto activamente para evitar falsos positivos al cargar edición
-        if (this.isVisible()) {
-          this.transactionForm.controls['category_id'].setValue(null);
-        }
-      });
+    this.setupFormListeners();
   }
 
   private async loadCatalogs(): Promise<void> {
@@ -93,9 +95,62 @@ export class TransactionModalComponent implements OnInit {
   }
 
   /**
-   * Método ejecutado cuando el componente padre abre el modal.
-   * Si recibe una transacción, parchea el formulario para Edición.
+   * Configura los listeners del formulario para la Validación Cruzada
    */
+  private setupFormListeners(): void {
+    // 1. Limpieza de categoría al cambiar de tipo (Ingreso/Gasto)
+    this.transactionForm.controls['type'].valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        if (this.isVisible()) {
+          this.transactionForm.controls['category_id'].setValue(null);
+        }
+      });
+
+    // 2. NUEVO: Prevención de Sobregiro (Overdraft Protection)
+    combineLatest([
+      this.transactionForm.controls['type'].valueChanges.pipe(startWith(this.transactionForm.value.type)),
+      this.transactionForm.controls['payment_method_id'].valueChanges.pipe(startWith(this.transactionForm.value.payment_method_id))
+    ])
+    .pipe(takeUntilDestroyed(this.destroyRef))
+    .subscribe(async ([type, methodId]) => {
+
+      const amountControl = this.transactionForm.controls['amount'];
+
+      // Solo evaluamos el saldo si es un GASTO y hay una BILLETERA seleccionada
+      if (type === 'EXPENSE' && methodId && this.isVisible()) {
+        this.isCheckingBalance.set(true);
+
+        try {
+          let balance = await this.transactionService.getBalanceByPaymentMethod(methodId);
+
+          // CASO ESPECIAL: Modo Edición.
+          // Si edita el mismo gasto, debemos sumarle el monto actual al saldo para que la validación sea justa
+          const editTarget = this.transactionToEdit();
+          if (editTarget && editTarget.type === 'EXPENSE' && editTarget.payment_method_id === methodId) {
+            balance += Number(editTarget.amount);
+          }
+
+          this.availableBalance.set(balance);
+
+          // INYECTAMOS EL VALIDADOR DINÁMICO
+          amountControl.setValidators([Validators.required, Validators.min(0.01), Validators.max(balance)]);
+
+        } catch (error) {
+          console.error('Error validando fondos:', error);
+        } finally {
+          this.isCheckingBalance.set(false);
+          amountControl.updateValueAndValidity({ emitEvent: false }); // Forzamos la re-evaluación del campo
+        }
+      } else {
+        // Si es INGRESO o no hay método, liberamos la restricción
+        this.availableBalance.set(null);
+        amountControl.setValidators([Validators.required, Validators.min(0.01)]);
+        amountControl.updateValueAndValidity({ emitEvent: false });
+      }
+    });
+  }
+
   public openForEdit(tx: TransactionWithDetails): void {
     this.transactionForm.patchValue({
       type: tx.type,
@@ -111,6 +166,7 @@ export class TransactionModalComponent implements OnInit {
     this.transactionForm.reset({
       type: 'EXPENSE', amount: 0, date: new Date(), description: '', category_id: null, payment_method_id: null
     });
+    this.availableBalance.set(null); // Limpiamos el saldo en pantalla
   }
 
   onCancel(): void {
@@ -131,18 +187,16 @@ export class TransactionModalComponent implements OnInit {
         const editTarget = this.transactionToEdit();
 
         if (editTarget) {
-          // MODO EDICIÓN
           await this.transactionService.updateTransaction(editTarget.id, formattedData);
           this.message.success('Transacción actualizada exitosamente');
         } else {
-          // MODO CREACIÓN
           await this.transactionService.createTransaction(formattedData);
           this.message.success('Transacción registrada exitosamente');
         }
 
         this.closeModal.emit();
         this.resetForm();
-        this.transactionSaved.emit(); // Notifica al componente padre para que refresque datos
+        this.transactionSaved.emit();
 
       } catch (error) {
         console.error('Error al guardar transacción:', error);

@@ -22,10 +22,10 @@
         </nz-form-control>
       </nz-form-item>
 
-      <!-- Monto -->
+      <!-- Monto con Template Dinámico de Errores -->
       <nz-form-item>
         <nz-form-label nzRequired>Monto a registrar</nz-form-label>
-        <nz-form-control nzErrorTip="Ingrese un monto válido mayor a 0">
+        <nz-form-control [nzErrorTip]="amountErrorTpl">
           <nz-input-number
             formControlName="amount"
             [nzMin]="0.01"
@@ -34,6 +34,22 @@
             [nzPrecision]="2"
           ></nz-input-number>
         </nz-form-control>
+
+        <!-- INTELIGENCIA UX: Manejo condicional de errores -->
+        <ng-template #amountErrorTpl let-control>
+          @if (control.errors?.['required']) {
+            <span>Ingrese el monto de la transacción.</span>
+          }
+          @if (control.errors?.['min']) {
+            <span>El monto debe ser mayor a 0.</span>
+          }
+          @if (control.errors?.['max']) {
+            <span style="font-weight: 500;">
+              <span nz-icon nzType="warning" nzTheme="outline"></span>
+              Saldo insuficiente. Máximo disponible: $ {{ availableBalance() | number:'1.0-2':'es' }}
+            </span>
+          }
+        </ng-template>
       </nz-form-item>
 
       <!-- Fecha -->
@@ -58,13 +74,26 @@
 
       <!-- Método de Pago -->
       <nz-form-item>
-        <nz-form-label>Método de Pago</nz-form-label>
-        <nz-form-control>
+        <nz-form-label nzRequired>Método de Pago</nz-form-label>
+        <nz-form-control nzErrorTip="Seleccione de qué cuenta sale/entra el dinero">
           <nz-select formControlName="payment_method_id" nzPlaceHolder="Seleccione un método de pago..." nzAllowClear>
             @for (method of paymentMethods(); track method.id) {
               <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
             }
           </nz-select>
+
+          <!-- INTELIGENCIA UX: Feedback del estado de fondos -->
+          @if (isCheckingBalance()) {
+            <div style="font-size: 12px; color: #1890ff; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+              <span nz-icon nzType="loading"></span> Consultando fondos...
+            </div>
+          } @else if (availableBalance() !== null) {
+            <div style="font-size: 12px; margin-top: 4px; display: flex; align-items: center; gap: 4px;"
+                 [style.color]="availableBalance()! <= 0 ? '#cf1322' : '#8c8c8c'">
+              <span nz-icon [nzType]="availableBalance()! <= 0 ? 'close-circle' : 'info-circle'"></span>
+              Saldo disponible: $ {{ availableBalance() | number:'1.0-2':'es' }}
+            </div>
+          }
         </nz-form-control>
       </nz-form-item>
 
