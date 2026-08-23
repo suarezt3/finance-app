@@ -83,12 +83,16 @@
   <!-- BARRA DE FILTROS -->
   <form [formGroup]="filterForm" class="filters-container">
     <nz-row [nzGutter]="[16, 16]">
-      <nz-col [nzXs]="24" [nzMd]="8">
+
+      <!-- Búsqueda: Reducido de 8 a 6 columnas -->
+      <nz-col [nzXs]="24" [nzMd]="6">
         <nz-input-wrapper nzPrefix="Buscar" nzPrefixIcon="search" class="full-width">
           <input type="text" nz-input formControlName="searchTerm" placeholder="Descripción o categoria." />
         </nz-input-wrapper>
       </nz-col>
-      <nz-col [nzXs]="24" [nzMd]="8">
+
+      <!-- Fechas: Reducido de 8 a 6 columnas -->
+      <nz-col [nzXs]="24" [nzMd]="6">
         <nz-range-picker
         formControlName="dateRange"
         class="full-width"
@@ -97,15 +101,29 @@
         [nzPlaceHolder]="['Fecha inicial', 'Fecha final']"
         ></nz-range-picker>
       </nz-col>
-      <nz-col [nzXs]="24" [nzMd]="5">
+
+      <!-- Naturaleza: Reducido de 5 a 4 columnas -->
+      <nz-col [nzXs]="24" [nzMd]="4">
         <nz-select formControlName="type" nzPlaceHolder="Naturaleza" nzAllowClear class="full-width">
           <nz-option nzValue="INCOME" nzLabel="Ingresos"></nz-option>
           <nz-option nzValue="EXPENSE" nzLabel="Gastos"></nz-option>
         </nz-select>
       </nz-col>
+
+      <!-- NUEVO FILTRO: Billetera / Método de Pago (5 columnas) -->
+      <nz-col [nzXs]="24" [nzMd]="5">
+        <nz-select formControlName="paymentMethodId" nzPlaceHolder="Método de Pago" nzAllowClear class="full-width">
+          @for (method of paymentMethods(); track method.id) {
+            <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
+          }
+        </nz-select>
+      </nz-col>
+
+      <!-- Botón Limpiar: Mantiene sus 3 columnas -->
       <nz-col [nzXs]="24" [nzMd]="3" class="filter-actions">
         <button nz-button nzType="default" (click)="clearFilters()" nzBlock>Limpiar</button>
       </nz-col>
+
     </nz-row>
   </form>
 

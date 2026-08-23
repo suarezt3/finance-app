@@ -1,16 +1,17 @@
 // src/app/features/dashboard/dashboard.component.scss
 
 .app-layout {
-  height: 100vh;
+  min-height: 100vh; // Permite que el contenedor crezca dinámicamente según el contenido
+  display: flex;     // Asegura el flujo flexible correcto para NG-Zorro
 }
-
 // ==========================================
 // 1. BARRA LATERAL DESKTOP (Sider)
 // ==========================================
 .desktop-sidebar {
   position: relative;
   z-index: 10;
-  min-height: 100vh;
+  height: 100%;       // Hereda y estira el fondo a lo largo del layout flexible
+  min-height: 100vh;  // Garantiza cobertura total inicial
   box-shadow: 2px 0 6px rgba(0, 21, 41, 0.35);
 
   // ARQUITECTURA RESPONSIVA:

@@ -161,3 +161,12 @@
   color: #bfbfbf;
   border-radius: 4px;
 }
+
+.wallet-selector {
+  min-width: 180px;
+
+  /* En móviles forzamos a que ocupe todo el ancho disponible si hay flex-wrap */
+  @media (max-width: 767px) {
+    flex: 1 1 100%;
+  }
+}

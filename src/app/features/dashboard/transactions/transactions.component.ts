@@ -9,7 +9,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzMessageService } from 'ng-zorro-antd/message';
-import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal'; // <-- IMPORTAMOS EL MÓDULO Y SERVICIO DE MODALES
+import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzSelectModule } from 'ng-zorro-antd/select';
@@ -19,6 +19,7 @@ import { NzCardModule } from 'ng-zorro-antd/card';
 
 import { TransactionService } from '../../../core/services/transaction.service';
 import { TransactionWithDetails } from '../../../core/models/transaction.model';
+import { CatalogService, PaymentMethod } from '../../../core/services/catalog.service'; // <-- NUEVO: Servicio de catálogos
 
 import { ExportService } from '../../../core/services/export.service';
 
@@ -33,7 +34,7 @@ import { TransactionModalComponent } from '../../../shared/components/transactio
     NzTableModule, NzTagModule, NzButtonModule, NzIconModule,
     NzInputModule, NzDatePickerModule, NzSelectModule, NzGridModule,
     NzStatisticModule, NzCardModule,
-    NzModalModule, // <-- REGISTRAMOS EL MÓDULO EN EL ENTORNO STANDALONE
+    NzModalModule,
     TransactionModalComponent
   ],
   templateUrl: './transactions.component.html',
@@ -41,8 +42,9 @@ import { TransactionModalComponent } from '../../../shared/components/transactio
 })
 export class TransactionsComponent implements OnInit {
   private readonly transactionService = inject(TransactionService);
+  private readonly catalogService = inject(CatalogService); // <-- INYECTADO
   private readonly message = inject(NzMessageService);
-  private readonly modalService = inject(NzModalService); // <-- INYECTAMOS EL SERVICIO
+  private readonly modalService = inject(NzModalService);
   private readonly fb = inject(FormBuilder);
   private readonly exportService = inject(ExportService);
   private readonly destroyRef = inject(DestroyRef);
@@ -50,6 +52,7 @@ export class TransactionsComponent implements OnInit {
   readonly transactionModal = viewChild(TransactionModalComponent);
 
   readonly transactions = signal<TransactionWithDetails[]>([]);
+  readonly paymentMethods = signal<PaymentMethod[]>([]); // <-- NUEVO: Estado del dropdown
   readonly isLoading = signal<boolean>(true);
 
   readonly isModalVisible = signal<boolean>(false);
@@ -58,7 +61,8 @@ export class TransactionsComponent implements OnInit {
   readonly filterForm: FormGroup = this.fb.group({
     searchTerm: [''],
     dateRange: [[]],
-    type: [null]
+    type: [null],
+    paymentMethodId: [null] // <-- NUEVO: Control para la billetera
   });
 
   private readonly filters = toSignal(this.filterForm.valueChanges, { initialValue: this.filterForm.value });
@@ -75,6 +79,9 @@ export class TransactionsComponent implements OnInit {
 
       const matchesType = !currentFilters.type || tx.type === currentFilters.type;
 
+      // NUEVA REGLA: Filtro por Método de Pago (Usando Foreign Key)
+      const matchesMethod = !currentFilters.paymentMethodId || tx.payment_method_id === currentFilters.paymentMethodId;
+
       let matchesDate = true;
       if (currentFilters.dateRange && currentFilters.dateRange.length === 2) {
         const txDate = new Date(tx.date).getTime();
@@ -83,7 +90,8 @@ export class TransactionsComponent implements OnInit {
         matchesDate = txDate >= startDate && txDate <= endDate;
       }
 
-      return matchesSearch && matchesType && matchesDate;
+      // Agregamos matchesMethod a la validación
+      return matchesSearch && matchesType && matchesMethod && matchesDate;
     });
   });
 
@@ -102,7 +110,11 @@ export class TransactionsComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
-    await this.loadTransactions();
+    // NUEVO: Carga paralela de transacciones y catálogos
+    await Promise.all([
+      this.loadTransactions(),
+      this.loadCatalogs()
+    ]);
 
     this.transactionService.transactionsChanged$
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -124,8 +136,19 @@ export class TransactionsComponent implements OnInit {
     }
   }
 
+  // NUEVO: Cargar métodos de pago
+  private async loadCatalogs(): Promise<void> {
+    try {
+      const methods = await this.catalogService.getPaymentMethods();
+      this.paymentMethods.set(methods);
+    } catch (error) {
+      console.error('Error al cargar métodos de pago:', error);
+    }
+  }
+
   clearFilters(): void {
-    this.filterForm.reset({ searchTerm: '', dateRange: [], type: null });
+    // NUEVO: Limpiamos también el paymentMethodId
+    this.filterForm.reset({ searchTerm: '', dateRange: [], type: null, paymentMethodId: null });
   }
 
   // ==========================================
@@ -166,10 +189,9 @@ export class TransactionsComponent implements OnInit {
       nzOnOk: async () => {
         try {
           this.isLoading.set(true);
-          // Asumo que tu servicio tiene este método implementado hacia Supabase
           await this.transactionService.deleteTransaction(id);
           this.message.success('Transacción eliminada con éxito');
-          await this.loadTransactions(); // Recarga y actualiza signals
+          await this.loadTransactions();
         } catch (error) {
           console.error('Error eliminando la transacción:', error);
           this.message.error('Ocurrió un error al intentar eliminar la transacción');

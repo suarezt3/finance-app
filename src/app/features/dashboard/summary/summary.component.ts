@@ -3,7 +3,7 @@ import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angula
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { BreakpointObserver } from '@angular/cdk/layout'; // <-- NUEVO: Para detectar móvil
+import { BreakpointObserver } from '@angular/cdk/layout';
 
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -14,11 +14,13 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
+import { NzSelectModule } from 'ng-zorro-antd/select'; // <-- NUEVO: Para el dropdown de Billeteras
 
 import { FinancialSummary } from './summary.model';
 import { TransactionWithDetails } from '../../../core/models/transaction.model';
 import { FinancialChartService } from '../../../core/services/charts/financial-chart.service';
 import { TransactionService } from '../../../core/services/transaction.service';
+import { CatalogService, PaymentMethod } from '../../../core/services/catalog.service'; // <-- NUEVO: Servicio de catálogos
 import { TransactionModalComponent } from '../../../shared/components/transaction-modal/transaction-modal.component';
 
 type Timeframe = '7d' | '30d' | '1y' | 'all' | 'custom-year';
@@ -30,6 +32,7 @@ type Timeframe = '7d' | '30d' | '1y' | 'all' | 'custom-year';
     DecimalPipe, DatePipe, FormsModule,
     NzGridModule, NzCardModule, NzStatisticModule, NgxEchartsDirective,
     NzButtonModule, NzIconModule, NzRadioModule, NzDatePickerModule,
+    NzSelectModule, // <-- REGISTRAMOS EL MÓDULO
     TransactionModalComponent
   ],
   templateUrl: './summary.component.html',
@@ -38,26 +41,38 @@ type Timeframe = '7d' | '30d' | '1y' | 'all' | 'custom-year';
 export class SummaryComponent implements OnInit {
   private readonly chartService = inject(FinancialChartService);
   private readonly transactionService = inject(TransactionService);
+  private readonly catalogService = inject(CatalogService); // <-- INYECTAMOS EL SERVICIO
   private readonly destroyRef = inject(DestroyRef);
-  private readonly breakpointObserver = inject(BreakpointObserver); // <-- INYECTADO
+  private readonly breakpointObserver = inject(BreakpointObserver);
 
   readonly transactions = signal<TransactionWithDetails[]>([]);
+  readonly paymentMethods = signal<PaymentMethod[]>([]); // <-- NUEVO: Estado del catálogo
+
   readonly isModalVisible = signal<boolean>(false);
   readonly timeframe = signal<Timeframe>('30d');
   readonly selectedYear = signal<Date | null>(null);
+  readonly selectedPaymentMethod = signal<string | null>(null); // <-- NUEVO: Estado del filtro
 
-  // NUEVO: Bandera reactiva de espacio visual
   readonly isMobileView = signal<boolean>(false);
 
-  readonly filteredTransactionsByTime = computed(() => {
+  // -- FILTRO CRUZADO MAESTRO (Billetera + Tiempo) --
+ readonly masterFilteredTransactions = computed(() => {
     const txs = this.transactions();
     const tf = this.timeframe();
+    const methodId = this.selectedPaymentMethod();
 
-    if (tf === 'all') return txs;
+    // 1. Filtro por Método de Pago (Billetera)
+    let filtered = txs;
+    if (methodId) {
+      // FIX TS: Usamos directamente la llave foránea en la raíz de la transacción
+      filtered = filtered.filter(tx => tx.payment_method_id === methodId);
+    }
 
+    // 2. Filtro por Ventana de Tiempo
+    if (tf === 'all') return filtered;
     if (tf === 'custom-year' && this.selectedYear()) {
       const year = this.selectedYear()!.getFullYear();
-      return txs.filter(tx => new Date(tx.date).getFullYear() === year);
+      return filtered.filter(tx => new Date(tx.date).getFullYear() === year);
     }
 
     const limitDate = new Date();
@@ -67,11 +82,12 @@ export class SummaryComponent implements OnInit {
     if (tf === '30d') limitDate.setDate(limitDate.getDate() - 30);
     if (tf === '1y') limitDate.setFullYear(limitDate.getFullYear() - 1);
 
-    return txs.filter(tx => new Date(tx.date).getTime() >= limitDate.getTime());
+    return filtered.filter(tx => new Date(tx.date).getTime() >= limitDate.getTime());
   });
 
+  // -- KPIs --
   readonly summary = computed<FinancialSummary>(() => {
-    const txs = this.filteredTransactionsByTime();
+    const txs = this.masterFilteredTransactions();
     const totalIncome = txs.filter(t => t.type === 'INCOME').reduce((sum, t) => sum + Number(t.amount), 0);
     const totalExpenses = txs.filter(t => t.type === 'EXPENSE').reduce((sum, t) => sum + Number(t.amount), 0);
     return {
@@ -80,10 +96,11 @@ export class SummaryComponent implements OnInit {
     };
   });
 
+  // -- GRÁFICO DE BALANCE --
   readonly balanceChartOptions = computed<EChartsOption | null>(() => {
-    const txs = this.filteredTransactionsByTime();
+    const txs = this.masterFilteredTransactions();
     const tf = this.timeframe();
-    const isMobile = this.isMobileView(); // <-- Extraemos el estado reactivo
+    const isMobile = this.isMobileView();
     if (txs.length === 0) return null;
 
     const isMonthly = tf === '1y' || tf === 'all' || tf === 'custom-year';
@@ -122,13 +139,13 @@ export class SummaryComponent implements OnInit {
       values.push(runningBalance);
     }
 
-    // PASAMOS EL TERCER PARÁMETRO: isMobile
     return this.chartService.getBalanceHistoryOptions(dates, values, isMobile);
   });
 
+  // -- GRÁFICO DE GASTOS --
   readonly expensesChartOptions = computed<EChartsOption | null>(() => {
-    const txs = this.filteredTransactionsByTime();
-    const isMobile = this.isMobileView(); // <-- Extraemos el estado reactivo
+    const txs = this.masterFilteredTransactions();
+    const isMobile = this.isMobileView();
     const expenses = txs.filter(t => t.type === 'EXPENSE' && t.categories?.name);
     if (expenses.length === 0) return null;
 
@@ -142,7 +159,6 @@ export class SummaryComponent implements OnInit {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
-    // PASAMOS EL TERCER PARÁMETRO: isMobile
     return this.chartService.getExpensesByCategoryOptions(
       sortedCategories.map(item => item[0]),
       sortedCategories.map(item => item[1]),
@@ -160,16 +176,17 @@ export class SummaryComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
-    await this.loadRealTransactions();
+    await Promise.all([
+      this.loadRealTransactions(),
+      this.loadCatalogs() // <-- NUEVO: Cargamos las billeteras al iniciar
+    ]);
 
-    // 1. Listeners de Supabase
     this.transactionService.transactionsChanged$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         this.loadRealTransactions();
       });
 
-    // 2. NUEVO: Listeners de Diseño Responsivo
     this.breakpointObserver.observe(['(max-width: 767px)'])
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(result => {
@@ -181,7 +198,15 @@ export class SummaryComponent implements OnInit {
     try {
       const data = await this.transactionService.getTransactions();
       this.transactions.set(data);
-    } catch (error) { console.error('Error al cargar:', error); }
+    } catch (error) { console.error('Error al cargar transacciones:', error); }
+  }
+
+  // NUEVO: Método para nutrir el dropdown
+  async loadCatalogs(): Promise<void> {
+    try {
+      const methods = await this.catalogService.getPaymentMethods();
+      this.paymentMethods.set(methods);
+    } catch (error) { console.error('Error al cargar métodos de pago:', error); }
   }
 
   onYearSelected(date: Date): void {

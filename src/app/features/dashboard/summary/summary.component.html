@@ -30,6 +30,18 @@
         class="year-picker">
       </nz-date-picker>
 
+      <!-- NUEVO: Selector de Billetera / Método de Pago -->
+      <nz-select
+        [ngModel]="selectedPaymentMethod()"
+        (ngModelChange)="selectedPaymentMethod.set($event)"
+        nzPlaceHolder="Todas las cuentas"
+        nzAllowClear
+        class="wallet-selector">
+        @for (method of paymentMethods(); track method.id) {
+          <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
+        }
+      </nz-select>
+
       <button nz-button nzType="primary" nzSize="large" (click)="openModal()" class="btn-new-transaction">
         <span nz-icon nzType="plus"></span>
         <span class="btn-text">Nueva Transacción</span>
@@ -94,7 +106,7 @@
           } @else {
             <div class="empty-chart">
               <span nz-icon nzType="line-chart" class="empty-icon"></span>
-              <p>Sin transacciones en este periodo.</p>
+              <p>Sin transacciones en este periodo/cuenta.</p>
             </div>
           }
         } @placeholder {
@@ -112,7 +124,7 @@
           } @else {
             <div class="empty-chart">
               <span nz-icon nzType="pie-chart" class="empty-icon"></span>
-              <p>Sin gastos registrados en este periodo.</p>
+              <p>Sin gastos registrados en este periodo/cuenta.</p>
             </div>
           }
         } @placeholder {
