@@ -170,3 +170,33 @@
     flex: 1 1 100%;
   }
 }
+
+// ==========================================
+// ESTILOS PARA INDICADORES DE BI (Variaciones)
+// ==========================================
+.variation-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #e8e8e8;
+
+  // Animación sutil de entrada
+  animation: fadeIn 0.4s ease-in-out;
+
+  &.text-success {
+    color: #3f8600;
+  }
+
+  &.text-danger {
+    color: #cf1322;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}

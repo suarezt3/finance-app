@@ -8,10 +8,7 @@
       <p>Última actualización: {{ summary().lastUpdated | date:'mediumTime' }}</p>
     </div>
 
-    <!-- Controles de filtrado y acciones -->
     <div class="summary-actions">
-
-      <!-- Selector de Marco Temporal Relativo -->
       <div class="timeframe-scroll-container">
         <nz-radio-group [ngModel]="timeframe()" (ngModelChange)="timeframe.set($event)" nzButtonStyle="solid">
           <label nz-radio-button nzValue="7d">7 Días</label>
@@ -21,7 +18,6 @@
         </nz-radio-group>
       </div>
 
-      <!-- Selector de Año Específico -->
       <nz-date-picker
         nzMode="year"
         [ngModel]="selectedYear()"
@@ -30,7 +26,6 @@
         class="year-picker">
       </nz-date-picker>
 
-      <!-- NUEVO: Selector de Billetera / Método de Pago -->
       <nz-select
         [ngModel]="selectedPaymentMethod()"
         (ngModelChange)="selectedPaymentMethod.set($event)"
@@ -51,6 +46,8 @@
 
   <!-- TARJETAS DE KPIs (Grid Responsivo Inteligente) -->
   <nz-row [nzGutter]="{ xs: 8, sm: 16, md: 16, lg: 24 }">
+
+    <!-- 1. FLUJO NETO -->
     <nz-col [nzXs]="24" [nzMd]="8">
       <nz-card nzHoverable class="dashboard-card kpi-card">
         <nz-statistic
@@ -62,6 +59,7 @@
       </nz-card>
     </nz-col>
 
+    <!-- 2. INGRESOS CON VARIACIÓN -->
     <nz-col [nzXs]="24" [nzMd]="8">
       <nz-card nzHoverable class="dashboard-card kpi-card">
         <nz-statistic
@@ -72,9 +70,22 @@
           [nzPrefix]="iconIncome"
         ></nz-statistic>
         <ng-template #iconIncome><span nz-icon nzType="arrow-up"></span> $ </ng-template>
+
+        <!-- INTELIGENCIA BI: Indicador de Variación -->
+        @if (kpiVariations(); as variations) {
+          <div class="variation-indicator"
+               [class.text-success]="variations.incomePercentage >= 0"
+               [class.text-danger]="variations.incomePercentage < 0">
+            <span nz-icon [nzType]="variations.incomePercentage >= 0 ? 'caret-up' : 'caret-down'"></span>
+            <span>
+              {{ (variations.incomePercentage > 0 ? variations.incomePercentage : variations.incomePercentage * -1) | number:'1.0-1':'es' }}% vs periodo anterior
+            </span>
+          </div>
+        }
       </nz-card>
     </nz-col>
 
+    <!-- 3. GASTOS CON VARIACIÓN -->
     <nz-col [nzXs]="24" [nzMd]="8">
       <nz-card nzHoverable class="dashboard-card kpi-card">
         <nz-statistic
@@ -85,19 +96,29 @@
           [nzPrefix]="iconExpense"
         ></nz-statistic>
         <ng-template #iconExpense><span nz-icon nzType="arrow-down"></span> $ </ng-template>
+
+        <!-- INTELIGENCIA BI: Indicador de Variación (Lógica Invertida) -->
+        @if (kpiVariations(); as variations) {
+          <div class="variation-indicator"
+               [class.text-danger]="variations.expensePercentage > 0"
+               [class.text-success]="variations.expensePercentage <= 0">
+            <span nz-icon [nzType]="variations.expensePercentage > 0 ? 'caret-up' : 'caret-down'"></span>
+            <span>
+              {{ (variations.expensePercentage > 0 ? variations.expensePercentage : variations.expensePercentage * -1) | number:'1.0-1':'es' }}% vs periodo anterior
+            </span>
+          </div>
+        }
       </nz-card>
     </nz-col>
+
   </nz-row>
 
-  <!-- PLANTILLA REUTILIZABLE PARA FORMATEAR LOS NÚMEROS DE LAS TARJETAS -->
   <ng-template #kpiFormatter let-value>
     {{ (value || 0) | number:'1.0-2':'es' }}
   </ng-template>
 
   <!-- ÁREA DE GRÁFICOS (Layout Grid Responsivo) -->
   <nz-row [nzGutter]="{ xs: 8, sm: 16, md: 16, lg: 24 }" class="charts-row">
-
-    <!-- Gráfico de Evolución del Balance -->
     <nz-col [nzXs]="24" [nzLg]="14">
       <nz-card class="dashboard-card" [nzTitle]="'Evolución del Balance (' + timeframeText() + ')'" [nzBordered]="false">
         @defer (when balanceChartOptions() !== null) {
@@ -115,7 +136,6 @@
       </nz-card>
     </nz-col>
 
-    <!-- Gráfico Top 5 Categorías de Gasto -->
     <nz-col [nzXs]="24" [nzLg]="10">
       <nz-card class="dashboard-card" [nzTitle]="'Top 5 Categorías de Gasto'" [nzBordered]="false">
         @defer (when expensesChartOptions() !== null) {
@@ -132,14 +152,48 @@
         }
       </nz-card>
     </nz-col>
-
   </nz-row>
 
-  <!-- MODAL DE TRANSACCIONES CENTRALIZADO -->
-  <app-transaction-modal
-    [isVisible]="isModalVisible()"
-    (closeModal)="closeModal()"
-    (transactionSaved)="onTransactionSaved()">
+  <!-- ÚLTIMAS TRANSACCIONES -->
+  <nz-row [nzGutter]="{ xs: 8, sm: 16, md: 16, lg: 24 }" style="margin-top: 24px; margin-bottom: 24px;">
+    <nz-col nzSpan="24">
+      <nz-card class="dashboard-card" nzTitle="Últimos Movimientos" [nzBordered]="false">
+        <nz-table #recentTable [nzData]="latestTransactions()" nzSize="small" [nzShowPagination]="false" [nzScroll]="{ x: '500px' }">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Descripción</th>
+              <th>Categoría / Billetera</th>
+              <th nzAlign="right">Monto</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (tx of recentTable.data; track tx.id) {
+              <tr>
+                <td>{{ tx.date | date:'dd/MM/yyyy' }}</td>
+                <td>{{ tx.description || '---' }}</td>
+                <td>
+                  @if (tx.type === 'INCOME') {
+                    <nz-tag nzColor="success">Ingreso</nz-tag>
+                  } @else {
+                    <nz-tag nzColor="error">{{ tx.categories?.name || 'Gasto' }}</nz-tag>
+                  }
+                  <span style="font-size: 12px; color: #8c8c8c; margin-left: 8px;">
+                    {{ tx.payment_methods?.name || '' }}
+                  </span>
+                </td>
+                <td nzAlign="right" [style.color]="tx.type === 'INCOME' ? '#3f8600' : '#cf1322'" style="font-weight: 500;">
+                  {{ tx.type === 'INCOME' ? '+' : '-' }} $ {{ tx.amount | number:'1.0-2':'es' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </nz-table>
+      </nz-card>
+    </nz-col>
+  </nz-row>
+
+  <app-transaction-modal [isVisible]="isModalVisible()" (closeModal)="closeModal()" (transactionSaved)="onTransactionSaved()">
   </app-transaction-modal>
 
 </div>

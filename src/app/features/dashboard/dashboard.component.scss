@@ -1,17 +1,17 @@
 // src/app/features/dashboard/dashboard.component.scss
 
 .app-layout {
-  min-height: 100vh; // Permite que el contenedor crezca dinámicamente según el contenido
-  display: flex;     // Asegura el flujo flexible correcto para NG-Zorro
+  height: 100vh;
+  overflow: hidden; // 1. Bloqueamos el scroll del navegador a nivel global
 }
+
 // ==========================================
 // 1. BARRA LATERAL DESKTOP (Sider)
 // ==========================================
 .desktop-sidebar {
   position: relative;
   z-index: 10;
-  height: 100%;       // Hereda y estira el fondo a lo largo del layout flexible
-  min-height: 100vh;  // Garantiza cobertura total inicial
+  height: 100%; // 2. El sidebar hereda estrictamente el 100vh del contenedor padre
   box-shadow: 2px 0 6px rgba(0, 21, 41, 0.35);
 
   // ARQUITECTURA RESPONSIVA:
@@ -105,13 +105,18 @@ nz-header {
 // ==========================================
 // 4. ÁREA DE TRABAJO PRINCIPAL (Content)
 // ==========================================
+nz-content {
+  // 3. MAGIA ARQUITECTÓNICA: Delegamos el scroll exclusivamente a este contenedor
+  height: calc(100vh - 64px); // Altura total de la ventana menos el Header
+  overflow-y: auto; // Se genera la barra de desplazamiento interna
+}
+
 .inner-content {
   padding: 24px;
   background: #f0f2f5;
-  min-height: calc(100vh - 64px);
+  min-height: 100%; // Garantizamos que el fondo gris cubra al menos la pantalla visible
 
   // UX: Minimizamos los márgenes muertos en pantallas pequeñas
-  // Esto es vital para cuando insertemos gráficos (ECharts) y tarjetas.
   @media (max-width: 767px) {
     padding: 16px;
   }
