@@ -11,12 +11,13 @@
   "private": true,
   "packageManager": "npm@11.6.3",
   "dependencies": {
-    "@angular/common": "^22.0.0",
-    "@angular/compiler": "^22.0.0",
-    "@angular/core": "^22.0.0",
-    "@angular/forms": "^22.0.0",
-    "@angular/platform-browser": "^22.0.0",
-    "@angular/router": "^22.0.0",
+    "@angular/common": "^22.1.4",
+    "@angular/compiler": "^22.1.4",
+    "@angular/core": "^22.1.4",
+    "@angular/forms": "^22.1.4",
+    "@angular/platform-browser": "^22.1.4",
+    "@angular/router": "^22.1.4",
+    "@angular/service-worker": "^22.1.4",
     "@supabase/supabase-js": "^2.110.7",
     "echarts": "^6.1.0",
     "ng-zorro-antd": "^22.0.0",
@@ -25,9 +26,9 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@angular/build": "^22.0.7",
-    "@angular/cli": "^22.0.7",
-    "@angular/compiler-cli": "^22.0.0",
+    "@angular/build": "^22.1.6",
+    "@angular/cli": "^22.1.6",
+    "@angular/compiler-cli": "^22.1.4",
     "@types/echarts": "^4.9.22",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2"
