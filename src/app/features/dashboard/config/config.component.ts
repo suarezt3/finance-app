@@ -6,7 +6,7 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTagModule } from 'ng-zorro-antd/tag';
-import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal'; // <-- Inyectamos NzModalService
+import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzSelectModule } from 'ng-zorro-antd/select';
@@ -28,7 +28,7 @@ export class ConfigComponent implements OnInit {
   private readonly catalogService = inject(CatalogService);
   private readonly fb = inject(FormBuilder);
   private readonly message = inject(NzMessageService);
-  private readonly modalService = inject(NzModalService); // <-- NUEVO: Servicio para confirmaciones
+  private readonly modalService = inject(NzModalService);
 
   readonly categories = signal<Category[]>([]);
   readonly paymentMethods = signal<PaymentMethod[]>([]);
@@ -100,7 +100,6 @@ export class ConfigComponent implements OnInit {
   }
 
   onDeleteCategory(id: string): void {
-    // NUEVO: Prevención de errores con diálogo de confirmación
     this.modalService.confirm({
       nzTitle: '¿Estás seguro de eliminar esta categoría?',
       nzContent: 'Si esta categoría ya tiene transacciones asociadas, no se podrá borrar.',
@@ -155,10 +154,10 @@ export class ConfigComponent implements OnInit {
   }
 
   onDeleteMethod(id: string): void {
-    // NUEVO: Prevención de errores con diálogo de confirmación
     this.modalService.confirm({
       nzTitle: '¿Estás seguro de eliminar este método de pago?',
-      nzContent: 'No podrás deshacer esta acción.',
+      // FIX: Homologamos la advertencia del modal para coincidir con la regla de negocio
+      nzContent: 'Si este método de pago ya tiene transacciones asociadas, no se podrá borrar.',
       nzOkText: 'Sí, eliminar',
       nzOkType: 'primary',
       nzOkDanger: true,
