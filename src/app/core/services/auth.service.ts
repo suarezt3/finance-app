@@ -1,7 +1,7 @@
 // src/app/core/services/auth.service.ts
 import { Injectable, inject, signal, PLATFORM_ID } from '@angular/core';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
-import { Router } from '@angular/router'; // <-- NUEVO IMPORT: Para dominar la navegación
+import { Router } from '@angular/router';
 import { AuthResponse, Session, User, UserResponse } from '@supabase/supabase-js';
 import { SupabaseService } from './supabase.service';
 
@@ -12,8 +12,6 @@ export class AuthService {
   private readonly supabase = inject(SupabaseService).client;
   private readonly platformId = inject(PLATFORM_ID);
   private readonly document = inject(DOCUMENT);
-
-  // NUEVO: Inyectamos el Router para tomar el control de los flujos de seguridad
   private readonly router = inject(Router);
 
   private readonly _currentUser = signal<User | null>(null);
@@ -32,13 +30,7 @@ export class AuthService {
     this.supabase.auth.onAuthStateChange((event, session) => {
       this._currentUser.set(session?.user ?? null);
 
-      // ==============================================================
-      // LÓGICA DE INTERCEPCIÓN DE EVENTOS DE SEGURIDAD
-      // ==============================================================
       if (event === 'PASSWORD_RECOVERY') {
-        // El usuario hizo clic en el enlace del correo.
-        // Supabase ya creó una sesión temporal, ahora lo capturamos
-        // y lo forzamos a ir a la vista de cambio de contraseña.
         this.router.navigate(['/auth/update-password']);
       }
     });
@@ -64,6 +56,9 @@ export class AuthService {
   }
 
   async signInWithGoogle(): Promise<void> {
+    // BLINDAJE: Solo ejecutamos lógica de redirección si estamos en el navegador
+    if (!isPlatformBrowser(this.platformId)) return;
+
     const redirectUrl = `${this.document.location.origin}/dashboard`;
     const { error } = await this.supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -101,7 +96,10 @@ export class AuthService {
   }
 
   async resetPassword(email: string): Promise<{ error: Error | null }> {
-    // ACTUALIZADO: Obligamos al correo a enviar al usuario a nuestra futura vista de recuperación
+    if (!isPlatformBrowser(this.platformId)) {
+      throw new Error('La recuperación de contraseña solo puede ejecutarse en el navegador.');
+    }
+
     const redirectUrl = `${this.document.location.origin}/auth/update-password`;
 
     return this.supabase.auth.resetPasswordForEmail(email, {
