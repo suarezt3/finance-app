@@ -18,8 +18,8 @@ import { NzDropdownModule } from 'ng-zorro-antd/dropdown';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzDrawerModule } from 'ng-zorro-antd/drawer';
 
-// Importamos la librería de Onboarding
-import { driver } from 'driver.js';
+// Importamos la librería de Onboarding y su tipado estricto
+import { driver, DriveStep } from 'driver.js';
 
 @Component({
   selector: 'app-dashboard',
@@ -136,9 +136,15 @@ export class DashboardComponent implements OnInit, AfterViewInit {
     const storageKey = `tour_completed_${currentUser.id}`;
     const tourCompleted = localStorage.getItem(storageKey);
 
-    if (!tourCompleted && !this.isMobileView()) {
+    // FIX: Eliminamos la restricción de vista móvil para que se ejecute en la PWA
+    if (!tourCompleted) {
 
       setTimeout(() => {
+        // Evaluamos la vista para determinar qué recorrido mostrar
+        const tourSteps: DriveStep[] = this.isMobileView()
+          ? this.getMobileSteps()
+          : this.getDesktopSteps();
+
         const driverObj = driver({
           showProgress: true,
           doneBtnText: 'Finalizar',
@@ -150,48 +156,82 @@ export class DashboardComponent implements OnInit, AfterViewInit {
             localStorage.setItem(storageKey, 'true');
             driverObj.destroy();
           },
-          steps: [
-            {
-              element: '#desktop-resumen', // Apuntamos estrictamente al elemento del Sider
-              popover: {
-                title: '¡Bienvenido a FinanceApp!',
-                description: 'Este es el resumen de tus finanzas. Aquí verás gráficos, balance total y el comportamiento de tu dinero.',
-                side: 'right',
-                align: 'start'
-              }
-            },
-            {
-              element: '#desktop-transacciones', // Apuntamos estrictamente al elemento del Sider
-              popover: {
-                title: 'Gestiona tu Dinero',
-                description: 'En esta sección podrás registrar todos tus ingresos, gastos y hacer transferencias de doble partida entre tus cuentas.',
-                side: 'right',
-                align: 'start'
-              }
-            },
-            {
-              element: '#desktop-config', // Apuntamos estrictamente al elemento del Sider
-              popover: {
-                title: 'Configura tus Catálogos',
-                description: 'Antes de iniciar, puedes agregar o eliminar Categorías y Métodos de Pago a tu gusto aquí.',
-                side: 'right',
-                align: 'start'
-              }
-            },
-            {
-              element: '#tour-user-menu', // Este se mantiene igual (no estaba en el template duplicado)
-              popover: {
-                title: 'Tu Perfil y Ajustes',
-                description: 'Aquí puedes actualizar tu nombre de usuario, cambiar tu contraseña o cerrar sesión en cualquier momento.',
-                side: 'bottom',
-                align: 'end'
-              }
-            }
-          ]
+          steps: tourSteps // Asignamos el arreglo calculado dinámicamente
         });
 
         driverObj.drive();
       }, 600);
     }
+  }
+
+  /**
+   * Retorna los pasos del tour optimizados para pantallas grandes (Desktop).
+   */
+  private getDesktopSteps(): DriveStep[] {
+    return [
+      {
+        element: '#desktop-resumen',
+        popover: {
+          title: '¡Bienvenido a FinanceApp!',
+          description: 'Este es el resumen de tus finanzas. Aquí verás gráficos, balance total y el comportamiento de tu dinero.',
+          side: 'right',
+          align: 'start'
+        }
+      },
+      {
+        element: '#desktop-transacciones',
+        popover: {
+          title: 'Gestiona tu Dinero',
+          description: 'En esta sección podrás registrar todos tus ingresos, gastos y hacer transferencias de doble partida entre tus cuentas.',
+          side: 'right',
+          align: 'start'
+        }
+      },
+      {
+        element: '#desktop-config',
+        popover: {
+          title: 'Configura tus Catálogos',
+          description: 'Antes de iniciar, puedes agregar o eliminar Categorías y Métodos de Pago a tu gusto aquí.',
+          side: 'right',
+          align: 'start'
+        }
+      },
+      {
+        element: '#tour-user-menu',
+        popover: {
+          title: 'Tu Perfil y Ajustes',
+          description: 'Aquí puedes actualizar tu nombre de usuario, cambiar tu contraseña o cerrar sesión en cualquier momento.',
+          side: 'bottom',
+          align: 'end'
+        }
+      }
+    ];
+  }
+
+  /**
+   * Retorna los pasos del tour adaptados para la PWA en celular,
+   * evitando el colapso visual al ignorar los elementos ocultos en el Drawer.
+   */
+  private getMobileSteps(): DriveStep[] {
+    return [
+      {
+        element: '#tour-hamburger-btn',
+        popover: {
+          title: 'Menú de Navegación',
+          description: 'Toca aquí para acceder a tu resumen financiero, registrar tus transacciones o configurar tu espacio de trabajo.',
+          side: 'bottom',
+          align: 'start'
+        }
+      },
+      {
+        element: '#tour-user-menu',
+        popover: {
+          title: 'Tu Perfil y Ajustes',
+          description: 'Toca aquí para actualizar tu información personal o cerrar tu sesión de forma segura.',
+          side: 'bottom',
+          align: 'end'
+        }
+      }
+    ];
   }
 }

@@ -25,7 +25,6 @@
   </ul>
 </ng-template>
 
-
 <nz-layout class="app-layout">
 
   <!-- 2. SIDEBAR DESKTOP -->
@@ -64,7 +63,9 @@
   <nz-layout>
     <nz-header>
       <div class="app-header">
-        <span class="header-trigger" (click)="toggleMenu()">
+
+        <!-- FIX: Añadimos el ID 'tour-hamburger-btn' para que Driver.js pueda anclarse en móvil -->
+        <span class="header-trigger" (click)="toggleMenu()" id="tour-hamburger-btn">
           <span nz-icon [nzType]="getMenuIcon()"></span>
         </span>
 
