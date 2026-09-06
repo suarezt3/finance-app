@@ -19,6 +19,7 @@
     "@angular/router": "^22.1.4",
     "@angular/service-worker": "^22.1.4",
     "@supabase/supabase-js": "^2.110.7",
+    "driver.js": "^1.8.0",
     "echarts": "^6.1.0",
     "ng-zorro-antd": "^22.0.0",
     "ngx-echarts": "^22.0.0",

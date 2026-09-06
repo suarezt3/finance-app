@@ -1,23 +1,22 @@
 <!-- src/app/features/dashboard/dashboard.component.html -->
 
-<!-- 1. TEMPLATE DEL MENÚ (DRY Principle) -->
-<!-- Definimos el menú una sola vez para inyectarlo en el Desktop Sider y en el Mobile Drawer -->
-<ng-template #menuItemsTemplate>
+<!-- 1. TEMPLATE DEL MENÚ (Ahora recibe una variable 'prefix') -->
+<ng-template #menuItemsTemplate let-prefix="prefix">
   <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isDesktopCollapsed()">
 
     <li nz-submenu nzOpen nzTitle="Panel Principal" nzIcon="dashboard">
       <ul>
-        <!-- Agregamos (click)="closeMobileMenu()" para auto-cerrar el Drawer al navegar en celular -->
-        <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()">
+        <!-- Generación dinámica de ID para evitar duplicidad en el DOM -->
+        <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()" [id]="prefix + '-resumen'">
           <a routerLink="/dashboard/resumen">Resumen Financiero</a>
         </li>
-        <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()">
+        <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()" [id]="prefix + '-transacciones'">
           <a routerLink="/dashboard/transacciones">Transacciones</a>
         </li>
       </ul>
     </li>
 
-    <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()">
+    <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()" [id]="prefix + '-config'">
       <a routerLink="/dashboard/configuracion">
         <span nz-icon nzType="setting"></span>
         <span>Configuración</span>
@@ -29,7 +28,7 @@
 
 <nz-layout class="app-layout">
 
-  <!-- 2. SIDEBAR DESKTOP (Solo visible en pantallas >= 768px) -->
+  <!-- 2. SIDEBAR DESKTOP -->
   <nz-sider
     class="desktop-sidebar"
     nzCollapsible
@@ -42,11 +41,11 @@
       <h1>{{ isDesktopCollapsed() ? 'FA' : 'FinanceApp' }}</h1>
     </div>
 
-    <!-- Renderizamos la plantilla del menú -->
-    <ng-container *ngTemplateOutlet="menuItemsTemplate"></ng-container>
+    <!-- Renderizamos la plantilla pasando el prefijo 'desktop' -->
+    <ng-container *ngTemplateOutlet="menuItemsTemplate; context: { prefix: 'desktop' }"></ng-container>
   </nz-sider>
 
-  <!-- 3. DRAWER MÓVIL (Menú Off-Canvas para pantallas < 768px) -->
+  <!-- 3. DRAWER MÓVIL -->
   <nz-drawer
     [nzVisible]="isMobileMenuOpen()"
     nzPlacement="left"
@@ -56,34 +55,28 @@
     [nzClosable]="true"
     [nzBodyStyle]="{ padding: '0' }">
     <ng-container *nzDrawerContent>
-      <!-- Renderizamos exactamente la misma plantilla del menú -->
-      <ng-container *ngTemplateOutlet="menuItemsTemplate"></ng-container>
+      <!-- Renderizamos la plantilla pasando el prefijo 'mobile' -->
+      <ng-container *ngTemplateOutlet="menuItemsTemplate; context: { prefix: 'mobile' }"></ng-container>
     </ng-container>
   </nz-drawer>
 
   <!-- 4. CONTENEDOR PRINCIPAL -->
   <nz-layout>
-
-    <!-- CABECERA (Header) -->
     <nz-header>
       <div class="app-header">
-
-        <!-- Botón Toggle Inteligente (Abre Drawer en Móvil, Colapsa Sider en Desktop) -->
         <span class="header-trigger" (click)="toggleMenu()">
           <span nz-icon [nzType]="getMenuIcon()"></span>
         </span>
 
-        <!-- Acciones de usuario -->
         <div class="header-actions">
           @if (user()) {
-            <a nz-dropdown [nzDropdownMenu]="userMenu" class="user-dropdown">
+            <!-- Este elemento no está en un template duplicado, su ID fijo está bien -->
+            <a nz-dropdown [nzDropdownMenu]="userMenu" class="user-dropdown" id="tour-user-menu">
               <nz-avatar
                 [nzText]="userInitial()"
                 nzSize="default"
                 style="background-color: #1890ff;">
               </nz-avatar>
-
-              <!-- Clase 'hide-on-mobile' añadida para ahorrar espacio en la barra superior táctil -->
               <span class="user-name hide-on-mobile">{{ userName() }}</span>
               <span nz-icon nzType="down"></span>
             </a>
@@ -104,15 +97,12 @@
       </div>
     </nz-header>
 
-    <!-- ÁREA DE TRABAJO (Content) -->
     <nz-content>
       <div class="inner-content">
         <router-outlet></router-outlet>
       </div>
     </nz-content>
-
   </nz-layout>
 
-  <!-- MODAL COMPARTIDO -->
   <app-profile-modal></app-profile-modal>
 </nz-layout>

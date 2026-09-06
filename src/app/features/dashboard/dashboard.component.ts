@@ -1,5 +1,5 @@
 // src/app/features/dashboard/dashboard.component.ts
-import { Component, inject, signal, computed, viewChild, OnInit, DestroyRef } from '@angular/core';
+import { Component, inject, signal, computed, viewChild, OnInit, AfterViewInit, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BreakpointObserver } from '@angular/cdk/layout';
 import { Router, RouterOutlet, RouterLink } from '@angular/router';
@@ -16,7 +16,10 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { NzDropdownModule } from 'ng-zorro-antd/dropdown';
 import { NzMessageService } from 'ng-zorro-antd/message';
-import { NzDrawerModule } from 'ng-zorro-antd/drawer'; // <-- NUEVO: Para el panel móvil
+import { NzDrawerModule } from 'ng-zorro-antd/drawer';
+
+// Importamos la librería de Onboarding
+import { driver } from 'driver.js';
 
 @Component({
   selector: 'app-dashboard',
@@ -31,34 +34,28 @@ import { NzDrawerModule } from 'ng-zorro-antd/drawer'; // <-- NUEVO: Para el pan
     NzButtonModule,
     NzAvatarModule,
     NzDropdownModule,
-    NzDrawerModule, // <-- Inyectado
+    NzDrawerModule,
     ProfileModalComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, AfterViewInit {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly message = inject(NzMessageService);
   private readonly breakpointObserver = inject(BreakpointObserver);
-  private readonly destroyRef = inject(DestroyRef); // <-- Para evitar memory leaks en el listener
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly profileModal = viewChild(ProfileModalComponent);
   readonly user = this.authService.currentUser;
 
-  // ==========================================
-  // ESTADOS REACTIVOS DE LAYOUT
-  // ==========================================
-
+  // Estados
   readonly isDesktopCollapsed = signal<boolean>(false);
   readonly isMobileMenuOpen = signal<boolean>(false);
-  readonly isMobileView = signal<boolean>(false); // Bandera para saber si estamos en celular
+  readonly isMobileView = signal<boolean>(false);
 
-  // ==========================================
-  // COMPUTADOS DE USUARIO
-  // ==========================================
-
+  // Computados
   readonly userName = computed(() => {
     const currentUser = this.user();
     return currentUser?.user_metadata?.['full_name']
@@ -70,33 +67,23 @@ export class DashboardComponent implements OnInit {
     return this.userName().charAt(0).toUpperCase();
   });
 
-  // ==========================================
-  // CICLO DE VIDA Y LISTENERS
-  // ==========================================
-
   ngOnInit(): void {
-    // Escuchamos activamente si la pantalla es menor a 768px (Mobile breakpoint común)
     this.breakpointObserver.observe(['(max-width: 767px)'])
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(result => {
         const isMobile = result.matches;
         this.isMobileView.set(isMobile);
 
-        // Si redimensionamos a escritorio, nos aseguramos de cerrar el drawer móvil
         if (!isMobile) {
           this.isMobileMenuOpen.set(false);
         }
       });
   }
 
-  // ==========================================
-  // LÓGICA DE NAVEGACIÓN Y MENÚS
-  // ==========================================
+  ngAfterViewInit(): void {
+    this.checkAndStartTour();
+  }
 
-  /**
-   * Controlador inteligente del botón hamburguesa/colapsar.
-   * Actúa sobre el Drawer en móvil, y sobre el Sider en escritorio.
-   */
   toggleMenu(): void {
     if (this.isMobileView()) {
       this.isMobileMenuOpen.update(val => !val);
@@ -105,18 +92,12 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  /**
-   * Cierra el Drawer. Se llama al hacer clic en un enlace en versión móvil.
-   */
   closeMobileMenu(): void {
     if (this.isMobileView()) {
       this.isMobileMenuOpen.set(false);
     }
   }
 
-  /**
-   * Retorna el icono correcto basándose en el estado actual de la vista activa.
-   */
   getMenuIcon(): string {
     if (this.isMobileView()) {
       return this.isMobileMenuOpen() ? 'menu-unfold' : 'menu-fold';
@@ -132,13 +113,85 @@ export class DashboardComponent implements OnInit {
     try {
       const { error } = await this.authService.signOut();
       if (error) throw error;
-
       await this.router.navigate(['/auth']);
     } catch (err: unknown) {
       if (err instanceof Error) {
         console.error('Error al cerrar sesión:', err.message);
         this.message.error('Hubo un problema al cerrar tu sesión. Intenta de nuevo.');
       }
+    }
+  }
+
+  // ==========================================
+  // LÓGICA DE ONBOARDING (DRIVER.JS)
+  // ==========================================
+
+  private checkAndStartTour(): void {
+    const currentUser = this.user();
+
+    // Programación defensiva: evitamos ejecutar lógica si no hay sesión activa
+    if (!currentUser?.id) return;
+
+    // Clave de almacenamiento dinámica anclada al ID del usuario
+    const storageKey = `tour_completed_${currentUser.id}`;
+    const tourCompleted = localStorage.getItem(storageKey);
+
+    if (!tourCompleted && !this.isMobileView()) {
+
+      setTimeout(() => {
+        const driverObj = driver({
+          showProgress: true,
+          doneBtnText: 'Finalizar',
+          nextBtnText: 'Siguiente',
+          prevBtnText: 'Anterior',
+          allowClose: true,
+          onDestroyStarted: () => {
+            // Guardamos el estado usando la clave específica del usuario
+            localStorage.setItem(storageKey, 'true');
+            driverObj.destroy();
+          },
+          steps: [
+            {
+              element: '#desktop-resumen', // Apuntamos estrictamente al elemento del Sider
+              popover: {
+                title: '¡Bienvenido a FinanceApp!',
+                description: 'Este es el resumen de tus finanzas. Aquí verás gráficos, balance total y el comportamiento de tu dinero.',
+                side: 'right',
+                align: 'start'
+              }
+            },
+            {
+              element: '#desktop-transacciones', // Apuntamos estrictamente al elemento del Sider
+              popover: {
+                title: 'Gestiona tu Dinero',
+                description: 'En esta sección podrás registrar todos tus ingresos, gastos y hacer transferencias de doble partida entre tus cuentas.',
+                side: 'right',
+                align: 'start'
+              }
+            },
+            {
+              element: '#desktop-config', // Apuntamos estrictamente al elemento del Sider
+              popover: {
+                title: 'Configura tus Catálogos',
+                description: 'Antes de iniciar, puedes agregar o eliminar Categorías y Métodos de Pago a tu gusto aquí.',
+                side: 'right',
+                align: 'start'
+              }
+            },
+            {
+              element: '#tour-user-menu', // Este se mantiene igual (no estaba en el template duplicado)
+              popover: {
+                title: 'Tu Perfil y Ajustes',
+                description: 'Aquí puedes actualizar tu nombre de usuario, cambiar tu contraseña o cerrar sesión en cualquier momento.',
+                side: 'bottom',
+                align: 'end'
+              }
+            }
+          ]
+        });
+
+        driverObj.drive();
+      }, 600);
     }
   }
 }
