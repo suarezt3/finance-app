@@ -20,13 +20,17 @@ import { CatalogService, Category, PaymentMethod } from '../../../core/services/
 import { TransactionService } from '../../../core/services/transaction.service';
 import { TransactionWithDetails } from '../../../core/models/transaction.model';
 
+// NUEVO: Importamos la directiva que acabamos de crear
+import { DecimalInputDirective } from '../../directives/decimal-input.directive';
+
 @Component({
   selector: 'app-transaction-modal',
   standalone: true,
   imports: [
     ReactiveFormsModule, DecimalPipe, NzIconModule,
     NzModalModule, NzFormModule, NzInputModule, NzInputNumberModule,
-    NzSelectModule, NzDatePickerModule, NzButtonModule
+    NzSelectModule, NzDatePickerModule, NzButtonModule,
+    DecimalInputDirective // NUEVO: Registramos la directiva en el componente
   ],
   templateUrl: './transaction-modal.component.html',
   styleUrl: './transaction-modal.component.scss'
@@ -50,7 +54,7 @@ export class TransactionModalComponent implements OnInit {
   readonly availableBalance = signal<number | null>(null);
   readonly isCheckingBalance = signal<boolean>(false);
 
-  // -- FORMULARIO REACTIVO (Añadido destination_method_id) --
+  // -- FORMULARIO REACTIVO --
   readonly transactionForm: FormGroup = this.fb.nonNullable.group({
     type: ['EXPENSE', [Validators.required]],
     amount: [0, [Validators.required, Validators.min(0.01)]],
@@ -58,7 +62,7 @@ export class TransactionModalComponent implements OnInit {
     description: [''],
     category_id: [null],
     payment_method_id: [null, [Validators.required]],
-    destination_method_id: [null] // Para transferencias
+    destination_method_id: [null]
   });
 
   // -- SEÑALES REACTIVAS DE FORMULARIO --
@@ -77,11 +81,31 @@ export class TransactionModalComponent implements OnInit {
     return this.categories().filter(c => c.type === currentType);
   });
 
-  // Evita que el usuario seleccione la misma cuenta de origen como destino
   readonly availableDestinationMethods = computed(() => {
     const source = this.selectedSourceMethod();
     return this.paymentMethods().filter(m => m.id !== source);
   });
+
+  // ==========================================
+  // FORMATTERS PARA UX VISUAL
+  // ==========================================
+
+  readonly formatterAmount = (value: number | string): string => {
+    if (value == null || value === '') return '';
+    const parts = value.toString().split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  };
+
+  readonly parserAmount = (value: string): number => {
+    const cleanString = value.replace(/,/g, '');
+    const parsedNumber = parseFloat(cleanString);
+    return isNaN(parsedNumber) ? 0 : parsedNumber;
+  };
+
+  // ==========================================
+  // CICLO DE VIDA Y LÓGICA DE NEGOCIO
+  // ==========================================
 
   async ngOnInit(): Promise<void> {
     await this.loadCatalogs();
@@ -102,7 +126,6 @@ export class TransactionModalComponent implements OnInit {
   }
 
   private setupFormListeners(): void {
-    // 1. Mutación dinámica del formulario según el Tipo
     this.transactionForm.controls['type'].valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((type) => {
@@ -122,7 +145,6 @@ export class TransactionModalComponent implements OnInit {
         }
       });
 
-    // 2. Protección contra Sobregiro (Aplicable a Gasto y Transferencia)
     combineLatest([
       this.transactionForm.controls['type'].valueChanges.pipe(startWith(this.transactionForm.value.type)),
       this.transactionForm.controls['payment_method_id'].valueChanges.pipe(startWith(this.transactionForm.value.payment_method_id))
@@ -187,7 +209,6 @@ export class TransactionModalComponent implements OnInit {
         const rawValues = this.transactionForm.getRawValue();
         const formattedDate = (rawValues.date as Date).toISOString().split('T')[0];
 
-        // LOGICA DE NEGOCIO: Enrutamiento según el tipo
         if (rawValues.type === 'TRANSFER') {
           await this.transactionService.createTransfer({
             amount: rawValues.amount,

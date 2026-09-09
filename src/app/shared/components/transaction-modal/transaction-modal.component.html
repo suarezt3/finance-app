@@ -23,17 +23,23 @@
         </nz-form-control>
       </nz-form-item>
 
-      <!-- Monto con Template Dinámico de Errores -->
+      <!-- Monto con Template Dinámico de Errores y Directiva Custom -->
       <nz-form-item>
         <nz-form-label nzRequired>Monto a registrar</nz-form-label>
         <nz-form-control [nzErrorTip]="amountErrorTpl">
+
+          <!-- REFACTORIZADO: Quitamos nzInputMode y agregamos appDecimalInput -->
           <nz-input-number
+            appDecimalInput
             formControlName="amount"
             [nzMin]="0.01"
             [nzStep]="1000"
             style="width: 100%;"
             [nzPrecision]="2"
+            [nzFormatter]="formatterAmount"
+            [nzParser]="parserAmount"
           ></nz-input-number>
+
         </nz-form-control>
         <ng-template #amountErrorTpl let-control>
           @if (control.errors?.['required']) {
@@ -99,12 +105,11 @@
         </nz-form-control>
       </nz-form-item>
 
-      <!-- Cuenta Destino (NUEVO: SOLO VISIBLE EN TRANSFERENCIAS) -->
+      <!-- Cuenta Destino (SOLO VISIBLE EN TRANSFERENCIAS) -->
       @if (selectedType() === 'TRANSFER') {
         <nz-form-item>
           <nz-form-label nzRequired>Cuenta Destino</nz-form-label>
           <nz-form-control nzErrorTip="Seleccione a qué cuenta enviará el dinero">
-            <!-- Usamos la señal calculada availableDestinationMethods() -->
             <nz-select formControlName="destination_method_id" nzPlaceHolder="Seleccione la cuenta destino..." nzAllowClear>
               @for (method of availableDestinationMethods(); track method.id) {
                 <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
