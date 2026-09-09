@@ -138,7 +138,17 @@ export class TransactionsComponent implements OnInit {
                             tx.description?.toLowerCase().includes(term) ||
                             (tx.displayCategory?.toLowerCase().includes(term) ?? false);
 
-      const matchesType = !currentFilters.type || tx.type === currentFilters.type;
+      // NUEVA REGLA: Intercepción del filtro de Naturaleza
+      let matchesType = true;
+      if (currentFilters.type) {
+        if (currentFilters.type === 'TRANSFER') {
+          // Si busca transferencias, validamos nuestra propiedad virtual
+          matchesType = tx.isTransfer;
+        } else {
+          // Si busca INCOME o EXPENSE, debe coincidir el tipo Y NO ser una transferencia
+          matchesType = tx.type === currentFilters.type && !tx.isTransfer;
+        }
+      }
 
       const matchesMethod = !currentFilters.paymentMethodId ||
                             tx.payment_method_id === currentFilters.paymentMethodId ||
