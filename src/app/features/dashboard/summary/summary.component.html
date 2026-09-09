@@ -172,18 +172,31 @@
               <tr>
                 <td>{{ tx.date | date:'dd/MM/yyyy' }}</td>
                 <td>{{ tx.description || '---' }}</td>
+
+                <!-- REFACTORIZADO: Lógica Visual Unificada (ViewModel) -->
                 <td>
-                  @if (tx.type === 'INCOME') {
+                  <!-- 1. Etiquetas de Naturaleza -->
+                  @if (tx.isTransfer) {
+                    <nz-tag nzColor="blue">Transferencia</nz-tag>
+                  } @else if (tx.type === 'INCOME') {
                     <nz-tag nzColor="success">Ingreso</nz-tag>
                   } @else {
-                    <nz-tag nzColor="error">{{ tx.categories?.name || 'Gasto' }}</nz-tag>
+                    <nz-tag nzColor="error">{{ tx.displayCategory }}</nz-tag>
                   }
+
+                  <!-- 2. Indicador de Flujo entre Billeteras -->
                   <span style="font-size: 12px; color: #8c8c8c; margin-left: 8px;">
-                    {{ tx.payment_methods?.name || '' }}
+                    @if (tx.isMergedTransfer) {
+                      {{ tx.sourceMethodName }} <span nz-icon nzType="arrow-right" style="margin: 0 4px; font-size: 10px; color: #1890ff;"></span> {{ tx.destinationMethodName }}
+                    } @else {
+                      {{ tx.payment_methods?.name || '---' }}
+                    }
                   </span>
                 </td>
-                <td nzAlign="right" [style.color]="tx.type === 'INCOME' ? '#3f8600' : '#cf1322'" style="font-weight: 500;">
-                  {{ tx.type === 'INCOME' ? '+' : '-' }} $ {{ tx.amount | number:'1.0-2':'es' }}
+
+                <!-- 3. Monto Neutral para Transferencias -->
+                <td nzAlign="right" [style.color]="tx.isTransfer ? '#8c8c8c' : (tx.type === 'INCOME' ? '#3f8600' : '#cf1322')" style="font-weight: 500;">
+                  {{ tx.isTransfer ? '' : (tx.type === 'INCOME' ? '+' : '-') }} $ {{ tx.amount | number:'1.0-2':'es' }}
                 </td>
               </tr>
             }

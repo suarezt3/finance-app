@@ -24,7 +24,6 @@
   <!-- RESUMEN DE KPIs (Grid Responsivo 2x2 en Móviles) -->
   <nz-row [nzGutter]="{ xs: 8, sm: 16, md: 16 }" class="kpi-row">
 
-    <!-- Saldo Global -->
     <nz-col [nzXs]="12" [nzMd]="6" class="kpi-col">
       <nz-card nzSize="small" class="kpi-card highlight-card">
         <nz-statistic
@@ -36,7 +35,6 @@
       </nz-card>
     </nz-col>
 
-    <!-- Saldo Filtrado -->
     <nz-col [nzXs]="12" [nzMd]="6" class="kpi-col">
       <nz-card nzSize="small" class="kpi-card">
         <nz-statistic
@@ -48,7 +46,6 @@
       </nz-card>
     </nz-col>
 
-    <!-- Ingresos -->
     <nz-col [nzXs]="12" [nzMd]="6" class="kpi-col">
       <nz-card nzSize="small" class="kpi-card">
         <nz-statistic
@@ -61,7 +58,6 @@
       </nz-card>
     </nz-col>
 
-    <!-- Gastos -->
     <nz-col [nzXs]="12" [nzMd]="6" class="kpi-col">
       <nz-card nzSize="small" class="kpi-card">
         <nz-statistic
@@ -84,14 +80,12 @@
   <form [formGroup]="filterForm" class="filters-container">
     <nz-row [nzGutter]="[16, 16]">
 
-      <!-- Búsqueda: Reducido de 8 a 6 columnas -->
       <nz-col [nzXs]="24" [nzMd]="6">
         <nz-input-wrapper nzPrefix="Buscar" nzPrefixIcon="search" class="full-width">
           <input type="text" nz-input formControlName="searchTerm" placeholder="Descripción o categoria." />
         </nz-input-wrapper>
       </nz-col>
 
-      <!-- Fechas: Reducido de 8 a 6 columnas -->
       <nz-col [nzXs]="24" [nzMd]="6">
         <nz-range-picker
         formControlName="dateRange"
@@ -102,7 +96,6 @@
         ></nz-range-picker>
       </nz-col>
 
-      <!-- Naturaleza: Reducido de 5 a 4 columnas -->
       <nz-col [nzXs]="24" [nzMd]="4">
         <nz-select formControlName="type" nzPlaceHolder="Naturaleza" nzAllowClear class="full-width">
           <nz-option nzValue="INCOME" nzLabel="Ingresos"></nz-option>
@@ -110,7 +103,6 @@
         </nz-select>
       </nz-col>
 
-      <!-- NUEVO FILTRO: Billetera / Método de Pago (5 columnas) -->
       <nz-col [nzXs]="24" [nzMd]="5">
         <nz-select formControlName="paymentMethodId" nzPlaceHolder="Método de Pago" nzAllowClear class="full-width">
           @for (method of paymentMethods(); track method.id) {
@@ -119,7 +111,6 @@
         </nz-select>
       </nz-col>
 
-      <!-- Botón Limpiar: Mantiene sus 3 columnas -->
       <nz-col [nzXs]="24" [nzMd]="3" class="filter-actions">
         <button nz-button nzType="default" (click)="clearFilters()" nzBlock>Limpiar</button>
       </nz-col>
@@ -127,7 +118,7 @@
     </nz-row>
   </form>
 
-  <!-- TABLA (Con scroll horizontal nativo para móviles) -->
+  <!-- TABLA -->
   <div class="table-container">
     <nz-table
       #txTable
@@ -153,24 +144,47 @@
           <tr>
             <td>{{ tx.date | date:'dd/MM/yyyy' }}</td>
             <td>{{ tx.description || '---' }}</td>
-            <td>{{ tx.categories?.name || '---' }}</td>
-            <td>{{ tx.payment_methods?.name || '---' }}</td>
+
+            <!-- 1. CATEGORÍA: Usamos la propiedad enriquecida de la UI -->
+            <td>{{ tx.displayCategory }}</td>
+
+            <!-- 2. MÉTODO: Flujo de origen y destino para transferencias -->
             <td>
-              @if (tx.type === 'INCOME') {
+              @if (tx.isMergedTransfer) {
+                <div style="display: flex; align-items: center; gap: 4px; color: #595959;">
+                  <span>{{ tx.sourceMethodName }}</span>
+                  <span nz-icon nzType="arrow-right" nzTheme="outline" style="color: #1890ff; font-size: 12px;"></span>
+                  <span>{{ tx.destinationMethodName }}</span>
+                </div>
+              } @else {
+                {{ tx.payment_methods?.name || '---' }}
+              }
+            </td>
+
+            <!-- NATURALEZA -->
+            <td>
+              @if (tx.isTransfer) {
+                <nz-tag nzColor="blue">Transferencia</nz-tag>
+              } @else if (tx.type === 'INCOME') {
                 <nz-tag nzColor="success">Ingreso</nz-tag>
               } @else {
                 <nz-tag nzColor="error">Gasto</nz-tag>
               }
             </td>
-            <td [style.color]="tx.type === 'INCOME' ? '#3f8600' : '#cf1322'" style="font-weight: 500;">
-              {{ tx.type === 'INCOME' ? '+' : '-' }} $ {{ tx.amount | number:'1.0-2':'es' }}
+
+            <!-- MONTO -->
+            <td [style.color]="tx.isTransfer ? '#8c8c8c' : (tx.type === 'INCOME' ? '#3f8600' : '#cf1322')" style="font-weight: 500;">
+              {{ tx.isTransfer ? '' : (tx.type === 'INCOME' ? '+' : '-') }} $ {{ tx.amount | number:'1.0-2':'es' }}
             </td>
+
+            <!-- ACCIONES -->
             <td>
               <div class="action-buttons">
                 <button nz-button nzType="text" nzSize="small" (click)="openEditModal(tx)" class="btn-edit">
                   <span nz-icon nzType="edit" nzTheme="outline"></span>
                 </button>
-                <button nz-button nzType="text" nzDanger nzSize="small" (click)="onDelete(tx.id)">
+                <!-- 3. DELETE: Pasamos el objeto 'tx' completo -->
+                <button nz-button nzType="text" nzDanger nzSize="small" (click)="onDelete(tx)">
                   <span nz-icon nzType="delete" nzTheme="outline"></span>
                 </button>
               </div>

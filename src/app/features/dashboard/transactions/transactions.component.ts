@@ -19,12 +19,20 @@ import { NzCardModule } from 'ng-zorro-antd/card';
 
 import { TransactionService } from '../../../core/services/transaction.service';
 import { TransactionWithDetails } from '../../../core/models/transaction.model';
-import { CatalogService, PaymentMethod } from '../../../core/services/catalog.service'; // <-- NUEVO: Servicio de catálogos
-
+import { CatalogService, PaymentMethod } from '../../../core/services/catalog.service';
 import { ExportService } from '../../../core/services/export.service';
 
-// Importamos nuestro Componente Compartido
 import { TransactionModalComponent } from '../../../shared/components/transaction-modal/transaction-modal.component';
+
+export interface TransactionView extends TransactionWithDetails {
+  isTransfer: boolean;
+  isMergedTransfer?: boolean;
+  linkedTransferId?: string;
+  sourceMethodName?: string;
+  destinationMethodName?: string;
+  destinationMethodId?: string;
+  displayCategory?: string;
+}
 
 @Component({
   selector: 'app-transactions',
@@ -42,7 +50,7 @@ import { TransactionModalComponent } from '../../../shared/components/transactio
 })
 export class TransactionsComponent implements OnInit {
   private readonly transactionService = inject(TransactionService);
-  private readonly catalogService = inject(CatalogService); // <-- INYECTADO
+  private readonly catalogService = inject(CatalogService);
   private readonly message = inject(NzMessageService);
   private readonly modalService = inject(NzModalService);
   private readonly fb = inject(FormBuilder);
@@ -52,7 +60,7 @@ export class TransactionsComponent implements OnInit {
   readonly transactionModal = viewChild(TransactionModalComponent);
 
   readonly transactions = signal<TransactionWithDetails[]>([]);
-  readonly paymentMethods = signal<PaymentMethod[]>([]); // <-- NUEVO: Estado del dropdown
+  readonly paymentMethods = signal<PaymentMethod[]>([]);
   readonly isLoading = signal<boolean>(true);
 
   readonly isModalVisible = signal<boolean>(false);
@@ -62,25 +70,79 @@ export class TransactionsComponent implements OnInit {
     searchTerm: [''],
     dateRange: [[]],
     type: [null],
-    paymentMethodId: [null] // <-- NUEVO: Control para la billetera
+    paymentMethodId: [null]
   });
 
   private readonly filters = toSignal(this.filterForm.valueChanges, { initialValue: this.filterForm.value });
 
+  // ==========================================
+  // LÓGICA DE DOMINIO: Cashflow vs Ledger
+  // ==========================================
+
+  readonly enrichedTransactions = computed<TransactionView[]>(() => {
+    const raw = this.transactions();
+    const processed: TransactionView[] = [];
+    const transferPairs = new Map<string, { expense?: TransactionWithDetails, income?: TransactionWithDetails }>();
+
+    raw.forEach(tx => {
+      const isTransfer = !tx.category_id && !!tx.description?.toLowerCase().includes('transferencia');
+
+      if (!isTransfer) {
+        processed.push({
+          ...tx,
+          isTransfer: false,
+          displayCategory: tx.categories?.name || '---'
+        });
+      } else {
+        const matchKey = `${tx.date}_${tx.amount}`;
+        if (!transferPairs.has(matchKey)) {
+          transferPairs.set(matchKey, {});
+        }
+
+        const pair = transferPairs.get(matchKey)!;
+        if (tx.type === 'EXPENSE') pair.expense = tx;
+        if (tx.type === 'INCOME') pair.income = tx;
+      }
+    });
+
+    transferPairs.forEach(pair => {
+      if (pair.expense && pair.income) {
+        processed.push({
+          ...pair.expense,
+          isTransfer: true,
+          isMergedTransfer: true,
+          linkedTransferId: pair.income.id,
+          sourceMethodName: pair.expense.payment_methods?.name || '---',
+          destinationMethodName: pair.income.payment_methods?.name || '---',
+          destinationMethodId: pair.income.payment_method_id,
+          displayCategory: 'Transferencia Interna'
+        });
+      } else {
+        const orphan = pair.expense || pair.income;
+        if (orphan) {
+          processed.push({ ...orphan, isTransfer: true, displayCategory: 'Transferencia (Anómala)' });
+        }
+      }
+    });
+
+    return processed.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  });
+
   readonly filteredTransactions = computed(() => {
-    const txs = this.transactions();
+    const txs = this.enrichedTransactions();
     const currentFilters = this.filters();
 
     return txs.filter(tx => {
       const term = currentFilters.searchTerm?.toLowerCase() || '';
       const matchesSearch = term === '' ||
                             tx.description?.toLowerCase().includes(term) ||
-                            tx.categories?.name.toLowerCase().includes(term);
+                            (tx.displayCategory?.toLowerCase().includes(term) ?? false);
 
       const matchesType = !currentFilters.type || tx.type === currentFilters.type;
 
-      // NUEVA REGLA: Filtro por Método de Pago (Usando Foreign Key)
-      const matchesMethod = !currentFilters.paymentMethodId || tx.payment_method_id === currentFilters.paymentMethodId;
+      const matchesMethod = !currentFilters.paymentMethodId ||
+                            tx.payment_method_id === currentFilters.paymentMethodId ||
+                            tx.destinationMethodId === currentFilters.paymentMethodId;
 
       let matchesDate = true;
       if (currentFilters.dateRange && currentFilters.dateRange.length === 2) {
@@ -90,27 +152,65 @@ export class TransactionsComponent implements OnInit {
         matchesDate = txDate >= startDate && txDate <= endDate;
       }
 
-      // Agregamos matchesMethod a la validación
       return matchesSearch && matchesType && matchesMethod && matchesDate;
     });
   });
 
+  /**
+   * REFACTORIZADO: Cálculo inteligente de Saldo Filtrado
+   */
   readonly filteredSummary = computed(() => {
     const txs = this.filteredTransactions();
-    const totalIncome = txs.filter(t => t.type === 'INCOME').reduce((sum, t) => sum + Number(t.amount), 0);
-    const totalExpenses = txs.filter(t => t.type === 'EXPENSE').reduce((sum, t) => sum + Number(t.amount), 0);
-    return { totalBalance: totalIncome - totalExpenses, totalIncome, totalExpenses };
+    const selectedMethodId = this.filters().paymentMethodId;
+
+    let totalIncome = 0;
+    let totalExpenses = 0;
+    let transferImpact = 0; // Rastreará el impacto neto de las transferencias en la cuenta filtrada
+
+    txs.forEach(t => {
+      if (!t.isTransfer) {
+        if (t.type === 'INCOME') totalIncome += Number(t.amount);
+        if (t.type === 'EXPENSE') totalExpenses += Number(t.amount);
+      } else if (t.isMergedTransfer && selectedMethodId) {
+        // Lógica de "Account Ledger": Si estamos viendo una cuenta específica,
+        // las transferencias sí afectan su saldo disponible.
+        if (t.payment_method_id === selectedMethodId) {
+          // El dinero salió de esta cuenta
+          transferImpact -= Number(t.amount);
+        } else if (t.destinationMethodId === selectedMethodId) {
+          // El dinero entró a esta cuenta
+          transferImpact += Number(t.amount);
+        }
+      }
+    });
+
+    return {
+      // El saldo ahora suma los ingresos/gastos puros MÁS el impacto de las transferencias
+      totalBalance: (totalIncome - totalExpenses) + transferImpact,
+      totalIncome,
+      totalExpenses
+    };
   });
 
   readonly absoluteBalance = computed(() => {
-    const txs = this.transactions();
-    const totalIncome = txs.filter(t => t.type === 'INCOME').reduce((sum, t) => sum + Number(t.amount), 0);
-    const totalExpenses = txs.filter(t => t.type === 'EXPENSE').reduce((sum, t) => sum + Number(t.amount), 0);
+    const txs = this.enrichedTransactions();
+    let totalIncome = 0;
+    let totalExpenses = 0;
+
+    txs.forEach(t => {
+      if (!t.isTransfer) {
+        if (t.type === 'INCOME') totalIncome += Number(t.amount);
+        if (t.type === 'EXPENSE') totalExpenses += Number(t.amount);
+      }
+    });
     return totalIncome - totalExpenses;
   });
 
+  // ==========================================
+  // CICLO DE VIDA Y ORQUESTACIÓN
+  // ==========================================
+
   async ngOnInit(): Promise<void> {
-    // NUEVO: Carga paralela de transacciones y catálogos
     await Promise.all([
       this.loadTransactions(),
       this.loadCatalogs()
@@ -136,7 +236,6 @@ export class TransactionsComponent implements OnInit {
     }
   }
 
-  // NUEVO: Cargar métodos de pago
   private async loadCatalogs(): Promise<void> {
     try {
       const methods = await this.catalogService.getPaymentMethods();
@@ -147,20 +246,15 @@ export class TransactionsComponent implements OnInit {
   }
 
   clearFilters(): void {
-    // NUEVO: Limpiamos también el paymentMethodId
     this.filterForm.reset({ searchTerm: '', dateRange: [], type: null, paymentMethodId: null });
   }
-
-  // ==========================================
-  // ORQUESTACIÓN DEL MODAL COMPARTIDO
-  // ==========================================
 
   openNewModal(): void {
     this.currentTxToEdit.set(null);
     this.isModalVisible.set(true);
   }
 
-  openEditModal(tx: TransactionWithDetails): void {
+  openEditModal(tx: TransactionView): void {
     this.currentTxToEdit.set(tx);
     this.isModalVisible.set(true);
     this.transactionModal()?.openForEdit(tx);
@@ -175,26 +269,31 @@ export class TransactionsComponent implements OnInit {
     this.loadTransactions();
   }
 
-  // ==========================================
-  // LÓGICA DE ELIMINACIÓN CON CONFIRMACIÓN UX
-  // ==========================================
-
-  onDelete(id: string): void {
+  onDelete(tx: TransactionView): void {
     this.modalService.confirm({
-      nzTitle: '¿Estás seguro de eliminar esta transacción?',
-      nzContent: 'Esta acción no se puede deshacer. Tus saldos y gráficos se actualizarán inmediatamente.',
+      nzTitle: '¿Estás seguro de eliminar este registro?',
+      nzContent: tx.isMergedTransfer
+        ? 'Esto eliminará tanto el gasto de la cuenta origen como el ingreso de la cuenta destino.'
+        : 'Esta acción no se puede deshacer. Tus saldos se actualizarán inmediatamente.',
       nzOkText: 'Sí, eliminar',
       nzOkType: 'primary',
       nzOkDanger: true,
       nzOnOk: async () => {
         try {
           this.isLoading.set(true);
-          await this.transactionService.deleteTransaction(id);
-          this.message.success('Transacción eliminada con éxito');
+
+          const deletePromises = [this.transactionService.deleteTransaction(tx.id)];
+          if (tx.isMergedTransfer && tx.linkedTransferId) {
+            deletePromises.push(this.transactionService.deleteTransaction(tx.linkedTransferId));
+          }
+
+          await Promise.all(deletePromises);
+
+          this.message.success('Registro eliminado con éxito');
           await this.loadTransactions();
         } catch (error) {
-          console.error('Error eliminando la transacción:', error);
-          this.message.error('Ocurrió un error al intentar eliminar la transacción');
+          console.error('Error eliminando:', error);
+          this.message.error('Ocurrió un error al intentar eliminar el registro');
         } finally {
           this.isLoading.set(false);
         }
@@ -203,16 +302,12 @@ export class TransactionsComponent implements OnInit {
     });
   }
 
-  // ==========================================
-  // EXPORTACIÓN DE DATOS
-  // ==========================================
   exportToCSV(): void {
     const currentData = this.filteredTransactions();
     if (currentData.length === 0) {
       this.message.warning('No hay datos para exportar con los filtros actuales.');
       return;
     }
-
     this.exportService.exportTransactionsToCSV(currentData, 'Libro_Mayor_FinanceApp');
     this.message.success('Archivo exportado correctamente.');
   }

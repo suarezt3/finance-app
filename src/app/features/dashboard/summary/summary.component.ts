@@ -27,6 +27,19 @@ import { TransactionModalComponent } from '../../../shared/components/transactio
 
 type Timeframe = '7d' | '30d' | '1y' | 'all' | 'custom-year';
 
+// ==========================================
+// VIEW MODEL: Interfaz extendida para la UI
+// ==========================================
+export interface TransactionView extends TransactionWithDetails {
+  isTransfer: boolean;
+  isMergedTransfer?: boolean;
+  linkedTransferId?: string;
+  sourceMethodName?: string;
+  destinationMethodName?: string;
+  destinationMethodId?: string;
+  displayCategory?: string;
+}
+
 @Component({
   selector: 'app-summary',
   standalone: true,
@@ -47,6 +60,7 @@ export class SummaryComponent implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
   private readonly breakpointObserver = inject(BreakpointObserver);
 
+  // Estado puro
   readonly transactions = signal<TransactionWithDetails[]>([]);
   readonly paymentMethods = signal<PaymentMethod[]>([]);
 
@@ -57,18 +71,65 @@ export class SummaryComponent implements OnInit {
 
   readonly isMobileView = signal<boolean>(false);
 
-  // -- FILTRO CRUZADO MAESTRO (Billetera + Tiempo) --
+  // ==========================================
+  // LÓGICA DE DOMINIO: Aggregation & ViewModel
+  // ==========================================
+  readonly enrichedTransactions = computed<TransactionView[]>(() => {
+    const raw = this.transactions();
+    const processed: TransactionView[] = [];
+    const transferPairs = new Map<string, { expense?: TransactionWithDetails, income?: TransactionWithDetails }>();
+
+    raw.forEach(tx => {
+      const isTransfer = !tx.category_id && !!tx.description?.toLowerCase().includes('transferencia');
+
+      if (!isTransfer) {
+        processed.push({ ...tx, isTransfer: false, displayCategory: tx.categories?.name || '---' });
+      } else {
+        const matchKey = `${tx.date}_${tx.amount}`;
+        if (!transferPairs.has(matchKey)) transferPairs.set(matchKey, {});
+        const pair = transferPairs.get(matchKey)!;
+        if (tx.type === 'EXPENSE') pair.expense = tx;
+        if (tx.type === 'INCOME') pair.income = tx;
+      }
+    });
+
+    transferPairs.forEach(pair => {
+      if (pair.expense && pair.income) {
+        processed.push({
+          ...pair.expense,
+          isTransfer: true,
+          isMergedTransfer: true,
+          linkedTransferId: pair.income.id,
+          sourceMethodName: pair.expense.payment_methods?.name || '---',
+          destinationMethodName: pair.income.payment_methods?.name || '---',
+          destinationMethodId: pair.income.payment_method_id,
+          displayCategory: 'Transferencia Interna'
+        });
+      } else {
+        const orphan = pair.expense || pair.income;
+        if (orphan) processed.push({ ...orphan, isTransfer: true, displayCategory: 'Transferencia (Anómala)' });
+      }
+    });
+
+    return processed.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  });
+
+  // -- FILTRO CRUZADO MAESTRO --
   readonly masterFilteredTransactions = computed(() => {
-    const txs = this.transactions();
+    const txs = this.enrichedTransactions(); // Usamos la data enriquecida
     const tf = this.timeframe();
     const methodId = this.selectedPaymentMethod();
 
     let filtered = txs;
     if (methodId) {
-      filtered = filtered.filter(tx => tx.payment_method_id === methodId);
+      // Soportamos cuentas de origen y destino en transferencias fusionadas
+      filtered = filtered.filter(tx =>
+        tx.payment_method_id === methodId || tx.destinationMethodId === methodId
+      );
     }
 
     if (tf === 'all') return filtered;
+
     if (tf === 'custom-year' && this.selectedYear()) {
       const year = this.selectedYear()!.getFullYear();
       return filtered.filter(tx => new Date(tx.date).getFullYear() === year);
@@ -84,47 +145,63 @@ export class SummaryComponent implements OnInit {
     return filtered.filter(tx => new Date(tx.date).getTime() >= limitDate.getTime());
   });
 
+  // -- TABLA DE ÚLTIMOS MOVIMIENTOS --
   readonly latestTransactions = computed(() => {
     const txs = this.masterFilteredTransactions();
     return [...txs]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 5);
+      .slice(0, 5); // Automáticamente hereda la vista fusionada (1 fila = 1 transferencia)
   });
 
   // -- KPIs ACTUALES --
   readonly summary = computed<FinancialSummary>(() => {
     const txs = this.masterFilteredTransactions();
-    const totalIncome = txs.filter(t => t.type === 'INCOME').reduce((sum, t) => sum + Number(t.amount), 0);
-    const totalExpenses = txs.filter(t => t.type === 'EXPENSE').reduce((sum, t) => sum + Number(t.amount), 0);
+    const methodId = this.selectedPaymentMethod();
+
+    let totalIncome = 0;
+    let totalExpenses = 0;
+    let transferImpact = 0;
+
+    txs.forEach(t => {
+      if (!t.isTransfer) {
+        if (t.type === 'INCOME') totalIncome += Number(t.amount);
+        if (t.type === 'EXPENSE') totalExpenses += Number(t.amount);
+      } else if (t.isMergedTransfer && methodId) {
+        // Lógica Ledger para transferencias si hay una cuenta específica filtrada
+        if (t.payment_method_id === methodId) transferImpact -= Number(t.amount);
+        else if (t.destinationMethodId === methodId) transferImpact += Number(t.amount);
+      }
+    });
+
     return {
-      totalBalance: totalIncome - totalExpenses, totalIncome, totalExpenses,
-      currency: 'COP', lastUpdated: new Date()
+      totalBalance: (totalIncome - totalExpenses) + transferImpact,
+      totalIncome,
+      totalExpenses,
+      currency: 'COP',
+      lastUpdated: new Date()
     };
   });
 
-  // ==========================================
-  // INTELIGENCIA DE NEGOCIO: VARIACIONES (NUEVO)
-  // ==========================================
+  // -- INTELIGENCIA DE NEGOCIO: VARIACIONES --
   readonly kpiVariations = computed(() => {
     const tf = this.timeframe();
-    // Si elige "Todo el histórico", no hay periodo con el cual comparar.
     if (tf === 'all') return null;
 
-    const txs = this.transactions();
+    const txs = this.enrichedTransactions(); // Evaluamos sobre la data enriquecida
     const methodId = this.selectedPaymentMethod();
     const current = this.summary();
 
-    // 1. Aplicamos el filtro de billetera a las transacciones globales
-    let filteredTxs = methodId ? txs.filter(tx => tx.payment_method_id === methodId) : txs;
+    let filteredTxs = methodId
+      ? txs.filter(tx => tx.payment_method_id === methodId || tx.destinationMethodId === methodId)
+      : txs;
 
-    // 2. Calculamos la ventana de tiempo previa (Time-Shift)
     const now = new Date();
     let prevStart = new Date();
     let prevEnd = new Date();
 
     if (tf === '7d') {
-      prevEnd.setDate(now.getDate() - 7); // Finalizó hace 7 días
-      prevStart.setDate(now.getDate() - 14); // Empezó hace 14 días
+      prevEnd.setDate(now.getDate() - 7);
+      prevStart.setDate(now.getDate() - 14);
     } else if (tf === '30d') {
       prevEnd.setDate(now.getDate() - 30);
       prevStart.setDate(now.getDate() - 60);
@@ -137,19 +214,17 @@ export class SummaryComponent implements OnInit {
       prevEnd = new Date(year - 1, 11, 31, 23, 59, 59);
     }
 
-    // 3. Filtramos las transacciones que caen exactamente en esa ventana fantasma
     const prevTxs = filteredTxs.filter(tx => {
       const txTime = new Date(tx.date).getTime();
       return txTime >= prevStart.getTime() && txTime < prevEnd.getTime();
     });
 
-    // 4. Sumamos el dinero de ese periodo pasado
-    const prevIncome = prevTxs.filter(t => t.type === 'INCOME').reduce((sum, t) => sum + Number(t.amount), 0);
-    const prevExpenses = prevTxs.filter(t => t.type === 'EXPENSE').reduce((sum, t) => sum + Number(t.amount), 0);
+    // Ignoramos las transferencias para el cálculo puro de ingresos/gastos pasados
+    const prevIncome = prevTxs.filter(t => t.type === 'INCOME' && !t.isTransfer).reduce((sum, t) => sum + Number(t.amount), 0);
+    const prevExpenses = prevTxs.filter(t => t.type === 'EXPENSE' && !t.isTransfer).reduce((sum, t) => sum + Number(t.amount), 0);
 
-    // 5. Función matemática para calcular el % de variación protegiendo divisiones por cero
     const calculatePercentage = (curr: number, prev: number): number => {
-      if (prev === 0) return curr > 0 ? 100 : 0; // Si antes era 0 y ahora hay dinero, subió un 100%
+      if (prev === 0) return curr > 0 ? 100 : 0;
       return ((curr - prev) / prev) * 100;
     };
 
@@ -158,12 +233,12 @@ export class SummaryComponent implements OnInit {
       expensePercentage: calculatePercentage(current.totalExpenses, prevExpenses)
     };
   });
-  // ==========================================
 
   // -- GRÁFICO DE BALANCE --
   readonly balanceChartOptions = computed<EChartsOption | null>(() => {
     const txs = this.masterFilteredTransactions();
     const tf = this.timeframe();
+    const methodId = this.selectedPaymentMethod();
     const isMobile = this.isMobileView();
     if (txs.length === 0) return null;
 
@@ -173,16 +248,16 @@ export class SummaryComponent implements OnInit {
 
     for (const tx of sortedTxs) {
       const dateObj = new Date(tx.date);
-      let key = '';
+      let key = isMonthly ? `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-01` : tx.date;
 
-      if (isMonthly) {
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        key = `${dateObj.getFullYear()}-${month}-01`;
-      } else {
-        key = tx.date;
+      // Calculamos el neto diario respetando el impacto de transferencia
+      let net = 0;
+      if (!tx.isTransfer) {
+        net = tx.type === 'INCOME' ? Number(tx.amount) : -Number(tx.amount);
+      } else if (tx.isMergedTransfer && methodId) {
+        net = tx.payment_method_id === methodId ? -Number(tx.amount) : Number(tx.amount);
       }
 
-      const net = tx.type === 'INCOME' ? Number(tx.amount) : -Number(tx.amount);
       groupedNet.set(key, (groupedNet.get(key) || 0) + net);
     }
 
@@ -210,7 +285,8 @@ export class SummaryComponent implements OnInit {
   readonly expensesChartOptions = computed<EChartsOption | null>(() => {
     const txs = this.masterFilteredTransactions();
     const isMobile = this.isMobileView();
-    const expenses = txs.filter(t => t.type === 'EXPENSE' && t.categories?.name);
+    // Filtramos estrictamente transferencias para no inflar las categorías de gasto
+    const expenses = txs.filter(t => t.type === 'EXPENSE' && !t.isTransfer && t.categories?.name);
     if (expenses.length === 0) return null;
 
     const categoryTotals = new Map<string, number>();
@@ -240,22 +316,15 @@ export class SummaryComponent implements OnInit {
   });
 
   async ngOnInit(): Promise<void> {
-    await Promise.all([
-      this.loadRealTransactions(),
-      this.loadCatalogs()
-    ]);
+    await Promise.all([this.loadRealTransactions(), this.loadCatalogs()]);
 
     this.transactionService.transactionsChanged$
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
-        this.loadRealTransactions();
-      });
+      .subscribe(() => { this.loadRealTransactions(); });
 
     this.breakpointObserver.observe(['(max-width: 767px)'])
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(result => {
-        this.isMobileView.set(result.matches);
-      });
+      .subscribe(result => { this.isMobileView.set(result.matches); });
   }
 
   async loadRealTransactions(): Promise<void> {
