@@ -16,6 +16,10 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 
+// NUEVOS IMPORTS REQUERIDOS PARA LA NUEVA UI
+import { NzRadioModule } from 'ng-zorro-antd/radio';
+import { NzGridModule } from 'ng-zorro-antd/grid';
+
 import { CatalogService, Category, PaymentMethod } from '../../../core/services/catalog.service';
 import { TransactionService } from '../../../core/services/transaction.service';
 import { TransactionWithDetails } from '../../../core/models/transaction.model';
@@ -27,6 +31,8 @@ import { DecimalInputDirective } from '../../directives/decimal-input.directive'
   selector: 'app-transaction-modal',
   standalone: true,
   imports: [
+    NzRadioModule,
+    NzGridModule,
     ReactiveFormsModule, DecimalPipe, NzIconModule,
     NzModalModule, NzFormModule, NzInputModule, NzInputNumberModule,
     NzSelectModule, NzDatePickerModule, NzButtonModule,

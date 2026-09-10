@@ -1,5 +1,71 @@
 // src/app/shared/components/transaction-modal/transaction-modal.component.scss
-// Estilos encapsulados para el modal compartido de transacciones
 :host {
   display: block;
+}
+
+/* 1. TIPO DE TRANSACCIÓN: Grupo de radios distribuido equitativamente */
+.type-selector-group {
+  display: flex;
+  width: 100%;
+  margin-bottom: 8px;
+
+  /* ... (Mantén aquí el código ::ng-deep label.ant-radio-button-wrapper que ya tenías para el flexbox y modo responsivo) ... */
+
+  /* =======================================================
+     TEMAS SEMÁNTICOS (Sobrescribiendo el azul por defecto)
+     ======================================================= */
+
+  /* TEMA: GASTO (Rojo Suave / Alerta) */
+  &.theme-expense {
+    ::ng-deep .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
+      background-color: #ff4d4f; // Color rojo semántico
+      border-color: #ff4d4f;
+      color: #fff;
+      &:hover {
+        background-color: #ff7875;
+        border-color: #ff7875;
+      }
+    }
+  }
+
+  /* TEMA: INGRESO (Verde Éxito) */
+  &.theme-income {
+    ::ng-deep .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
+      background-color: #52c41a; // Color verde semántico
+      border-color: #52c41a;
+      color: #fff;
+      &:hover {
+        background-color: #73d13d;
+        border-color: #73d13d;
+      }
+    }
+  }
+
+  /* TEMA: TRANSFERENCIA (Mantiene el azul estándar neutral) */
+  &.theme-transfer {
+    ::ng-deep .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
+      background-color: #1890ff;
+      border-color: #1890ff;
+      color: #fff;
+      &:hover {
+        background-color: #40a9ff;
+        border-color: #40a9ff;
+      }
+    }
+  }
+}
+
+/* 2. MONTO: Aumento de jerarquía visual */
+.amount-field {
+  ::ng-deep .ant-input-number-input {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f1f1f;
+  }
+}
+
+/* 3. UTILIDADES: Ajustes menores de espaciado */
+.form-icon {
+  margin-right: 8px;
+  color: #8c8c8c;
 }

@@ -7,28 +7,39 @@
   [nzOkLoading]="isSubmitting()"
   nzOkText="Guardar"
   nzCancelText="Cancelar"
+  nzWidth="500px"
 >
   <ng-container *nzModalContent>
     <form nz-form [formGroup]="transactionForm" nzLayout="vertical">
 
-      <!-- Tipo de Transacción -->
-      <nz-form-item>
-        <nz-form-label nzRequired>Tipo</nz-form-label>
-        <nz-form-control nzErrorTip="Seleccione el tipo de transacción">
-          <nz-select formControlName="type" [nzDisabled]="!!transactionToEdit()">
-            <nz-option nzValue="EXPENSE" nzLabel="Gasto"></nz-option>
-            <nz-option nzValue="INCOME" nzLabel="Ingreso"></nz-option>
-            <nz-option nzValue="TRANSFER" nzLabel="Transferencia"></nz-option>
-          </nz-select>
+      <!-- 1. TIPO DE TRANSACCIÓN (Control Segmentado de Rápido Acceso) -->
+    <nz-form-item>
+        <nz-form-control>
+          <nz-radio-group
+            formControlName="type"
+            nzButtonStyle="solid"
+            class="type-selector-group"
+            [class.theme-expense]="selectedType() === 'EXPENSE'"
+            [class.theme-income]="selectedType() === 'INCOME'"
+            [class.theme-transfer]="selectedType() === 'TRANSFER'"
+          >
+            <label nz-radio-button nzValue="EXPENSE">
+              <span nz-icon nzType="fall" nzTheme="outline"></span> Gasto
+            </label>
+            <label nz-radio-button nzValue="INCOME">
+              <span nz-icon nzType="rise" nzTheme="outline"></span> Ingreso
+            </label>
+            <label nz-radio-button nzValue="TRANSFER">
+              <span nz-icon nzType="swap" nzTheme="outline"></span> Transferencia
+            </label>
+          </nz-radio-group>
         </nz-form-control>
       </nz-form-item>
 
-      <!-- Monto con Template Dinámico de Errores y Directiva Custom -->
-      <nz-form-item>
+      <!-- 2. MONTO (El dato más importante, con jerarquía visual aumentada) -->
+      <nz-form-item class="amount-field">
         <nz-form-label nzRequired>Monto a registrar</nz-form-label>
         <nz-form-control [nzErrorTip]="amountErrorTpl">
-
-          <!-- REFACTORIZADO: Quitamos nzInputMode y agregamos appDecimalInput -->
           <nz-input-number
             appDecimalInput
             formControlName="amount"
@@ -38,8 +49,9 @@
             [nzPrecision]="2"
             [nzFormatter]="formatterAmount"
             [nzParser]="parserAmount"
+            nzSize="large"
+            nzPlaceHolder="0.00"
           ></nz-input-number>
-
         </nz-form-control>
         <ng-template #amountErrorTpl let-control>
           @if (control.errors?.['required']) {
@@ -49,81 +61,103 @@
             <span>El monto debe ser mayor a 0.</span>
           }
           @if (control.errors?.['max']) {
-            <span style="font-weight: 500;">
+            <span style="font-weight: 500; color: #cf1322;">
               <span nz-icon nzType="warning" nzTheme="outline"></span>
-              Saldo insuficiente. Máximo disponible: $ {{ availableBalance() | number:'1.0-2':'es' }}
+              Saldo insuficiente. Máximo: $ {{ availableBalance() | number:'1.0-2':'es' }}
             </span>
           }
         </ng-template>
       </nz-form-item>
 
-      <!-- Fecha -->
-      <nz-form-item>
-        <nz-form-label nzRequired>Fecha</nz-form-label>
-        <nz-form-control nzErrorTip="Seleccione una fecha válida">
-          <nz-date-picker formControlName="date" style="width: 100%;"></nz-date-picker>
-        </nz-form-control>
-      </nz-form-item>
+      <!-- 3. AGRUPACIÓN: FECHA Y CATEGORÍA (Reducción de espacio vertical) -->
+      <nz-row [nzGutter]="16">
 
-      <!-- Categoría (SE OCULTA EN TRANSFERENCIAS) -->
-      @if (selectedType() !== 'TRANSFER') {
-        <nz-form-item>
-          <nz-form-label>Categoría</nz-form-label>
-          <nz-form-control>
-            <nz-select formControlName="category_id" nzPlaceHolder="Seleccione una categoría..." nzAllowClear>
-              @for (category of filteredCategories(); track category.id) {
-                <nz-option [nzValue]="category.id" [nzLabel]="category.name"></nz-option>
+        <!-- Fecha -->
+        <nz-col [nzXs]="24" [nzSm]="selectedType() === 'TRANSFER' ? 24 : 12">
+          <nz-form-item>
+            <nz-form-label nzRequired>Fecha</nz-form-label>
+            <nz-form-control nzErrorTip="Requerido">
+              <nz-date-picker formControlName="date" style="width: 100%;"></nz-date-picker>
+            </nz-form-control>
+          </nz-form-item>
+        </nz-col>
+
+        <!-- Categoría (Se oculta dinámicamente si es transferencia) -->
+        @if (selectedType() !== 'TRANSFER') {
+          <nz-col [nzXs]="24" [nzSm]="12">
+            <nz-form-item>
+              <nz-form-label nzRequired>Categoría</nz-form-label>
+              <nz-form-control nzErrorTip="Requerido">
+                <nz-select formControlName="category_id" nzPlaceHolder="Seleccione..." nzAllowClear nzShowSearch>
+                  @for (category of filteredCategories(); track category.id) {
+                    <nz-option [nzValue]="category.id" [nzLabel]="category.name"></nz-option>
+                  }
+                </nz-select>
+              </nz-form-control>
+            </nz-form-item>
+          </nz-col>
+        }
+      </nz-row>
+
+      <!-- 4. AGRUPACIÓN: CUENTAS ORIGEN Y DESTINO -->
+      <nz-row [nzGutter]="16">
+
+        <!-- Cuenta Origen / Billetera Principal -->
+        <nz-col [nzXs]="24" [nzSm]="selectedType() === 'TRANSFER' ? 12 : 24">
+          <nz-form-item>
+            <nz-form-label nzRequired>
+              {{ selectedType() === 'TRANSFER' ? 'Cuenta Origen' : 'Billetera / Cuenta' }}
+            </nz-form-label>
+            <nz-form-control nzErrorTip="Requerido">
+              <nz-select formControlName="payment_method_id" nzPlaceHolder="Ej: Efectivo, Banco..." nzAllowClear>
+                @for (method of paymentMethods(); track method.id) {
+                  <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
+                }
+              </nz-select>
+
+              <!-- Indicador Inteligente de Saldo Disponible -->
+              @if (isCheckingBalance()) {
+                <div style="font-size: 12px; color: #1890ff; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
+                  <span nz-icon nzType="loading"></span> Consultando...
+                </div>
+              } @else if (availableBalance() !== null) {
+                <div style="font-size: 12px; margin-top: 4px; display: flex; align-items: center; gap: 4px;"
+                     [style.color]="availableBalance()! <= 0 ? '#cf1322' : '#8c8c8c'">
+                  <span nz-icon [nzType]="availableBalance()! <= 0 ? 'close-circle' : 'info-circle'"></span>
+                  Saldo: $ {{ availableBalance() | number:'1.0-2':'es' }}
+                </div>
               }
-            </nz-select>
-          </nz-form-control>
-        </nz-form-item>
-      }
+            </nz-form-control>
+          </nz-form-item>
+        </nz-col>
 
-      <!-- Método de Pago / Cuenta Origen -->
-      <nz-form-item>
-        <nz-form-label nzRequired>
-          {{ selectedType() === 'TRANSFER' ? 'Cuenta Origen' : 'Método de Pago' }}
-        </nz-form-label>
-        <nz-form-control nzErrorTip="Seleccione la cuenta">
-          <nz-select formControlName="payment_method_id" nzPlaceHolder="Seleccione una cuenta..." nzAllowClear>
-            @for (method of paymentMethods(); track method.id) {
-              <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
-            }
-          </nz-select>
+        <!-- Cuenta Destino (Solo para transferencias) -->
+        @if (selectedType() === 'TRANSFER') {
+          <nz-col [nzXs]="24" [nzSm]="12">
+            <nz-form-item>
+              <nz-form-label nzRequired>Cuenta Destino</nz-form-label>
+              <nz-form-control nzErrorTip="Requerido">
+                <nz-select formControlName="destination_method_id" nzPlaceHolder="¿Hacia dónde?" nzAllowClear>
+                  @for (method of availableDestinationMethods(); track method.id) {
+                    <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
+                  }
+                </nz-select>
+              </nz-form-control>
+            </nz-form-item>
+          </nz-col>
+        }
+      </nz-row>
 
-          @if (isCheckingBalance()) {
-            <div style="font-size: 12px; color: #1890ff; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
-              <span nz-icon nzType="loading"></span> Consultando fondos...
-            </div>
-          } @else if (availableBalance() !== null) {
-            <div style="font-size: 12px; margin-top: 4px; display: flex; align-items: center; gap: 4px;"
-                 [style.color]="availableBalance()! <= 0 ? '#cf1322' : '#8c8c8c'">
-              <span nz-icon [nzType]="availableBalance()! <= 0 ? 'close-circle' : 'info-circle'"></span>
-              Saldo disponible: $ {{ availableBalance() | number:'1.0-2':'es' }}
-            </div>
-          }
-        </nz-form-control>
-      </nz-form-item>
-
-      <!-- Cuenta Destino (SOLO VISIBLE EN TRANSFERENCIAS) -->
-      @if (selectedType() === 'TRANSFER') {
-        <nz-form-item>
-          <nz-form-label nzRequired>Cuenta Destino</nz-form-label>
-          <nz-form-control nzErrorTip="Seleccione a qué cuenta enviará el dinero">
-            <nz-select formControlName="destination_method_id" nzPlaceHolder="Seleccione la cuenta destino..." nzAllowClear>
-              @for (method of availableDestinationMethods(); track method.id) {
-                <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
-              }
-            </nz-select>
-          </nz-form-control>
-        </nz-form-item>
-      }
-
-      <!-- Descripción -->
-      <nz-form-item>
+      <!-- 5. DESCRIPCIÓN (Opcional, con ícono) -->
+      <nz-form-item style="margin-bottom: 0;">
         <nz-form-label>Descripción (Opcional)</nz-form-label>
         <nz-form-control>
-          <input nz-input formControlName="description" placeholder="Ej. Ahorro quincenal, pago de tarjeta..." />
+
+          <!-- REFACTORIZADO: Uso del nuevo componente soportado por la v20+ -->
+          <nz-input-wrapper nzPrefixIcon="edit">
+            <input nz-input formControlName="description" placeholder="Ej. Cena, gasolina, pago..." />
+          </nz-input-wrapper>
+
         </nz-form-control>
       </nz-form-item>
 
