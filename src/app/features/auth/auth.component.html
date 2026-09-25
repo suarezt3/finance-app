@@ -1,150 +1,418 @@
 <!-- src/app/features/auth/auth.component.html -->
-<div class="auth-container">
-  <div class="auth-card">
-    <div class="auth-header">
-      <!-- Título Dinámico -->
-      <h2>
-        @if (isRecoveryMode()) {
-          Recuperar Contraseña
-        } @else if (isLoginMode()) {
-          Iniciar Sesión
-        } @else {
-          Crear Cuenta
-        }
-      </h2>
+<div class="enterprise-auth-wrapper">
 
-      <!-- Subtítulo Dinámico -->
-      <p>
-        @if (isRecoveryMode()) {
-          Ingresa tu correo y te enviaremos un enlace seguro.
-        } @else {
-          Gestiona tus finanzas personales de forma segura.
-        }
-      </p>
+  <!-- ======================================================== -->
+  <!-- PANEL IZQUIERDO: SHOWCASE INSTITUCIONAL & MARCA        -->
+  <!-- ======================================================== -->
+  <aside class="enterprise-brand-panel">
+    <div class="brand-panel-content">
+
+      <!-- Header de Marca -->
+      <div class="brand-header">
+        <div class="brand-identity">
+          <div class="brand-logo-mark">
+            <svg class="vault-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="4" width="28" height="24" rx="6" stroke="currentColor" stroke-width="2.2" />
+              <circle cx="16" cy="16" r="6" stroke="currentColor" stroke-width="2.2" />
+              <circle cx="16" cy="16" r="2" fill="currentColor" />
+              <path d="M16 10V6M16 26V22M10 16H6M26 16H22" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+            </svg>
+          </div>
+          <div class="brand-title-group">
+            <span class="brand-name">FinanceApp</span>
+            <span class="brand-tier-tag">ENTERPRISE</span>
+          </div>
+        </div>
+
+        <div class="system-status-chip">
+          <span class="status-live-indicator">
+            <span class="pulse-ring"></span>
+            <span class="status-dot"></span>
+          </span>
+          <span class="status-label">Sistema Operativo · Grado Bancario</span>
+        </div>
+      </div>
+
+      <!-- Título y Mensaje Principal -->
+      <div class="brand-hero">
+        <h1 class="hero-headline">
+          Infraestructura de control financiero y tesorería institucional
+        </h1>
+        <p class="hero-subline">
+          Visibilidad integral de transacciones, liquidez, presupuestos y reportes analíticos con los más altos estándares de gobernanza y privacidad.
+        </p>
+      </div>
+
+      <!-- Pilares Enterprise -->
+      <div class="enterprise-pillars">
+        <div class="pillar-card">
+          <div class="pillar-icon">
+            <span nz-icon nzType="safety-certificate" nzTheme="outline"></span>
+          </div>
+          <div class="pillar-content">
+            <h3>Seguridad de Grado Financiero</h3>
+            <p>Protección perimetral con cifrado de datos en reposo y en tránsito bajo estándar AES-256.</p>
+          </div>
+        </div>
+
+        <div class="pillar-card">
+          <div class="pillar-icon">
+            <span nz-icon nzType="dashboard" nzTheme="outline"></span>
+          </div>
+          <div class="pillar-content">
+            <h3>Auditoría y Trazabilidad</h3>
+            <p>Registro histórico detallado de ingresos, egresos y conciliación de cuentas en tiempo real.</p>
+          </div>
+        </div>
+
+        <div class="pillar-card">
+          <div class="pillar-icon">
+            <span nz-icon nzType="file-done" nzTheme="outline"></span>
+          </div>
+          <div class="pillar-content">
+            <h3>Informes & Inteligencia de Flujo</h3>
+            <p>Exportaciones ejecutivas inmediatas para análisis de solvencia, liquidez y toma de decisiones.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Métricas Institucionales -->
+      <div class="enterprise-metrics-grid">
+        <div class="metric-item">
+          <span class="metric-value">99.98%</span>
+          <span class="metric-label">Disponibilidad SLA</span>
+        </div>
+        <div class="metric-divider"></div>
+        <div class="metric-item">
+          <span class="metric-value">256-bit</span>
+          <span class="metric-label">Cifrado Militar</span>
+        </div>
+        <div class="metric-divider"></div>
+        <div class="metric-item">
+          <span class="metric-value">Zero-Trust</span>
+          <span class="metric-label">Arquitectura</span>
+        </div>
+      </div>
+
+      <!-- Footer Institucional -->
+      <div class="brand-panel-footer">
+        <div class="security-assurance">
+          <span nz-icon nzType="lock" nzTheme="outline"></span>
+          <span>Acceso cifrado de extremo a extremo · Protocolo TLS 1.3 · Cumplimiento de Privacidad</span>
+        </div>
+      </div>
+
     </div>
+  </aside>
 
-    <form [formGroup]="authForm" (ngSubmit)="onSubmit()" class="auth-form">
+  <!-- ======================================================== -->
+  <!-- PANEL DERECHO: FORMULARIO DE ACCESO ENTERPRISE          -->
+  <!-- ======================================================== -->
+  <main class="enterprise-form-panel">
+    <div class="form-container">
 
-      <!-- Campo Nombre Completo (Solo visible en Registro) -->
-      @if (!isLoginMode() && !isRecoveryMode()) {
-        <div class="form-group">
-          <label for="fullName">Nombre Completo</label>
-          <input nz-input id="fullName" type="text" formControlName="fullName" placeholder="Ej: Juan Pérez" nzSize="large">
+      <!-- Header para Móvil (Visible solo en pantallas pequeñas) -->
+      <div class="mobile-brand-bar">
+        <div class="mobile-logo-wrap">
+          <div class="mobile-logo-icon">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22">
+              <rect x="2" y="4" width="28" height="24" rx="6" stroke="currentColor" stroke-width="2.2" />
+              <circle cx="16" cy="16" r="6" stroke="currentColor" stroke-width="2.2" />
+              <circle cx="16" cy="16" r="2" fill="currentColor" />
+            </svg>
+          </div>
+          <span class="mobile-brand-name">FinanceApp <span class="mobile-brand-sub">Enterprise</span></span>
+        </div>
+        <span class="mobile-security-tag">
+          <span nz-icon nzType="lock"></span> Seguro
+        </span>
+      </div>
 
-          @if (invalidField('fullName')) {
-            <div class="error">
-              @if (authForm.controls.fullName.hasError('required')) {
-                <span>El nombre es obligatorio.</span>
-              }
-              @if (authForm.controls.fullName.hasError('minlength')) {
-                <span>Debe tener al menos 4 caracteres.</span>
-              }
-            </div>
-          }
+      <!-- Barra superior de contexto de sesión -->
+      <div class="portal-header-bar">
+        <div class="portal-badge">
+          <span class="badge-dot"></span>
+          <span>PORTAL DE ACCESO SEGURO</span>
+        </div>
+        <div class="portal-protocol">
+          <span>SSL 256-BIT</span>
+        </div>
+      </div>
+
+      <!-- Segmented Control para Alternar Modo (Login / Registro) -->
+      @if (!isRecoveryMode()) {
+        <div class="enterprise-tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="isLoginMode()"
+            class="tab-button"
+            [class.active]="isLoginMode()"
+            (click)="setMode(true)">
+            <span nz-icon nzType="login"></span>
+            <span>Iniciar Sesión</span>
+          </button>
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="!isLoginMode()"
+            class="tab-button"
+            [class.active]="!isLoginMode()"
+            (click)="setMode(false)">
+            <span nz-icon nzType="user-add"></span>
+            <span>Crear Cuenta</span>
+          </button>
         </div>
       }
 
-      <!-- Campo Correo (Visible Siempre) -->
-      <div class="form-group">
-        <label for="email">Correo Electrónico</label>
-        <input nz-input id="email" type="email" formControlName="email" placeholder="tu@correo.com" nzSize="large">
+      <!-- Encabezado del Formulario -->
+      <div class="form-heading">
+        <h2 class="form-title">
+          @if (isRecoveryMode()) {
+            Recuperación de Acceso
+          } @else if (isLoginMode()) {
+            Acceso Corporativo
+          } @else {
+            Registro de Nueva Cuenta
+          }
+        </h2>
+        <p class="form-subtitle">
+          @if (isRecoveryMode()) {
+            Ingresa el correo corporativo asociado a tu cuenta para enviarte un enlace de autenticación segura.
+          } @else if (isLoginMode()) {
+            Ingresa tus credenciales autorizadas para acceder al portal de finanzas.
+          } @else {
+            Completa los datos para configurar tu cuenta y comenzar la gestión de finanzas.
+          }
+        </p>
+      </div>
 
-        @if (invalidField('email')) {
-          <div class="error">
-            @if (authForm.controls.email.hasError('required')) {
-              <span>El correo es obligatorio.</span>
-            }
-            @if (authForm.controls.email.hasError('pattern')) {
-              <span>Ingrese un email válido.</span>
+      <!-- Formulario Reactivo -->
+      <form [formGroup]="authForm" (ngSubmit)="onSubmit()" class="enterprise-form" novalidate>
+
+        <!-- Campo Nombre Completo (Solo en Registro) -->
+        @if (!isLoginMode() && !isRecoveryMode()) {
+          <div class="form-field-group">
+            <label for="fullName" class="field-label">
+              <span>Nombre y Apellidos</span>
+              <span class="required-indicator">*</span>
+            </label>
+
+            <nz-input-wrapper class="custom-input-group">
+              <span nz-icon nzType="user" nzInputPrefix class="input-field-icon"></span>
+              <input
+                nz-input
+                id="fullName"
+                type="text"
+                formControlName="fullName"
+                placeholder="ej. Lic. Roberto Gómez"
+                nzSize="large"
+                autocomplete="name" />
+            </nz-input-wrapper>
+
+            @if (invalidField('fullName')) {
+              <div class="field-error-message">
+                <span nz-icon nzType="close-circle" nzTheme="fill"></span>
+                @if (authForm.controls.fullName.hasError('required')) {
+                  <span>El nombre completo es requerido.</span>
+                }
+                @if (authForm.controls.fullName.hasError('minlength')) {
+                  <span>Debe contener al menos 4 caracteres.</span>
+                }
+              </div>
             }
           </div>
         }
-      </div>
 
-      <!-- Campo Contraseña (Oculto en Modo Recuperación) -->
-      @if (!isRecoveryMode()) {
-        <div class="form-group">
-          <label for="password">Contraseña</label>
+        <!-- Campo Correo Electrónico -->
+        <div class="form-field-group">
+          <label for="email" class="field-label">
+            <span>Correo Corporativo o Personal</span>
+            <span class="required-indicator">*</span>
+          </label>
 
-          <nz-input-password nzSize="large">
+          <nz-input-wrapper class="custom-input-group">
+            <span nz-icon nzType="mail" nzInputPrefix class="input-field-icon"></span>
             <input
               nz-input
-              id="password"
-              formControlName="password"
-              placeholder="Mínimo 8 caracteres"
-              nzSize="large">
-          </nz-input-password>
+              id="email"
+              type="email"
+              formControlName="email"
+              placeholder="nombre@organizacion.com"
+              nzSize="large"
+              autocomplete="email" />
+          </nz-input-wrapper>
 
-          @if (invalidField('password')) {
-            <div class="error">
-              @if (authForm.controls.password.hasError('required')) {
-                <span>La contraseña es obligatoria.</span>
+          @if (invalidField('email')) {
+            <div class="field-error-message">
+              <span nz-icon nzType="close-circle" nzTheme="fill"></span>
+              @if (authForm.controls.email.hasError('required')) {
+                <span>El correo electrónico es requerido.</span>
               }
-              @if (authForm.controls.password.hasError('pattern')) {
-                <span>Debe contener al menos 8 caracteres, una mayúscula, una minúscula y un carácter especial.</span>
+              @if (authForm.controls.email.hasError('pattern')) {
+                <span>Ingresa una dirección de correo válida (ej. usuario&#64;dominio.com).</span>
               }
-            </div>
-          }
-
-          <!-- Enlace de Recuperación (Solo visible en Login) -->
-          @if (isLoginMode()) {
-            <div style="text-align: right; margin-top: 8px;">
-              <a (click)="toggleRecoveryMode()" style="font-size: 13px; color: #1890ff; cursor: pointer;">
-                ¿Olvidaste tu contraseña?
-              </a>
             </div>
           }
         </div>
+
+        <!-- Campo Contraseña (Oculto en Recuperación) -->
+        @if (!isRecoveryMode()) {
+          <div class="form-field-group">
+            <div class="label-with-action">
+              <label for="password" class="field-label">
+                <span>Contraseña</span>
+                <span class="required-indicator">*</span>
+              </label>
+
+              @if (isLoginMode()) {
+                <button
+                  type="button"
+                  class="link-action-muted"
+                  (click)="toggleRecoveryMode()">
+                  ¿Olvidaste tu contraseña?
+                </button>
+              }
+            </div>
+
+            <nz-input-password nzSize="large" class="custom-input-group">
+              <span nz-icon nzType="lock" nzInputPrefix class="input-field-icon"></span>
+              <input
+                nz-input
+                id="password"
+                formControlName="password"
+                placeholder="Ingresa tu contraseña"
+                nzSize="large"
+                (input)="onPasswordInput($event)"
+                autocomplete="current-password" />
+            </nz-input-password>
+
+            @if (invalidField('password')) {
+              <div class="field-error-message">
+                <span nz-icon nzType="close-circle" nzTheme="fill"></span>
+                @if (authForm.controls.password.hasError('required')) {
+                  <span>La contraseña es requerida.</span>
+                }
+                @if (authForm.controls.password.hasError('pattern')) {
+                  <span>No cumple con la directiva de seguridad corporativa.</span>
+                }
+              </div>
+            }
+
+            <!-- Checklist Interactivo de Directiva de Seguridad (Visible en Registro) -->
+            @if (!isLoginMode()) {
+              <div class="password-policy-card">
+                <span class="policy-header">Requisitos de seguridad de acceso:</span>
+                <ul class="policy-checklist">
+                  <li [class.met]="passwordHasMinLength()">
+                    <span nz-icon [nzType]="passwordHasMinLength() ? 'check-circle' : 'minus-circle'" [nzTheme]="passwordHasMinLength() ? 'fill' : 'outline'"></span>
+                    <span>Mínimo 8 caracteres</span>
+                  </li>
+                  <li [class.met]="passwordHasUpper()">
+                    <span nz-icon [nzType]="passwordHasUpper() ? 'check-circle' : 'minus-circle'" [nzTheme]="passwordHasUpper() ? 'fill' : 'outline'"></span>
+                    <span>Al menos una letra mayúscula (A-Z)</span>
+                  </li>
+                  <li [class.met]="passwordHasLower()">
+                    <span nz-icon [nzType]="passwordHasLower() ? 'check-circle' : 'minus-circle'" [nzTheme]="passwordHasLower() ? 'fill' : 'outline'"></span>
+                    <span>Al menos una letra minúscula (a-z)</span>
+                  </li>
+                  <li [class.met]="passwordHasSpecial()">
+                    <span nz-icon [nzType]="passwordHasSpecial() ? 'check-circle' : 'minus-circle'" [nzTheme]="passwordHasSpecial() ? 'fill' : 'outline'"></span>
+                    <span>Al menos un carácter especial (!, &#64;, #, $, etc.)</span>
+                  </li>
+                </ul>
+              </div>
+            }
+          </div>
+
+          <!-- Opciones extras de sesión (Solo en Login) -->
+          @if (isLoginMode()) {
+            <div class="form-row-options">
+              <label class="remember-checkbox-label">
+                <input
+                  type="checkbox"
+                  class="custom-checkbox"
+                  [checked]="rememberDevice()"
+                  (change)="rememberDevice.set(!rememberDevice())" />
+                <span>Recordar este equipo por 30 días</span>
+              </label>
+            </div>
+          }
+        }
+
+        <!-- Botón de Envío Principal -->
+        <button
+          nz-button
+          nzType="primary"
+          nzSize="large"
+          nzBlock
+          [nzLoading]="isLoading()"
+          [disabled]="authForm.invalid"
+          type="submit"
+          class="btn-enterprise-primary">
+          <span class="btn-text">
+            @if (isRecoveryMode()) {
+              Enviar enlace de recuperación
+            } @else if (isLoginMode()) {
+              Ingresar al Portal
+            } @else {
+              Crear Cuenta Empresarial
+            }
+          </span>
+          @if (!isLoading()) {
+            <span nz-icon nzType="arrow-right" class="btn-arrow-icon"></span>
+          }
+        </button>
+
+      </form>
+
+      <!-- Autenticación Federada / SSO (Oculto en Recuperación) -->
+      @if (!isRecoveryMode()) {
+        <div class="enterprise-divider">
+          <span class="divider-text">O autentícate mediante</span>
+        </div>
+
+        <button
+          type="button"
+          class="btn-sso-google"
+          (click)="onGoogleSignIn()"
+          [disabled]="isLoading()">
+          <svg class="google-svg" viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          <span class="sso-label">Continuar con Google Workspace</span>
+        </button>
       }
 
-      <!-- Botón Submit Principal Dinámico -->
-      <button
-        nz-button
-        nzType="primary"
-        nzSize="large"
-        nzBlock
-        [nzLoading]="isLoading()"
-        [disabled]="authForm.invalid"
-        type="submit"
-        class="btn-submit">
+      <!-- Enlace Alternativo al Pie -->
+      <footer class="form-footer-action">
         @if (isRecoveryMode()) {
-          Enviar enlace
-        } @else if (isLoginMode()) {
-          Ingresar
+          <button type="button" class="link-return" (click)="toggleRecoveryMode()">
+            <span nz-icon nzType="arrow-left"></span>
+            <span>Volver a Iniciar Sesión</span>
+          </button>
         } @else {
-          Registrarse
+          <div class="footer-prompt">
+            <span class="prompt-text">
+              {{ isLoginMode() ? '¿Aún no dispones de una cuenta?' : '¿Ya cuentas con credenciales autorizadas?' }}
+            </span>
+            <button type="button" class="prompt-button" (click)="toggleMode()">
+              {{ isLoginMode() ? 'Registrarse ahora' : 'Iniciar sesión aquí' }}
+            </button>
+          </div>
         }
-      </button>
-    </form>
+      </footer>
 
-    <!-- Autenticación Social (Oculta en Modo Recuperación) -->
-    @if (!isRecoveryMode()) {
-      <div class="divider">
-        <span>O continúa con</span>
+      <!-- Sello de Seguridad Corporativo -->
+      <div class="compliance-stamp">
+        <span nz-icon nzType="safety" nzTheme="outline" class="stamp-icon"></span>
+        <span class="stamp-text">Autenticación segura respaldada por Supabase Auth · Cifrado integral de sesión</span>
       </div>
 
-      <button type="button" class="btn-google" (click)="onGoogleSignIn()" [disabled]="isLoading()">
-        <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-        </svg>
-        Google
-      </button>
-    }
+    </div>
+  </main>
 
-    <!-- Footer Dinámico -->
-    <footer class="auth-footer">
-      @if (isRecoveryMode()) {
-        <button type="button" class="btn-link" (click)="toggleRecoveryMode()">
-          Volver a Iniciar Sesión
-        </button>
-      } @else {
-        <button type="button" class="btn-link" (click)="toggleMode()">
-          {{ isLoginMode() ? '¿No tienes cuenta? Regístrate aquí' : '¿Ya tienes cuenta? Inicia sesión' }}
-        </button>
-      }
-    </footer>
-  </div>
 </div>

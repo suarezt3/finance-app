@@ -1,0 +1,8 @@
+{
+  "name": "Finance App",
+  "description": "Personal finance and transaction management application with expense tracking, summaries, and analytics.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

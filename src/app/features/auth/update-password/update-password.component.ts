@@ -2,7 +2,7 @@
 import { Component, inject, signal, OnInit, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../../app/core/services/auth.service';
 
 // Importaciones de NG-Zorro
@@ -16,7 +16,8 @@ import { NzMessageService } from 'ng-zorro-antd/message';
   imports: [
     ReactiveFormsModule,
     NzInputModule,
-    NzButtonModule
+    NzButtonModule,
+    RouterLink
   ],
   templateUrl: './update-password.component.html',
   styleUrl: './update-password.component.scss'

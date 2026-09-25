@@ -1,5 +1,5 @@
 // src/app/features/auth/auth.component.ts
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
@@ -30,8 +30,18 @@ export class AuthComponent {
 
   // Estados de la vista
   readonly isLoginMode = signal<boolean>(true);
-  readonly isRecoveryMode = signal<boolean>(false); // NUEVO: Estado para recuperar contraseña
+  readonly isRecoveryMode = signal<boolean>(false);
   readonly isLoading = signal<boolean>(false);
+  readonly rememberDevice = signal<boolean>(true);
+  readonly passwordVisible = signal<boolean>(false);
+
+  // Señal reactiva para inspección de seguridad de contraseña
+  readonly passwordInputValue = signal<string>('');
+
+  readonly passwordHasMinLength = computed(() => this.passwordInputValue().length >= 8);
+  readonly passwordHasUpper = computed(() => /[A-Z]/.test(this.passwordInputValue()));
+  readonly passwordHasLower = computed(() => /[a-z]/.test(this.passwordInputValue()));
+  readonly passwordHasSpecial = computed(() => /[^a-zA-Z0-9]/.test(this.passwordInputValue()));
 
   readonly authForm = this.fb.group({
     fullName: ['', [Validators.minLength(4)]],
@@ -50,20 +60,34 @@ export class AuthComponent {
     return !!control && control.invalid && (control.dirty || control.touched);
   }
 
+  onPasswordInput(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.passwordInputValue.set(target ? target.value : '');
+  }
+
   // ==========================================
   // MANEJO DE ESTADOS Y VALIDACIONES
   // ==========================================
 
-  toggleMode(): void {
-    this.isLoginMode.update(mode => !mode);
-    this.isRecoveryMode.set(false); // Si cambia entre login/registro, apaga la recuperación
+  setMode(login: boolean): void {
+    if (this.isLoginMode() === login && !this.isRecoveryMode()) {
+      return;
+    }
+    this.isLoginMode.set(login);
+    this.isRecoveryMode.set(false);
     this.authForm.reset();
+    this.passwordInputValue.set('');
     this.updateValidators();
+  }
+
+  toggleMode(): void {
+    this.setMode(!this.isLoginMode());
   }
 
   toggleRecoveryMode(): void {
     this.isRecoveryMode.update(mode => !mode);
     this.authForm.reset();
+    this.passwordInputValue.set('');
     this.updateValidators();
   }
 
@@ -75,18 +99,15 @@ export class AuthComponent {
     const fullNameControl = this.authForm.controls.fullName;
     const passwordControl = this.authForm.controls.password;
 
-    // 1. Limpiamos validadores condicionales
     fullNameControl.clearValidators();
     passwordControl.clearValidators();
 
-    // 2. Base de validadores fijos
     fullNameControl.addValidators([Validators.minLength(4)]);
     const passwordValidators = [
       Validators.required,
       Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{8,}$/)
     ];
 
-    // 3. Aplicamos lógica según el estado actual
     if (this.isRecoveryMode()) {
       // Recuperación: Ningún validador extra requerido (solo el email importa)
     } else if (this.isLoginMode()) {
@@ -98,7 +119,6 @@ export class AuthComponent {
       passwordControl.addValidators(passwordValidators);
     }
 
-    // 4. Refrescamos el estado del formulario
     fullNameControl.updateValueAndValidity();
     passwordControl.updateValueAndValidity();
   }
@@ -112,9 +132,8 @@ export class AuthComponent {
       'User already registered': 'Este correo ya se encuentra registrado en el sistema.',
       'Invalid login credentials': 'El correo electrónico o la contraseña son incorrectos.',
       'Email not confirmed': 'Debes confirmar tu correo electrónico antes de iniciar sesión.',
-      // NUEVOS: Manejo de errores para la recuperación
-      'For security purposes, you can only request this once every 60 seconds': 'Por seguridad, debes esperar 60 segundos antes de solicitar otro correo.',
-      'User not found': 'No existe un usuario registrado con este correo electrónico.'
+      'For security purposes, you can only request this once every 60 seconds': 'Por razones de seguridad, debes esperar 60 segundos antes de solicitar otro enlace.',
+      'User not found': 'No existe ningún usuario registrado con este correo corporativo.'
     };
 
     return errorTranslations[errorMsg] || 'Ocurrió un error en la autenticación. Por favor, intenta de nuevo.';
@@ -135,15 +154,15 @@ export class AuthComponent {
         const { error } = await this.authService.resetPassword(email);
         if (error) throw error;
 
-        this.message.success('Te hemos enviado un enlace al correo para recuperar tu contraseña.', { nzDuration: 6000 });
-        this.toggleRecoveryMode(); // Regresamos al login tras el éxito
+        this.message.success('Enlace de recuperación enviado exitosamente a tu correo.', { nzDuration: 6000 });
+        this.toggleRecoveryMode();
 
       } else if (this.isLoginMode()) {
         // FLUJO DE LOGIN
         const { error } = await this.authService.signIn(email, password);
         if (error) throw error;
 
-        this.message.success('¡Bienvenido de vuelta!');
+        this.message.success('Sesión corporativa iniciada con éxito.');
         this.authForm.reset();
         await this.router.navigate(['/dashboard']);
 
@@ -152,8 +171,8 @@ export class AuthComponent {
         const { error } = await this.authService.signUp(email, password, fullName);
         if (error) throw error;
 
-        this.toggleMode();
-        this.message.success('¡Registro exitoso! Por favor, verifica tu bandeja de entrada o spam para confirmar tu cuenta.', { nzDuration: 6000 });
+        this.setMode(true);
+        this.message.success('Registro completado. Por favor, revisa tu correo electrónico institucional para validar tu acceso.', { nzDuration: 6000 });
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -176,7 +195,7 @@ export class AuthComponent {
         const localizedMessage = this.translateAuthError(err.message);
         this.message.error(localizedMessage);
       } else {
-        this.message.error('Error inesperado al iniciar flujo con Google.');
+        this.message.error('Error al conectar con el proveedor de identidad institucional.');
       }
     } finally {
       this.isLoading.set(false);

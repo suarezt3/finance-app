@@ -1,72 +1,727 @@
 // src/app/features/auth/auth.component.scss
 
-.auth-container {
+.enterprise-auth-wrapper {
   display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
-  background-color: #f8fafc;
-  padding: 1rem;
+  width: 100%;
+  background-color: #ffffff;
+  font-family: inherit;
+  overflow-x: hidden;
 }
 
-.auth-card {
-  background-color: #ffffff;
-  width: 100%;
-  max-width: 400px;
-  padding: 2.5rem 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+// ========================================================
+// 1. PANEL IZQUIERDO: SHOWCASE INSTITUCIONAL (DESKTOP)
+// ========================================================
+.enterprise-brand-panel {
+  display: none;
+  position: relative;
+  width: 46%;
+  min-height: 100vh;
+  background: radial-gradient(circle at 15% 15%, #172554 0%, transparent 45%),
+              radial-gradient(circle at 85% 85%, #0e244d 0%, transparent 40%),
+              linear-gradient(160deg, #070c16 0%, #0b1324 50%, #070c18 100%);
+  color: #ffffff;
+  padding: 3.5rem 3.5rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
 
-  .auth-header {
-    text-align: center;
-    margin-bottom: 2rem;
-
-    h2 {
-      margin: 0;
-      color: #1e293b;
-      font-size: 1.75rem;
-      font-weight: 700;
-    }
-
-    p {
-      margin-top: 0.5rem;
-      color: #64748b;
-      font-size: 0.875rem;
-    }
+  // Patrón sutil geométrico de fondo
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
   }
 
-
-
-  .auth-form {
+  @media (min-width: 1024px) {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+  }
 
-    .form-group {
+  .brand-panel-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    max-width: 540px;
+    margin: 0 auto;
+    gap: 2.5rem;
+  }
+
+  // Header de Marca
+  .brand-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+    .brand-identity {
       display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+      align-items: center;
+      gap: 0.875rem;
 
-      label {
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: #334155;
+      .brand-logo-mark {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+        .vault-icon {
+          width: 26px;
+          height: 26px;
+        }
+      }
+
+      .brand-title-group {
+        display: flex;
+        flex-direction: column;
+
+        .brand-name {
+          font-size: 1.25rem;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+          color: #ffffff;
+          line-height: 1.2;
+        }
+
+        .brand-tier-tag {
+          font-size: 0.65rem;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          color: #93c5fd;
+          text-transform: uppercase;
+        }
       }
     }
 
-    .btn-submit {
-      margin-top: 1rem;
-      border-radius: 6px;
-      font-weight: 600;
+    .system-status-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+
+      .status-live-indicator {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 8px;
+        height: 8px;
+
+        .status-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background-color: #10b981;
+        }
+
+        .pulse-ring {
+          position: absolute;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background-color: rgba(16, 185, 129, 0.4);
+          animation: pulse 2s infinite ease-out;
+        }
+      }
+
+      .status-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6ee7b7;
+        letter-spacing: 0.01em;
+      }
     }
   }
 
-  .divider {
+  // Hero y Copy Principal
+  .brand-hero {
+    margin-top: 1rem;
+
+    .hero-headline {
+      font-size: 1.85rem;
+      line-height: 1.25;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #f8fafc;
+      margin: 0 0 1rem 0;
+    }
+
+    .hero-subline {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #94a3b8;
+      margin: 0;
+      font-weight: 400;
+    }
+  }
+
+  // Pilares Enterprise
+  .enterprise-pillars {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .pillar-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem 1.15rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: background 0.2s ease, border-color 0.2s ease;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.12);
+      }
+
+      .pillar-icon {
+        flex-shrink: 0;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: rgba(59, 130, 246, 0.15);
+        border: 1px solid rgba(59, 130, 246, 0.25);
+        color: #60a5fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+      }
+
+      .pillar-content {
+        h3 {
+          font-size: 0.925rem;
+          font-weight: 700;
+          color: #f1f5f9;
+          margin: 0 0 0.25rem 0;
+        }
+
+        p {
+          font-size: 0.825rem;
+          line-height: 1.45;
+          color: #94a3b8;
+          margin: 0;
+        }
+      }
+    }
+  }
+
+  // Métricas
+  .enterprise-metrics-grid {
     display: flex;
     align-items: center;
-    margin: 1.5rem 0;
-    color: #94a3b8;
-    font-size: 0.875rem;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    .metric-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+
+      .metric-value {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: -0.02em;
+      }
+
+      .metric-label {
+        font-size: 0.725rem;
+        color: #94a3b8;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+    }
+
+    .metric-divider {
+      width: 1px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  // Footer Showcase
+  .brand-panel-footer {
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+
+    .security-assurance {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: #64748b;
+      line-height: 1.4;
+
+      span[nz-icon] {
+        font-size: 0.875rem;
+        color: #94a3b8;
+      }
+    }
+  }
+}
+
+// ========================================================
+// 2. PANEL DERECHO: FORMULARIO DE ACCESO (ENTERPRISE)
+// ========================================================
+.enterprise-form-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2.5rem 1.5rem;
+  background-color: #f8fafc;
+  box-sizing: border-box;
+
+  @media (min-width: 640px) {
+    padding: 3rem 2rem;
+  }
+
+  .form-container {
+    width: 100%;
+    max-width: 440px;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 2.25rem 2rem;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.06), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+
+    @media (min-width: 640px) {
+      padding: 2.75rem 2.5rem;
+    }
+  }
+
+  // Mobile Brand Bar (Visible solo en mobile/tablet)
+  .mobile-brand-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f1f5f9;
+
+    @media (min-width: 1024px) {
+      display: none;
+    }
+
+    .mobile-logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+
+      .mobile-logo-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #ffffff;
+      }
+
+      .mobile-brand-name {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #0f172a;
+
+        .mobile-brand-sub {
+          font-size: 0.7rem;
+          color: #2563eb;
+          font-weight: 700;
+          text-transform: uppercase;
+        }
+      }
+    }
+
+    .mobile-security-tag {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #059669;
+      background: #ecfdf5;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+    }
+  }
+
+  // Barra Superior de Contexto
+  .portal-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+
+    .portal-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.725rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #475569;
+      text-transform: uppercase;
+
+      .badge-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background-color: #2563eb;
+      }
+    }
+
+    .portal-protocol {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 0.06em;
+    }
+  }
+
+  // Segmented Control de Modos
+  .enterprise-tabs {
+    display: flex;
+    background: #f1f5f9;
+    padding: 0.25rem;
+    border-radius: 10px;
+    margin-bottom: 1.75rem;
+    border: 1px solid #e2e8f0;
+
+    .tab-button {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: #64748b;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      span[nz-icon] {
+        font-size: 0.95rem;
+      }
+
+      &:hover:not(.active) {
+        color: #1e293b;
+      }
+
+      &.active {
+        background: #ffffff;
+        color: #0f172a;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1), 0 1px 2px rgba(15, 23, 42, 0.06);
+      }
+    }
+  }
+
+  // Títulos
+  .form-heading {
+    margin-bottom: 1.5rem;
+
+    .form-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.025em;
+      margin: 0 0 0.35rem 0;
+      line-height: 1.25;
+    }
+
+    .form-subtitle {
+      font-size: 0.875rem;
+      line-height: 1.5;
+      color: #64748b;
+      margin: 0;
+    }
+  }
+
+  // Formulario y Campos
+  .enterprise-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+
+    .form-field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+
+      .field-label {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.8125rem;
+        font-weight: 700;
+        color: #1e293b;
+        letter-spacing: -0.01em;
+
+        .required-indicator {
+          color: #dc2626;
+          font-weight: 700;
+        }
+      }
+
+      .label-with-action {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .link-action-muted {
+        background: none;
+        border: none;
+        padding: 0;
+        color: #2563eb;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: color 0.15s ease;
+
+        &:hover {
+          color: #1d4ed8;
+          text-decoration: underline;
+        }
+      }
+    }
+
+    // Input Group Customization
+    .custom-input-group {
+      border-radius: 8px;
+      overflow: hidden;
+      transition: all 0.2s ease;
+
+      ::ng-deep .ant-input-affix-wrapper {
+        border-radius: 8px;
+        padding: 0.65rem 0.85rem;
+        border-color: #cbd5e1;
+        background-color: #ffffff;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+        &:hover {
+          border-color: #94a3b8;
+        }
+
+        &:focus,
+        &-focused {
+          border-color: #0f172a;
+          box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+        }
+
+        input.ant-input {
+          font-size: 0.925rem;
+          color: #0f172a;
+
+          &::placeholder {
+            color: #94a3b8;
+            font-size: 0.875rem;
+          }
+        }
+      }
+
+      .input-field-icon {
+        color: #94a3b8;
+        font-size: 1rem;
+        margin-right: 0.5rem;
+      }
+
+      .password-visibility-btn {
+        background: none;
+        border: none;
+        padding: 0.25rem;
+        color: #64748b;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        transition: color 0.15s ease;
+
+        &:hover {
+          color: #0f172a;
+        }
+      }
+    }
+
+    // Mensaje de Error
+    .field-error-message {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.775rem;
+      color: #dc2626;
+      font-weight: 600;
+      margin-top: 0.15rem;
+
+      span[nz-icon] {
+        font-size: 0.85rem;
+      }
+    }
+
+    // Password Policy Checklist
+    .password-policy-card {
+      margin-top: 0.5rem;
+      padding: 0.75rem 0.85rem;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+
+      .policy-header {
+        display: block;
+        font-size: 0.725rem;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        margin-bottom: 0.5rem;
+      }
+
+      .policy-checklist {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+
+        li {
+          display: flex;
+          align-items: center;
+          gap: 0.45rem;
+          font-size: 0.775rem;
+          color: #64748b;
+          font-weight: 500;
+          transition: color 0.15s ease;
+
+          span[nz-icon] {
+            font-size: 0.85rem;
+            color: #94a3b8;
+          }
+
+          &.met {
+            color: #059669;
+            font-weight: 600;
+
+            span[nz-icon] {
+              color: #10b981;
+            }
+          }
+        }
+      }
+    }
+
+    // Fila de opciones (Remember me)
+    .form-row-options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: -0.25rem;
+
+      .remember-checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8125rem;
+        color: #475569;
+        font-weight: 500;
+        cursor: pointer;
+        user-select: none;
+
+        .custom-checkbox {
+          width: 16px;
+          height: 16px;
+          border-radius: 4px;
+          accent-color: #0f172a;
+          cursor: pointer;
+        }
+      }
+    }
+
+    // Botón de Envío Principal
+    .btn-enterprise-primary {
+      margin-top: 0.5rem;
+      height: 48px;
+      border-radius: 8px;
+      background-color: #0f172a !important;
+      border-color: #0f172a !important;
+      color: #ffffff !important;
+      font-size: 0.925rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.12), 0 2px 4px -2px rgba(15, 23, 42, 0.08);
+      transition: all 0.2s ease;
+
+      &:hover:not(:disabled) {
+        background-color: #1e293b !important;
+        border-color: #1e293b !important;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 10px -1px rgba(15, 23, 42, 0.16);
+      }
+
+      &:active:not(:disabled) {
+        transform: translateY(0);
+        background-color: #020617 !important;
+      }
+
+      &:disabled {
+        background-color: #e2e8f0 !important;
+        border-color: #cbd5e1 !important;
+        color: #94a3b8 !important;
+        box-shadow: none;
+        cursor: not-allowed;
+      }
+
+      .btn-arrow-icon {
+        font-size: 0.95rem;
+        transition: transform 0.15s ease;
+      }
+
+      &:hover:not(:disabled) .btn-arrow-icon {
+        transform: translateX(3px);
+      }
+    }
+  }
+
+  // Divisor de SSO
+  .enterprise-divider {
+    display: flex;
+    align-items: center;
+    margin: 1.5rem 0 1.25rem 0;
 
     &::before,
     &::after {
@@ -75,58 +730,149 @@
       border-bottom: 1px solid #e2e8f0;
     }
 
-    span {
-      padding: 0 1rem;
-      font-weight: 500;
+    .divider-text {
+      padding: 0 0.85rem;
+      font-size: 0.775rem;
+      font-weight: 600;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
   }
 
-  .btn-google {
+  // Botón SSO Google
+  .btn-sso-google {
     width: 100%;
+    height: 46px;
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     gap: 0.75rem;
     background-color: #ffffff;
-    color: #334155;
-    padding: 0.75rem;
     border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    font-size: 1rem;
+    border-radius: 8px;
+    color: #1e293b;
+    font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s, border-color 0.2s, transform 0.1s;
+    transition: all 0.15s ease;
 
     &:hover:not(:disabled) {
       background-color: #f8fafc;
       border-color: #94a3b8;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
     }
 
     &:active:not(:disabled) {
+      background-color: #f1f5f9;
       transform: translateY(1px);
     }
 
     &:disabled {
-      opacity: 0.7;
+      opacity: 0.6;
       cursor: not-allowed;
+    }
+
+    .google-svg {
+      flex-shrink: 0;
+    }
+
+    .sso-label {
+      letter-spacing: -0.01em;
     }
   }
 
-  .auth-footer {
-    margin-top: 1.5rem;
+  // Footer Prompts
+  .form-footer-action {
+    margin-top: 1.75rem;
     text-align: center;
 
-    .btn-link {
+    .link-return {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
       background: none;
       border: none;
-      color: #2563eb;
-      font-size: 0.875rem;
-      font-weight: 500;
+      color: #0f172a;
+      font-size: 0.85rem;
+      font-weight: 700;
       cursor: pointer;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      transition: background 0.15s ease;
 
       &:hover {
-        text-decoration: underline;
+        background: #f1f5f9;
       }
     }
+
+    .footer-prompt {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      font-size: 0.8125rem;
+
+      .prompt-text {
+        color: #64748b;
+      }
+
+      .prompt-button {
+        background: none;
+        border: none;
+        padding: 0;
+        color: #2563eb;
+        font-weight: 700;
+        cursor: pointer;
+        transition: color 0.15s ease;
+
+        &:hover {
+          color: #1d4ed8;
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+
+  // Compliance Stamp
+  .compliance-stamp {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid #f1f5f9;
+    color: #94a3b8;
+    font-size: 0.725rem;
+    text-align: center;
+
+    .stamp-icon {
+      font-size: 0.875rem;
+      color: #64748b;
+    }
+
+    .stamp-text {
+      line-height: 1.35;
+    }
+  }
+}
+
+// ========================================================
+// ANIMACIONES SUTILES
+// ========================================================
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
   }
 }
