@@ -1,81 +1,63 @@
-# Plan de Corrección Integral de Modo Oscuro: Filtros, Perfil, Modales e Inputs Globales
+# Plan de Implementación: Corrección de Modo Oscuro en Filtros, Tarjetas KPI, Inputs y Modal de Perfil
 
-Resolución completa de los problemas de contraste, fondos desalineados y legibilidad detectados en las capturas de pantalla, aplicando la paleta oficial **Slate Navy** (`#0B1329` / `#0F172A`) y **Financial Blue** (`#2563EB` / `#38BDF8`).
+## Diagnóstico y Causa Raíz
 
----
-
-## Diagnóstico de los Problemas Reportados en las Capturas
-
-1. **Barra de Filtros y Tarjetas KPI (Libro de Transacciones)**:
-   - **Contenedor de Filtros**: Presenta fondo blanco residual (`#FFFFFF`) rompiendo con el fondo oscuro general.
-   - **Buscador (`nz-input-affix-wrapper`)**: El contenedor exterior es blanco mientras que el `<input>` interno tiene fondo azul oscuro, produciendo un antiestético efecto de "caja doble".
-   - **Tarjeta "SALDO GLOBAL"**: Fondo blanco residual que no se adapta al modo oscuro.
-   - **Tarjeta "SALDO (FILTRO)"**: Valor numérico invisible o en negro sobre azul oscuro.
-   - **Selects y Calendario Rango**: Desincronización de colores en el picker y selectores.
-
-2. **Modal de Configuración de Perfil y Seguridad**:
-   - **Pestañas (`nz-tabs`)**: Pestañas inactivas con tipografía oscura invisible sobre fondo azul marino; pestaña activa cortada o desalineada.
-   - **Campos de Contraseña (`nz-input-affix-wrapper`)**: Envoltorio blanco con input oscuro en el centro e iconos de candado y visibilidad desfasados.
-   - **Etiquetas de Formulario (`label`)**: Texto en gris oscuro (`#475569`) casi ilegible sobre fondo oscuro.
-   - **Botón "Actualizar Contraseña"**: Botón deshabilitado o primario con texto blanco sobre fondo blanco (completamente invisible).
-   - **Botón "Cancelar"**: Fondo blanco brillante fuera de armonía con el modal oscuro.
+A partir de las capturas y análisis del código fuente:
+1. **Tarjeta "Saldo (Filtro)" con número invisible**:
+   - En `transactions.component.scss`, `.kpi-num` tiene hardcoded `color: #0f172a`.
+   - En modo oscuro, la superficie de la tarjeta es `#0f172a`, haciendo que el valor numérico sea 100% invisible (negro sobre negro).
+2. **Tarjeta "Saldo Global" permanece blanca**:
+   - `.tx-kpi-card.highlight-card` tiene `background-color: #f8fafc !important`, que sobreescribe la regla de modo oscuro.
+3. **Inputs de Formularios y Buscadores con recuadro blanco/oscuro**:
+   - Ng-Zorro envuelve los inputs con prefijo/sufijo en `.ant-input-affix-wrapper` y `.ant-input-password`.
+   - En `styles.scss`, solo se estilizaba `.ant-input`, dejando el wrapper con fondo blanco por defecto y borde gris claro, mientras el input interno era oscuro.
+4. **Barra de Filtros en Libro de Transacciones**:
+   - `.filters-card-wrapper` tiene `background-color: #f8fafc` fijo y el contenedor principal `.transactions-container` tiene `background-color: #ffffff`.
+5. **Modal "Configuración de Perfil y Seguridad"**:
+   - Las pestañas `.ant-tabs-tab-active .ant-tabs-tab-btn` y las etiquetas de formulario `.ant-form-item-label > label` tienen hardcoded `color: #0f172a` y `#1e293b`.
+   - El botón `.btn-update-password` (con `nzDanger` y `nzType="primary"`) sufre conflicto de colores mostrando texto blanco sobre fondo blanco.
 
 ---
 
-## 1. Solución Global para Componentes Ng-Zorro (`src/styles.scss`)
+## Cambios Propuestos
 
-Configuraremos selectores globales bajo `html.dark` y `[data-theme="dark"]` para garantizar consistencia en toda la plataforma:
+### 1. Variables Globales y Estilos de Inputs (`src/styles.scss`)
+- **Inputs & Wrappers globales**: Estilizar exhaustivamente en modo oscuro:
+  - `.ant-input-affix-wrapper`, `.ant-input-affix-wrapper-focused`
+  - `.ant-input-password` y sus iconos `.ant-input-password-icon`
+  - `.ant-input`, `.ant-input-number`, `.ant-input-number-input`
+  - Iconos de prefijo y sufijo `.ant-input-prefix`, `.ant-input-suffix` con color `#94a3b8`.
+- **Modales y Formularios globales**:
+  - Forzar que `.ant-form-item-label > label` respete `--color-slate-text` (`#f1f5f9` en modo oscuro).
+  - Pestañas `.ant-tabs`: fondo transparente, tabs inactivos `#94a3b8`, tabs activos `#f8fafc` con barra de tinta Sky Blue (`#38bdf8`).
+  - Botones de peligro primarios (`.ant-btn-dangerous.ant-btn-primary`): fondo rojo accesible `#dc2626` con texto `#ffffff` en hover y estado normal.
 
-### A. Inputs y Envoltorios (`.ant-input`, `.ant-input-affix-wrapper`)
-- Fondo del envoltorio: `#1E293B` (Slate 800) sin fondo blanco residual.
-- Input interior: `background: transparent !important; color: #F8FAFC !important;`.
-- Borde: `#334155` (Slate 700) con focus en Financial Blue `#38BDF8` y resplandor suave.
-- Iconos de prefijo y sufijo (candado, lupa, ojo de contraseña): `#94A3B8`, con hover activo en `#38BDF8`.
-- Placeholder: `#64748B`.
+### 2. Libro de Transacciones (`transactions.component.scss` y HTML)
+- **Tarjetas KPI**:
+  - En modo oscuro, `.tx-kpi-card` y `.tx-kpi-card.highlight-card` adoptarán fondo `#0f172a` con borde `#1e293b`.
+  - `.kpi-num`: utilizar `var(--color-navy)` (`#f8fafc` en modo oscuro) para que el saldo filtrado sea claramente visible con alto contraste.
+  - La tarjeta "Saldo Global" tendrá un acento visual consistente en modo oscuro (borde o fondo Slate Navy elevado).
+- **Contenedores y Filtros**:
+  - `.transactions-container`: fondo `var(--color-surface)` y borde `var(--color-border)`.
+  - `.filters-card-wrapper`: fondo `#111a33` en modo oscuro con borde `#1e293b`, iconos de búsqueda visibles (`#94a3b8`) y textos nítidos.
+  - Tabla de transacciones: adaptación completa de celdas, descripciones y badges.
 
-### B. Selectores y Calendarios Rango (`.ant-select`, `.ant-picker`)
-- Contenedores: `#1E293B` con bordes `#334155` y texto `#F8FAFC`.
-- Dropdowns flotantes (`.ant-select-dropdown`, `.ant-picker-dropdown`): Fondo `#0F172A`, bordes `#1E293B`, opciones en hover `#1E293B` y seleccionadas en `#2563EB`.
+### 3. Modal de Perfil y Seguridad (`profile-modal.component.scss`)
+- Actualizar pestañas para usar variables de tema `--color-navy` y `--color-blue-primary`.
+- Corregir el color de las etiquetas (`label`) y textos descriptivos en modo oscuro.
+- Ajustar botones de acción ("Cancelar" y "Actualizar Contraseña") para garantizar contraste AAA.
 
-### C. Modales (`.ant-modal-content`)
-- Fondo del modal: `#0F172A` (Slate Navy elevado).
-- Cabecera (`.ant-modal-header`): Fondo `#0F172A`, borde inferior `#1E293B`, título `#F8FAFC`, botón de cierre `#94A3B8`.
-- Pie de modal (`.ant-modal-footer`): Borde superior `#1E293B`.
-- Etiquetas (`.ant-form-item-label > label`): `#E2E8F0` con asterisco rojo de obligatoriedad nítido `#F87171`.
-
-### D. Pestañas (`.ant-tabs`)
-- Barra de navegación (`.ant-tabs-nav`): Borde inferior `#1E293B`.
-- Pestañas inactivas: Texto `#94A3B8` con hover en `#F8FAFC`.
-- Pestaña activa: Texto en Financial Sky `#38BDF8` y barra indicadora (`.ant-tabs-ink-bar`) en `#38BDF8`.
-
-### E. Botones en Modo Oscuro (`.ant-btn`)
-- Primario (`.ant-btn-primary`): Fondo `#2563EB`, texto blanco `#FFFFFF`, hover `#1D4ED8`.
-- Primario Deshabilitado: Fondo `#1E293B`, borde `#334155`, texto `#64748B` (legible y contrastado, nunca blanco sobre blanco).
-- Secundario / Cancelar (`.ant-btn-default`): Fondo `#1E293B`, borde `#334155`, texto `#F8FAFC`, hover `#334155`.
-
----
-
-## 2. Ajustes Específicos en Transacciones (`src/app/features/transactions/`)
-
-- **Barra de Filtros**:
-  - Contenedor con fondo Slate Navy `#0F172A`, borde `#1E293B`, sombra suave.
-  - Botón "Limpiar": Estilo dark outline con hover luminoso.
-- **Tarjetas KPI de Saldo**:
-  - Tarjeta "SALDO GLOBAL": Fondo `#0F172A` con borde `#1E293B`, valor numérico `#F8FAFC`.
-  - Tarjeta "SALDO (FILTRO)": Valor numérico legible en verde esmeralda o `#38BDF8`.
+### 4. Consistencia en Otros Módulos (`config.component.scss` y `transaction-modal.component.scss`)
+- Aplicar tokens en el modal de transacciones (monto, selector de tipo Segmented Control y etiquetas).
+- Asegurar que la pantalla de Configuración (catálogos) también se renderice en Slate Navy Enterprise sin fondos blancos residuales.
 
 ---
 
-## 3. Ajustes Específicos en Modal de Perfil y Contraseña (`src/app/features/dashboard/components/`)
+## Plan de Verificación
 
-- Armonización de `config.component.scss` y `update-password.component.scss` para que adopten transparentemente las variables del tema sin estilos inline blancos forzados.
-- Validación de contraste tipográfico WCAG AA en todos los estados (reposo, foco, error de validación y deshabilitado).
-
----
-
-## 4. Fases de Ejecución
-
-1. **Fase 1**: Refactorizar y ampliar los overrides de Ng-Zorro en `src/styles.scss` (inputs, affix-wrappers, selects, pickers, tabs, modales, botones y labels).
-2. **Fase 2**: Actualizar la barra de filtros y las tarjetas KPI en `transactions.component.scss`.
-3. **Fase 3**: Revisar y asegurar estilos de `config.component` y `update-password.component`.
-4. **Fase 4**: Ejecutar `compile_applet` y verificar la visualización general en modo oscuro.
+1. **Compilación**: Ejecutar `compile_applet` para asegurar ausencia de errores de tipado o estilos.
+2. **Revisión de Contraste**: Comprobar visual y programáticamente que:
+   - El número de "Saldo (Filtro)" se renderice con color claro sobre la tarjeta oscura.
+   - Las 4 tarjetas KPI tengan aspecto armónico y ninguna quede blanca en modo oscuro.
+   - La barra de filtros tenga fondo Slate Navy elevado sin wrappers blancos en los inputs.
+   - El modal de perfil tenga pestañas legibles, etiquetas visibles y botón con texto legible.

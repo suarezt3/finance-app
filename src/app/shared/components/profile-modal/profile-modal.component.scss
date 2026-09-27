@@ -10,28 +10,29 @@
       margin-bottom: 20px !important;
 
       &::before {
-        border-bottom-color: #e2e8f0 !important;
+        border-bottom-color: var(--color-border) !important;
       }
     }
 
     .ant-tabs-tab {
       font-size: 0.875rem;
       font-weight: 600;
-      color: #64748b;
+      color: var(--color-slate-muted);
       padding: 10px 14px !important;
+      transition: all 0.2s ease;
 
       &:hover {
-        color: #0f172a;
+        color: var(--color-navy);
       }
 
       &.ant-tabs-tab-active .ant-tabs-tab-btn {
-        color: #0f172a !important;
+        color: var(--color-blue-primary) !important;
         font-weight: 700;
       }
     }
 
     .ant-tabs-ink-bar {
-      background-color: #0f172a !important;
+      background-color: var(--color-blue-primary) !important;
       height: 2.5px !important;
     }
   }
@@ -42,11 +43,12 @@
     .ant-form-item-label > label {
       font-size: 0.8125rem;
       font-weight: 600;
-      color: #1e293b;
+      color: var(--color-slate-text) !important;
     }
 
     .ant-input,
-    .ant-input-password {
+    .ant-input-password,
+    .ant-input-affix-wrapper {
       border-radius: 8px !important;
     }
   }
@@ -56,7 +58,7 @@
   }
 
   .input-prefix-icon {
-    color: #94a3b8;
+    color: var(--color-slate-muted);
     margin-right: 6px;
   }
 }
@@ -68,24 +70,32 @@
   gap: 10px;
   margin-top: 24px;
   padding-top: 16px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--color-border);
 
   .btn-cancel {
     border-radius: 8px;
     font-weight: 600;
     height: 38px;
+    background-color: var(--color-surface);
+    border-color: var(--color-border);
+    color: var(--color-slate-text);
+
+    &:hover {
+      background-color: var(--color-surface-hover);
+      color: var(--color-navy);
+    }
   }
 
   .btn-save-profile {
     border-radius: 8px;
-    background-color: #0f172a !important;
-    border-color: #0f172a !important;
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
     color: #ffffff !important;
     font-weight: 600;
     height: 38px;
 
     &:hover {
-      background-color: #1e293b !important;
+      background-color: #3b82f6 !important;
     }
   }
 
@@ -93,5 +103,12 @@
     border-radius: 8px;
     height: 38px;
     font-weight: 600;
+    background-color: #dc2626 !important;
+    border-color: #dc2626 !important;
+    color: #ffffff !important;
+
+    &:hover {
+      background-color: #ef4444 !important;
+    }
   }
 }

@@ -2,10 +2,10 @@
 
 .config-container {
   padding: 24px 28px;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
   min-height: calc(100vh - 140px);
 
   @media (max-width: 767px) {
@@ -28,7 +28,7 @@
 
       h2 {
         margin: 0;
-        color: #0f172a;
+        color: var(--color-navy);
         font-size: 1.5rem;
         font-weight: 800;
         letter-spacing: -0.025em;
@@ -38,16 +38,16 @@
         font-size: 0.65rem;
         font-weight: 700;
         letter-spacing: 0.08em;
-        color: #475569;
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
+        color: var(--color-slate-muted);
+        background: var(--color-surface-muted);
+        border: 1px solid var(--color-border);
         padding: 2px 8px;
         border-radius: 9999px;
       }
     }
 
     p {
-      color: #64748b;
+      color: var(--color-slate-muted);
       margin-top: 4px;
       margin-bottom: 0;
       font-size: 0.8125rem;
@@ -64,28 +64,29 @@
       margin-bottom: 20px !important;
 
       &::before {
-        border-bottom-color: #e2e8f0 !important;
+        border-bottom-color: var(--color-border) !important;
       }
     }
 
     .ant-tabs-tab {
       font-weight: 600;
       font-size: 0.875rem;
-      color: #64748b;
+      color: var(--color-slate-muted);
       padding: 10px 16px !important;
+      transition: all 0.2s ease;
 
       &:hover {
-        color: #0f172a;
+        color: var(--color-navy);
       }
 
       &.ant-tabs-tab-active .ant-tabs-tab-btn {
-        color: #0f172a !important;
+        color: var(--color-blue-primary) !important;
         font-weight: 700;
       }
     }
 
     .ant-tabs-ink-bar {
-      background-color: #0f172a !important;
+      background-color: var(--color-blue-primary) !important;
       height: 2.5px !important;
     }
   }
@@ -101,20 +102,13 @@
 
   .tab-description {
     font-size: 0.8125rem;
-    color: #64748b;
+    color: var(--color-slate-muted);
   }
 
   .btn-create-item {
     border-radius: 8px;
-    background-color: #0f172a !important;
-    border-color: #0f172a !important;
-    color: #ffffff !important;
     font-weight: 600;
     height: 38px;
-
-    &:hover {
-      background-color: #1e293b !important;
-    }
 
     .btn-text {
       @media (max-width: 575px) {
@@ -129,16 +123,16 @@
 // ==========================================
 .table-container {
   width: 100%;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   overflow: hidden;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
 }
 
 .enterprise-config-table {
   .item-name {
     font-weight: 600;
-    color: #0f172a;
+    color: var(--color-navy);
     font-size: 0.875rem;
   }
 
@@ -150,26 +144,26 @@
     border-radius: 6px;
 
     &.income {
-      background-color: #ecfdf5;
-      color: #059669;
-      border: 1px solid #a7f3d0;
+      background-color: rgba(5, 150, 105, 0.12);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.25);
     }
 
     &.expense {
-      background-color: #fef2f2;
-      color: #dc2626;
-      border: 1px solid #fecaca;
+      background-color: rgba(220, 38, 38, 0.12);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.25);
     }
   }
 
   .btn-action-delete {
-    color: #dc2626;
+    color: #ef4444;
     border-radius: 6px;
     font-weight: 500;
     font-size: 0.8125rem;
 
     &:hover {
-      background-color: #fef2f2;
+      background-color: rgba(239, 68, 68, 0.12);
     }
 
     .action-text {
@@ -188,7 +182,7 @@
     .ant-form-item-label > label {
       font-size: 0.8125rem;
       font-weight: 600;
-      color: #1e293b;
+      color: var(--color-slate-text) !important;
     }
 
     .ant-input,

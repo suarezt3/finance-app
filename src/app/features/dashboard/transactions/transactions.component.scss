@@ -2,10 +2,10 @@
 
 .transactions-container {
   padding: 24px 28px;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
   border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-card);
   min-height: calc(100vh - 140px);
 
   @media (max-width: 767px) {
@@ -33,7 +33,7 @@
 
       h2 {
         margin: 0;
-        color: #0f172a;
+        color: var(--color-navy);
         font-size: 1.5rem;
         font-weight: 800;
         letter-spacing: -0.025em;
@@ -42,16 +42,16 @@
       .count-badge {
         font-size: 0.7rem;
         font-weight: 700;
-        color: #475569;
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
+        color: var(--color-slate-muted);
+        background: var(--color-surface-muted);
+        border: 1px solid var(--color-border);
         padding: 2px 8px;
         border-radius: 9999px;
       }
     }
 
     p {
-      color: #64748b;
+      color: var(--color-slate-muted);
       margin-top: 4px;
       margin-bottom: 0;
       font-size: 0.8125rem;
@@ -71,15 +71,8 @@
 
     .btn-action-new {
       border-radius: 8px;
-      background-color: #0f172a !important;
-      border-color: #0f172a !important;
-      color: #ffffff !important;
       font-weight: 600;
       height: 38px;
-
-      &:hover {
-        background-color: #1e293b !important;
-      }
     }
   }
 }
@@ -97,8 +90,8 @@
 
 .tx-kpi-card {
   border-radius: 12px !important;
-  border: 1px solid #e2e8f0 !important;
-  background-color: #ffffff !important;
+  border: 1px solid var(--color-border) !important;
+  background-color: var(--color-surface) !important;
   padding: 12px 16px !important;
   transition: all 0.15s ease;
 
@@ -108,8 +101,8 @@
   }
 
   &.highlight-card {
-    background-color: #f8fafc !important;
-    border-color: #cbd5e1 !important;
+    background-color: var(--color-surface-muted) !important;
+    border-color: var(--color-border) !important;
   }
 
   ::ng-deep .ant-card-body {
@@ -120,7 +113,7 @@
     display: block;
     font-size: 0.725rem;
     font-weight: 700;
-    color: #64748b;
+    color: var(--color-slate-muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     margin-bottom: 4px;
@@ -134,34 +127,51 @@
     .kpi-currency {
       font-size: 0.85rem;
       font-weight: 700;
-      color: #64748b;
+      color: var(--color-slate-muted);
 
       &.income {
-        color: #059669;
+        color: #10b981;
       }
 
       &.expense {
-        color: #dc2626;
+        color: #ef4444;
       }
     }
 
     .kpi-num {
       font-size: 1.25rem;
       font-weight: 800;
-      color: #0f172a;
+      color: var(--color-navy);
       letter-spacing: -0.02em;
 
       &.income {
-        color: #059669;
+        color: #10b981;
       }
 
       &.expense {
-        color: #dc2626;
+        color: #ef4444;
       }
 
       &.negative {
-        color: #dc2626;
+        color: #ef4444;
       }
+    }
+  }
+}
+
+// Host context for dark mode fine tuning
+:host-context(html.dark) {
+  .tx-kpi-card {
+    background-color: #0f172a !important;
+    border-color: #1e293b !important;
+
+    &:hover {
+      border-color: #38bdf8 !important;
+    }
+
+    &.highlight-card {
+      background-color: #131d36 !important;
+      border-color: #1e293b !important;
     }
   }
 }
@@ -170,8 +180,8 @@
 // 3. BARRA DE FILTROS AVANZADA
 // ==========================================
 .filters-card-wrapper {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background-color: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 14px 16px;
   margin-bottom: 20px;
@@ -190,12 +200,14 @@
   .btn-clear-filters {
     border-radius: 8px;
     height: 38px;
-    color: #64748b;
+    color: var(--color-slate-muted);
+    border-color: var(--color-border);
+    background-color: var(--color-surface);
     font-weight: 600;
 
     &:hover {
-      color: #0f172a;
-      border-color: #cbd5e1;
+      color: var(--color-navy);
+      border-color: var(--color-border-focus);
     }
   }
 }
@@ -204,22 +216,22 @@
 // 4. TABLA DE TRANSACCIONES
 // ==========================================
 .table-container {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   overflow: hidden;
-  background-color: #ffffff;
+  background-color: var(--color-surface);
 }
 
 .enterprise-tx-table {
   .cell-date {
     font-size: 0.8125rem;
-    color: #475569;
+    color: var(--color-slate-muted);
     font-weight: 500;
   }
 
   .cell-desc {
     font-weight: 600;
-    color: #0f172a;
+    color: var(--color-navy);
     font-size: 0.875rem;
   }
 
@@ -227,14 +239,14 @@
     .category-name {
       font-size: 0.8125rem;
       font-weight: 500;
-      color: #334155;
+      color: var(--color-slate-text);
     }
   }
 
   .cell-method {
     .method-single {
       font-size: 0.8125rem;
-      color: #64748b;
+      color: var(--color-slate-muted);
     }
 
     .method-transfer-flow {
@@ -242,10 +254,10 @@
       align-items: center;
       gap: 5px;
       font-size: 0.8125rem;
-      color: #475569;
+      color: var(--color-slate-text);
 
       .flow-arrow {
-        color: #2563eb;
+        color: var(--color-blue-primary);
         font-size: 0.7rem;
       }
     }
@@ -259,35 +271,35 @@
     border-radius: 6px;
 
     &.tag-income {
-      background-color: #ecfdf5;
-      color: #059669;
-      border: 1px solid #a7f3d0;
+      background-color: rgba(5, 150, 105, 0.12);
+      color: #10b981;
+      border: 1px solid rgba(16, 185, 129, 0.25);
     }
 
     &.tag-expense {
-      background-color: #fef2f2;
-      color: #dc2626;
-      border: 1px solid #fecaca;
+      background-color: rgba(220, 38, 38, 0.12);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.25);
     }
 
     &.tag-transfer {
-      background-color: #eff6ff;
-      color: #2563eb;
-      border: 1px solid #bfdbfe;
+      background-color: rgba(37, 99, 235, 0.12);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.25);
     }
   }
 
   .cell-amount {
     font-size: 0.925rem;
     font-weight: 700;
-    color: #475569;
+    color: var(--color-slate-text);
 
     &.income {
-      color: #059669;
+      color: #10b981;
     }
 
     &.expense {
-      color: #dc2626;
+      color: #ef4444;
     }
   }
 
@@ -307,19 +319,19 @@
       border-radius: 6px;
 
       &.edit {
-        color: #475569;
+        color: var(--color-slate-muted);
 
         &:hover {
-          background-color: #f1f5f9;
-          color: #0f172a;
+          background-color: var(--color-surface-hover);
+          color: var(--color-navy);
         }
       }
 
       &.delete {
-        color: #dc2626;
+        color: #ef4444;
 
         &:hover {
-          background-color: #fef2f2;
+          background-color: rgba(239, 68, 68, 0.12);
         }
       }
     }
