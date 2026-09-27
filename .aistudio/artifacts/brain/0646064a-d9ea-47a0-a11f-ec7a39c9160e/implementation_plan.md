@@ -1,63 +1,46 @@
-# Plan de Implementación: Corrección de Modo Oscuro en Filtros, Tarjetas KPI, Inputs y Modal de Perfil
+# Plan de Implementación: Corrección de Estabilidad y Desborde en Móviles
 
-## Diagnóstico y Causa Raíz
+## Diagnóstico del Problema
 
-A partir de las capturas y análisis del código fuente:
-1. **Tarjeta "Saldo (Filtro)" con número invisible**:
-   - En `transactions.component.scss`, `.kpi-num` tiene hardcoded `color: #0f172a`.
-   - En modo oscuro, la superficie de la tarjeta es `#0f172a`, haciendo que el valor numérico sea 100% invisible (negro sobre negro).
-2. **Tarjeta "Saldo Global" permanece blanca**:
-   - `.tx-kpi-card.highlight-card` tiene `background-color: #f8fafc !important`, que sobreescribe la regla de modo oscuro.
-3. **Inputs de Formularios y Buscadores con recuadro blanco/oscuro**:
-   - Ng-Zorro envuelve los inputs con prefijo/sufijo en `.ant-input-affix-wrapper` y `.ant-input-password`.
-   - En `styles.scss`, solo se estilizaba `.ant-input`, dejando el wrapper con fondo blanco por defecto y borde gris claro, mientras el input interno era oscuro.
-4. **Barra de Filtros en Libro de Transacciones**:
-   - `.filters-card-wrapper` tiene `background-color: #f8fafc` fijo y el contenedor principal `.transactions-container` tiene `background-color: #ffffff`.
-5. **Modal "Configuración de Perfil y Seguridad"**:
-   - Las pestañas `.ant-tabs-tab-active .ant-tabs-tab-btn` y las etiquetas de formulario `.ant-form-item-label > label` tienen hardcoded `color: #0f172a` y `#1e293b`.
-   - El botón `.btn-update-password` (con `nzDanger` y `nzType="primary"`) sufre conflicto de colores mostrando texto blanco sobre fondo blanco.
+1. **Efecto de Rebote Constante / Parpadeo (Jitter de Scroll en Móvil)**:
+   - **Causa Raíz**: En `.enterprise-viewport` y en los contenedores de las tablas (`nz-table` con `[nzScroll]`), al no contar con un gutter de scrollbar estable (`scrollbar-gutter: stable`), la aparición de la barra de scroll vertical reduce el ancho disponible en la pantalla en unos píxeles. Esto provoca que la tabla recalcule su ancho, reduciendo la altura total, lo que a su vez hace desaparecer la barra de scroll. Al desaparecer, el ancho vuelve a expandirse, aumentando la altura y reapareciendo la barra de scroll. Este bucle de retroalimentación se repite continuamente a 60 FPS, causando la sensación de que la tabla "salta arriba y abajo" rápidamente.
+   - Adicionalmente, los contenedores flex sin `min-width: 0` y `max-width: 100%` permiten que el scroll horizontal de la tabla interfiera con el scroll vertical del viewport.
+
+2. **Desborde de Botones de Acción en Móviles**:
+   - En la cabecera del **Libro de Transacciones** (`transactions.component.scss`), los botones `Exportar CSV` y `Nueva Transacción` utilizan flexbox horizontal con texto completo sin ajuste de rejilla en pantallas menores a 768px, desbordando el ancho de la pantalla.
+   - En el **Resumen Ejecutivo** (`summary.component.scss`), los selectores y el botón de nueva transacción requieren una distribución vertical u horizontal adaptada al 100% del ancho del viewport móvil.
 
 ---
 
 ## Cambios Propuestos
 
-### 1. Variables Globales y Estilos de Inputs (`src/styles.scss`)
-- **Inputs & Wrappers globales**: Estilizar exhaustivamente en modo oscuro:
-  - `.ant-input-affix-wrapper`, `.ant-input-affix-wrapper-focused`
-  - `.ant-input-password` y sus iconos `.ant-input-password-icon`
-  - `.ant-input`, `.ant-input-number`, `.ant-input-number-input`
-  - Iconos de prefijo y sufijo `.ant-input-prefix`, `.ant-input-suffix` con color `#94a3b8`.
-- **Modales y Formularios globales**:
-  - Forzar que `.ant-form-item-label > label` respete `--color-slate-text` (`#f1f5f9` en modo oscuro).
-  - Pestañas `.ant-tabs`: fondo transparente, tabs inactivos `#94a3b8`, tabs activos `#f8fafc` con barra de tinta Sky Blue (`#38bdf8`).
-  - Botones de peligro primarios (`.ant-btn-dangerous.ant-btn-primary`): fondo rojo accesible `#dc2626` con texto `#ffffff` en hover y estado normal.
+### 1. Estabilización del Viewport y Eliminación del Jitter (`dashboard.component.scss` y `styles.scss`)
+- Implementar `scrollbar-gutter: stable;` y `overflow-x: hidden;` en `.enterprise-viewport` y en el layout raíz.
+- Establecer `width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box;` en `.inner-workspace` para aislar el ancho de renderizado e impedir que las tablas expandan el contenedor padre.
+- Aplicar `overscroll-behavior-y: contain;` y `contain: paint;` controlado en las vistas principales para suprimir rebotes elásticos no deseados.
 
-### 2. Libro de Transacciones (`transactions.component.scss` y HTML)
-- **Tarjetas KPI**:
-  - En modo oscuro, `.tx-kpi-card` y `.tx-kpi-card.highlight-card` adoptarán fondo `#0f172a` con borde `#1e293b`.
-  - `.kpi-num`: utilizar `var(--color-navy)` (`#f8fafc` en modo oscuro) para que el saldo filtrado sea claramente visible con alto contraste.
-  - La tarjeta "Saldo Global" tendrá un acento visual consistente en modo oscuro (borde o fondo Slate Navy elevado).
-- **Contenedores y Filtros**:
-  - `.transactions-container`: fondo `var(--color-surface)` y borde `var(--color-border)`.
-  - `.filters-card-wrapper`: fondo `#111a33` en modo oscuro con borde `#1e293b`, iconos de búsqueda visibles (`#94a3b8`) y textos nítidos.
-  - Tabla de transacciones: adaptación completa de celdas, descripciones y badges.
+### 2. Contención y Scroll Fluido en Tablas (`transactions.component.scss` y `summary.component.scss`)
+- **Libro de Transacciones (`.table-container`)**:
+  - Envolver la tabla en un contenedor con `width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;`.
+  - Asegurar que `.ant-table-wrapper` y `.ant-table-container` respeten `max-width: 100%` sin forzar saltos de altura.
+- **Últimos Movimientos en Resumen (`.dashboard-table-card` y `.enterprise-data-table`)**:
+  - Configurar `overflow-x: auto` en el contenedor de tarjeta para que el scroll horizontal sea suave y completamente contenido dentro del card sin afectar el scroll vertical de la página.
 
-### 3. Modal de Perfil y Seguridad (`profile-modal.component.scss`)
-- Actualizar pestañas para usar variables de tema `--color-navy` y `--color-blue-primary`.
-- Corregir el color de las etiquetas (`label`) y textos descriptivos en modo oscuro.
-- Ajustar botones de acción ("Cancelar" y "Actualizar Contraseña") para garantizar contraste AAA.
-
-### 4. Consistencia en Otros Módulos (`config.component.scss` y `transaction-modal.component.scss`)
-- Aplicar tokens en el modal de transacciones (monto, selector de tipo Segmented Control y etiquetas).
-- Asegurar que la pantalla de Configuración (catálogos) también se renderice en Slate Navy Enterprise sin fondos blancos residuales.
+### 3. Distribución Equilibrada de Botones en Móvil (Mobile Actions)
+- **Cabecera de Transacciones**:
+  - En pantallas `< 768px`, organizar `.header-actions` en una cuadrícula equilibrada `grid-template-columns: 1fr 1fr; gap: 8px; width: 100%;`.
+  - Ambos botones ocuparán exactamente el 50% del ancho disponible, con padding compacto y sin desbordamiento horizontal.
+- **Cabecera de Resumen**:
+  - En pantallas `< 768px`, apilar los controles ordenadamente:
+    1. Selector de periodo (Segmented control) con scroll horizontal suave.
+    2. Fila con los selectores de año y billetera al 50% cada uno.
+    3. Botón `+ Nueva Transacción` al 100% del ancho con altura táctil ergonómica (40px).
 
 ---
 
 ## Plan de Verificación
 
-1. **Compilación**: Ejecutar `compile_applet` para asegurar ausencia de errores de tipado o estilos.
-2. **Revisión de Contraste**: Comprobar visual y programáticamente que:
-   - El número de "Saldo (Filtro)" se renderice con color claro sobre la tarjeta oscura.
-   - Las 4 tarjetas KPI tengan aspecto armónico y ninguna quede blanca en modo oscuro.
-   - La barra de filtros tenga fondo Slate Navy elevado sin wrappers blancos en los inputs.
-   - El modal de perfil tenga pestañas legibles, etiquetas visibles y botón con texto legible.
+1. **Compilación**: Ejecutar `compile_applet` para confirmar que los cambios de SCSS y HTML compilan sin errores.
+2. **Prueba de Comportamiento Móvil**:
+   - Verificar en resoluciones móviles (360px a 768px) que la tabla de *Últimos Movimientos* y la del *Libro de Transacciones* no sufran parpadeo, temblor ni salto cíclico de scroll.
+   - Confirmar que los botones de acción se ajusten con precisión al 100% del ancho de la pantalla sin desbordarse.

@@ -2,6 +2,9 @@
 
 .summary-container {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 // ==========================================
@@ -17,7 +20,8 @@
 
   @media (max-width: 900px) {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    gap: 14px;
   }
 }
 
@@ -33,6 +37,10 @@
       font-size: 1.5rem;
       font-weight: 800;
       letter-spacing: -0.025em;
+
+      @media (max-width: 767px) {
+        font-size: 1.25rem;
+      }
     }
 
     .live-badge {
@@ -62,6 +70,9 @@
 
   @media (max-width: 767px) {
     width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
 
   .apple-segmented-control {
@@ -69,6 +80,10 @@
     border: 1px solid var(--color-border);
     padding: 3px;
     border-radius: 9px;
+
+    @media (max-width: 767px) {
+      width: 100%;
+    }
   }
 
   .enterprise-select {
@@ -77,14 +92,14 @@
     &.year-picker {
       width: 130px;
       @media (max-width: 767px) {
-        flex: 1;
+        width: 100%;
       }
     }
 
     &.wallet-selector {
       min-width: 160px;
       @media (max-width: 767px) {
-        flex: 1;
+        width: 100%;
       }
     }
   }
@@ -92,27 +107,16 @@
   .btn-new-transaction {
     height: 38px;
     border-radius: 8px;
-    background-color: #0f172a !important;
-    border-color: #0f172a !important;
-    color: #ffffff !important;
     font-weight: 600;
     font-size: 0.85rem;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 
-    &:hover {
-      background-color: #1e293b !important;
-    }
-
-    html.dark & {
-      background-color: #2563eb !important;
-      border-color: #2563eb !important;
-      &:hover {
-        background-color: #1d4ed8 !important;
-      }
-    }
-
     @media (max-width: 767px) {
       width: 100%;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
   }
 }
@@ -380,9 +384,32 @@
 // ==========================================
 .recent-transactions-section {
   margin-bottom: 24px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+
+  .dashboard-table-card {
+    width: 100%;
+
+    ::ng-deep .ant-card-body {
+      padding: 0 !important;
+      overflow: hidden;
+    }
+  }
 }
 
 .enterprise-data-table {
+  width: 100%;
+
+  ::ng-deep {
+    .ant-table-thead > tr > th,
+    .ant-table-tbody > tr > td {
+      white-space: nowrap !important;
+      word-break: keep-all !important;
+    }
+  }
+
   .date-cell {
     font-size: 0.825rem;
     color: var(--color-slate-muted);

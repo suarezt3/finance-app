@@ -7,9 +7,13 @@
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-card);
   min-height: calc(100vh - 140px);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 
   @media (max-width: 767px) {
-    padding: 16px;
+    padding: 14px 12px;
     border-radius: 12px;
   }
 }
@@ -25,6 +29,12 @@
   flex-wrap: wrap;
   gap: 16px;
 
+  @media (max-width: 767px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
   .header-title {
     .title-with-badge {
       display: flex;
@@ -37,6 +47,10 @@
         font-size: 1.5rem;
         font-weight: 800;
         letter-spacing: -0.025em;
+
+        @media (max-width: 767px) {
+          font-size: 1.25rem;
+        }
       }
 
       .count-badge {
@@ -63,16 +77,41 @@
     gap: 10px;
     align-items: center;
 
+    @media (max-width: 767px) {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
     .btn-action-export {
       border-radius: 8px;
       font-weight: 600;
       height: 38px;
+
+      @media (max-width: 767px) {
+        width: 100%;
+        min-width: 0;
+        padding: 0 8px;
+        font-size: 0.8125rem;
+        display: flex;
+        justify-content: center;
+      }
     }
 
     .btn-action-new {
       border-radius: 8px;
       font-weight: 600;
       height: 38px;
+
+      @media (max-width: 767px) {
+        width: 100%;
+        min-width: 0;
+        padding: 0 8px;
+        font-size: 0.8125rem;
+        display: flex;
+        justify-content: center;
+      }
     }
   }
 }
@@ -216,13 +255,24 @@
 // 4. TABLA DE TRANSACCIONES
 // ==========================================
 .table-container {
+  width: 100%;
   border: 1px solid var(--color-border);
   border-radius: 12px;
-  overflow: hidden;
   background-color: var(--color-surface);
+  overflow: hidden;
 }
 
 .enterprise-tx-table {
+  width: 100%;
+
+  ::ng-deep {
+    .ant-table-thead > tr > th,
+    .ant-table-tbody > tr > td {
+      white-space: nowrap !important;
+      word-break: keep-all !important;
+    }
+  }
+
   .cell-date {
     font-size: 0.8125rem;
     color: var(--color-slate-muted);

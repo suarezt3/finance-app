@@ -469,6 +469,8 @@
 .enterprise-viewport {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
   background-color: var(--color-bg-app);
 
   &::-webkit-scrollbar {
@@ -481,13 +483,16 @@
 }
 
 .inner-workspace {
+  width: 100%;
+  min-width: 0;
   max-width: 1400px;
   margin: 0 auto;
   padding: 24px 28px;
   box-sizing: border-box;
+  overflow-x: hidden;
 
   @media (max-width: 767px) {
-    padding: 16px;
+    padding: 14px 12px;
   }
 }
 

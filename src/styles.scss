@@ -235,10 +235,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 // Tablas Enterprise
+.ant-table-wrapper {
+  width: 100%;
+}
+
 .ant-table {
   font-family: var(--font-sans) !important;
   border-radius: 10px !important;
-  overflow: hidden;
 
   .ant-table-thead > tr > th {
     background-color: #f8fafc !important;
@@ -249,6 +252,8 @@ h1, h2, h3, h4, h5, h6 {
     letter-spacing: 0.05em !important;
     border-bottom: 1px solid var(--color-border) !important;
     padding: 12px 16px !important;
+    white-space: nowrap !important;
+    word-break: keep-all !important;
   }
 
   .ant-table-tbody > tr > td {
@@ -256,6 +261,8 @@ h1, h2, h3, h4, h5, h6 {
     border-bottom: 1px solid var(--color-border-subtle) !important;
     font-size: 0.875rem !important;
     color: var(--color-slate-text);
+    white-space: nowrap !important;
+    word-break: keep-all !important;
   }
 
   .ant-table-tbody > tr:hover > td {
@@ -462,6 +469,30 @@ html.dark {
   }
 
   // Tabs Globales (Modales y Vistas)
+  // Tablas
+  .ant-table {
+    background-color: transparent !important;
+
+    .ant-table-thead > tr > th {
+      background-color: #111a33 !important;
+      color: #94a3b8 !important;
+      border-bottom-color: #1e293b !important;
+      white-space: nowrap !important;
+      word-break: keep-all !important;
+    }
+
+    .ant-table-tbody > tr > td {
+      border-bottom-color: #1e293b !important;
+      color: #cbd5e1 !important;
+      white-space: nowrap !important;
+      word-break: keep-all !important;
+    }
+
+    .ant-table-tbody > tr:hover > td {
+      background-color: rgba(255, 255, 255, 0.04) !important;
+    }
+  }
+
   .ant-tabs {
     color: var(--color-slate-text) !important;
 
