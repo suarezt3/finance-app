@@ -5,15 +5,16 @@
   (nzOnCancel)="onCancel()"
   (nzOnOk)="onSubmit()"
   [nzOkLoading]="isSubmitting()"
-  nzOkText="Guardar"
+  nzOkText="Guardar Transacción"
   nzCancelText="Cancelar"
-  nzWidth="500px"
+  nzWidth="520px"
+  class="enterprise-transaction-modal"
 >
   <ng-container *nzModalContent>
-    <form nz-form [formGroup]="transactionForm" nzLayout="vertical">
+    <form nz-form [formGroup]="transactionForm" nzLayout="vertical" class="transaction-modal-form">
 
-      <!-- 1. TIPO DE TRANSACCIÓN (Control Segmentado de Rápido Acceso) -->
-    <nz-form-item>
+      <!-- 1. TIPO DE TRANSACCIÓN (Control Segmentado Apple Style) -->
+      <nz-form-item class="type-form-item">
         <nz-form-control>
           <nz-radio-group
             formControlName="type"
@@ -36,9 +37,9 @@
         </nz-form-control>
       </nz-form-item>
 
-      <!-- 2. MONTO (El dato más importante, con jerarquía visual aumentada) -->
+      <!-- 2. MONTO (Jerarquía Visual Primaria) -->
       <nz-form-item class="amount-field">
-        <nz-form-label nzRequired>Monto a registrar</nz-form-label>
+        <nz-form-label nzRequired>Monto a Registrar</nz-form-label>
         <nz-form-control [nzErrorTip]="amountErrorTpl">
           <nz-input-number
             appDecimalInput
@@ -51,6 +52,7 @@
             [nzParser]="parserAmount"
             nzSize="large"
             nzPlaceHolder="0.00"
+            class="enterprise-amount-input"
           ></nz-input-number>
         </nz-form-control>
         <ng-template #amountErrorTpl let-control>
@@ -61,15 +63,15 @@
             <span>El monto debe ser mayor a 0.</span>
           }
           @if (control.errors?.['max']) {
-            <span style="font-weight: 500; color: #cf1322;">
+            <span class="insufficient-balance-alert">
               <span nz-icon nzType="warning" nzTheme="outline"></span>
-              Saldo insuficiente. Máximo: $ {{ availableBalance() | number:'1.0-2':'es' }}
+              Saldo insuficiente. Máximo disponible: $ {{ availableBalance() | number:'1.0-2':'es' }}
             </span>
           }
         </ng-template>
       </nz-form-item>
 
-      <!-- 3. AGRUPACIÓN: FECHA Y CATEGORÍA (Reducción de espacio vertical) -->
+      <!-- 3. FECHA Y CATEGORÍA -->
       <nz-row [nzGutter]="16">
 
         <!-- Fecha -->
@@ -77,7 +79,7 @@
           <nz-form-item>
             <nz-form-label nzRequired>Fecha</nz-form-label>
             <nz-form-control nzErrorTip="Requerido">
-              <nz-date-picker formControlName="date" style="width: 100%;"></nz-date-picker>
+              <nz-date-picker formControlName="date" style="width: 100%;" nzSize="large"></nz-date-picker>
             </nz-form-control>
           </nz-form-item>
         </nz-col>
@@ -88,7 +90,7 @@
             <nz-form-item>
               <nz-form-label nzRequired>Categoría</nz-form-label>
               <nz-form-control nzErrorTip="Requerido">
-                <nz-select formControlName="category_id" nzPlaceHolder="Seleccione..." nzAllowClear nzShowSearch>
+                <nz-select formControlName="category_id" nzPlaceHolder="Seleccione categoría..." nzAllowClear nzShowSearch nzSize="large">
                   @for (category of filteredCategories(); track category.id) {
                     <nz-option [nzValue]="category.id" [nzLabel]="category.name"></nz-option>
                   }
@@ -99,7 +101,7 @@
         }
       </nz-row>
 
-      <!-- 4. AGRUPACIÓN: CUENTAS ORIGEN Y DESTINO -->
+      <!-- 4. CUENTAS ORIGEN Y DESTINO -->
       <nz-row [nzGutter]="16">
 
         <!-- Cuenta Origen / Billetera Principal -->
@@ -109,7 +111,7 @@
               {{ selectedType() === 'TRANSFER' ? 'Cuenta Origen' : 'Billetera / Cuenta' }}
             </nz-form-label>
             <nz-form-control nzErrorTip="Requerido">
-              <nz-select formControlName="payment_method_id" nzPlaceHolder="Ej: Efectivo, Banco..." nzAllowClear>
+              <nz-select formControlName="payment_method_id" nzPlaceHolder="Ej. Cuenta Corriente, Tarjeta..." nzAllowClear nzSize="large">
                 @for (method of paymentMethods(); track method.id) {
                   <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
                 }
@@ -117,14 +119,13 @@
 
               <!-- Indicador Inteligente de Saldo Disponible -->
               @if (isCheckingBalance()) {
-                <div style="font-size: 12px; color: #1890ff; margin-top: 4px; display: flex; align-items: center; gap: 4px;">
-                  <span nz-icon nzType="loading"></span> Consultando...
+                <div class="balance-indicator checking">
+                  <span nz-icon nzType="loading"></span> Verificando saldo...
                 </div>
               } @else if (availableBalance() !== null) {
-                <div style="font-size: 12px; margin-top: 4px; display: flex; align-items: center; gap: 4px;"
-                     [style.color]="availableBalance()! <= 0 ? '#cf1322' : '#8c8c8c'">
+                <div class="balance-indicator" [class.alert]="availableBalance()! <= 0">
                   <span nz-icon [nzType]="availableBalance()! <= 0 ? 'close-circle' : 'info-circle'"></span>
-                  Saldo: $ {{ availableBalance() | number:'1.0-2':'es' }}
+                  Saldo disponible: $ {{ availableBalance() | number:'1.0-2':'es' }}
                 </div>
               }
             </nz-form-control>
@@ -137,7 +138,7 @@
             <nz-form-item>
               <nz-form-label nzRequired>Cuenta Destino</nz-form-label>
               <nz-form-control nzErrorTip="Requerido">
-                <nz-select formControlName="destination_method_id" nzPlaceHolder="¿Hacia dónde?" nzAllowClear>
+                <nz-select formControlName="destination_method_id" nzPlaceHolder="Selecciona cuenta receptora..." nzAllowClear nzSize="large">
                   @for (method of availableDestinationMethods(); track method.id) {
                     <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
                   }
@@ -148,16 +149,14 @@
         }
       </nz-row>
 
-      <!-- 5. DESCRIPCIÓN (Opcional, con ícono) -->
+      <!-- 5. DESCRIPCIÓN (Opcional, con prefijo) -->
       <nz-form-item style="margin-bottom: 0;">
         <nz-form-label>Descripción (Opcional)</nz-form-label>
         <nz-form-control>
-
-          <!-- REFACTORIZADO: Uso del nuevo componente soportado por la v20+ -->
-          <nz-input-wrapper nzPrefixIcon="edit">
-            <input nz-input formControlName="description" placeholder="Ej. Cena, gasolina, pago..." />
+          <nz-input-wrapper class="custom-desc-wrapper">
+            <span nz-icon nzType="edit" nzInputPrefix class="desc-prefix-icon"></span>
+            <input nz-input formControlName="description" placeholder="Ej. Pago servicios cloud, suscripción, honorarios..." nzSize="large" />
           </nz-input-wrapper>
-
         </nz-form-control>
       </nz-form-item>
 

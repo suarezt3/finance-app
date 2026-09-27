@@ -1,48 +1,562 @@
 // src/styles.scss
 @import 'driver.js/dist/driver.css';
-/* 1. Importación de Google Fonts (Debe ir siempre arriba) */
-@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
 
-/* 2. Reseteo básico y aplicación de tipografía global */
+/* 1. Importación de Google Fonts: Inter (Similar a Apple SF Pro) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* 2. Variables y Tokens de Diseño Enterprise (Slate Navy & Financial Blue) */
+:root {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+  --color-bg-app: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f1f5f9;
+  --color-surface-muted: #f8fafc;
+  --color-border: #e2e8f0;
+  --color-border-subtle: #f1f5f9;
+  --color-border-focus: #0f172a;
+
+  --color-navy: #0f172a;
+  --color-navy-dark: #070c18;
+  --color-navy-light: #1e293b;
+  --color-slate-muted: #64748b;
+  --color-slate-text: #1e293b;
+
+  --color-blue-primary: #2563eb;
+  --color-blue-hover: #1d4ed8;
+  --color-blue-subtle: #eff6ff;
+
+  --color-success: #059669;
+  --color-success-bg: #ecfdf5;
+  --color-success-border: #a7f3d0;
+
+  --color-danger: #dc2626;
+  --color-danger-bg: #fef2f2;
+  --color-danger-border: #fecaca;
+
+  --shadow-card: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.02);
+  --shadow-hover: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-dropdown: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
+}
+
+/* 2.1 Variables Modo Oscuro (Slate Navy & Financial Blue) */
+html.dark,
+[data-theme='dark'] {
+  --color-bg-app: #0b1329;        // Deep Slate Navy canvas
+  --color-surface: #0f172a;       // Slate 900 card surface
+  --color-surface-hover: #1e293b; // Slate 800 hover
+  --color-surface-muted: #131d36; // Muted dark navy
+  --color-border: #1e293b;        // Slate 800 border
+  --color-border-subtle: #1e293b;
+  --color-border-focus: #38bdf8;  // Sky 400 focus
+
+  --color-navy: #f8fafc;          // White/light headings
+  --color-navy-dark: #f1f5f9;
+  --color-navy-light: #cbd5e1;
+  --color-slate-muted: #94a3b8;   // Slate 400 muted text
+  --color-slate-text: #f1f5f9;    // High readability light body text
+
+  --color-blue-primary: #38bdf8;  // High contrast Sky Blue
+  --color-blue-hover: #60a5fa;
+  --color-blue-subtle: rgba(56, 189, 248, 0.12);
+
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.4), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+  --shadow-hover: 0 4px 12px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-dropdown: 0 10px 25px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+}
+
+/* 3. Reseteo y Base Tipográfica */
 html, body {
   margin: 0;
   padding: 0;
-  /* Aplicamos Nunito como fuente principal, con fallbacks de sistema */
-  font-family: "Nunito", system-ui, -apple-system, sans-serif;
-  font-optical-sizing: auto;
-  font-style: normal;
-  background-color: #f8fafc;
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-app);
+  color: var(--color-slate-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.011em;
 }
 
-
-/* Clase global para errores de validación (Basado en tu lógica) */
-.error {
-  color: rgb(245, 12, 12);
-  font-size: small;
+/* Cifras Tabulares para Alineación Numérica en Finanzas */
+.tabular-nums,
+.ant-statistic-content-value,
+.numeric-value,
+.amount-cell {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
 }
 
-/* ==========================================
-   FIX RESPONSIVO: NG-ZORRO RANGE PICKER
-   ========================================== */
+/* Encabezados Globales Enterprise */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans);
+  letter-spacing: -0.025em;
+  color: var(--color-navy);
+}
+
+/* 4. Sobrescrituras y Refinamiento NG-ZORRO Enterprise */
+
+// Tarjetas Unificadas (Single-Elevation)
+.ant-card {
+  border-radius: 12px !important;
+  border: 1px solid var(--color-border) !important;
+  background-color: var(--color-surface) !important;
+  box-shadow: var(--shadow-card);
+  transition: all 0.2s ease;
+
+  &.ant-card-hoverable:hover {
+    border-color: #cbd5e1 !important;
+    box-shadow: var(--shadow-hover);
+  }
+
+  .ant-card-head {
+    border-bottom: 1px solid var(--color-border-subtle) !important;
+    padding: 0 20px !important;
+    min-height: 52px !important;
+
+    .ant-card-head-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--color-navy);
+      letter-spacing: -0.015em;
+    }
+  }
+
+  .ant-card-body {
+    padding: 20px !important;
+  }
+}
+
+// Botones Enterprise
+.ant-btn {
+  font-family: var(--font-sans) !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  height: 38px !important;
+  padding: 0 16px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  transition: all 0.15s ease !important;
+
+  &.ant-btn-primary {
+    background-color: var(--color-navy) !important;
+    border-color: var(--color-navy) !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+
+    &:hover, &:focus {
+      background-color: var(--color-navy-light) !important;
+      border-color: var(--color-navy-light) !important;
+    }
+
+    &:active {
+      background-color: var(--color-navy-dark) !important;
+    }
+
+    &:disabled {
+      background-color: #e2e8f0 !important;
+      border-color: #cbd5e1 !important;
+      color: #94a3b8 !important;
+    }
+  }
+
+  &.ant-btn-default {
+    background-color: #ffffff !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-slate-text) !important;
+
+    &:hover, &:focus {
+      background-color: var(--color-surface-hover) !important;
+      border-color: #cbd5e1 !important;
+      color: var(--color-navy) !important;
+    }
+  }
+}
+
+// Segmented Controls (Radio Group Solid)
+.ant-radio-group-solid {
+  background-color: #f1f5f9;
+  padding: 3px;
+  border-radius: 9px;
+  border: 1px solid var(--color-border);
+  display: inline-flex;
+  align-items: center;
+
+  .ant-radio-button-wrapper {
+    border: none !important;
+    background: transparent !important;
+    color: var(--color-slate-muted) !important;
+    font-size: 0.8125rem !important;
+    font-weight: 600 !important;
+    height: 30px !important;
+    line-height: 30px !important;
+    padding: 0 12px !important;
+    border-radius: 6px !important;
+    transition: all 0.15s ease;
+
+    &::before {
+      display: none !important;
+    }
+
+    &:hover {
+      color: var(--color-navy) !important;
+    }
+
+    &-checked:not(.ant-radio-button-wrapper-disabled) {
+      background: #ffffff !important;
+      color: var(--color-navy) !important;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+    }
+  }
+}
+
+// Selectores e Inputs
+.ant-select-selector,
+.ant-input,
+.ant-picker {
+  border-radius: 8px !important;
+  border-color: var(--color-border) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease !important;
+
+  &:hover {
+    border-color: #94a3b8 !important;
+  }
+
+  &:focus,
+  &-focused {
+    border-color: var(--color-navy) !important;
+    box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08) !important;
+  }
+}
+
+// Tablas Enterprise
+.ant-table {
+  font-family: var(--font-sans) !important;
+  border-radius: 10px !important;
+  overflow: hidden;
+
+  .ant-table-thead > tr > th {
+    background-color: #f8fafc !important;
+    color: var(--color-slate-muted) !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    border-bottom: 1px solid var(--color-border) !important;
+    padding: 12px 16px !important;
+  }
+
+  .ant-table-tbody > tr > td {
+    padding: 12px 16px !important;
+    border-bottom: 1px solid var(--color-border-subtle) !important;
+    font-size: 0.875rem !important;
+    color: var(--color-slate-text);
+  }
+
+  .ant-table-tbody > tr:hover > td {
+    background-color: #f8fafc !important;
+  }
+}
+
+// Modales Enterprise
+.ant-modal-content {
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1), 0 8px 10px -6px rgba(15, 23, 42, 0.04) !important;
+  border: 1px solid var(--color-border) !important;
+
+  .ant-modal-header {
+    border-bottom: 1px solid var(--color-border) !important;
+    padding: 18px 24px !important;
+
+    .ant-modal-title {
+      font-size: 1.15rem !important;
+      font-weight: 700 !important;
+      color: var(--color-navy) !important;
+      letter-spacing: -0.02em;
+    }
+  }
+
+  .ant-modal-body {
+    padding: 24px !important;
+  }
+
+  .ant-modal-footer {
+    border-top: 1px solid var(--color-border) !important;
+    padding: 14px 24px !important;
+  }
+}
+
+/* Errores de Validación Formulario */
+.error,
+.field-error {
+  color: var(--color-danger);
+  font-size: 0.775rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Dropdown de Rango en Móvil */
 @media (max-width: 767px) {
-  /* Apunta a la clase personalizada que inyectamos desde el HTML */
   .mobile-range-dropdown {
     .ant-picker-panel-container {
-      /* Obliga a los dos paneles del calendario a apilarse verticalmente */
       .ant-picker-panels {
         display: flex !important;
         flex-direction: column !important;
       }
-
-      /* Oculta el divisor vertical entre los dos calendarios (ya no es necesario) */
       .ant-picker-panel-separator {
         display: none !important;
       }
-
-      /* Ajuste estético para el panel inferior */
       .ant-picker-panel:last-child {
         border-top: 1px solid #f0f0f0;
       }
     }
   }
 }
+
+/* =========================================================
+   5. REFINAMIENTOS GLOBALES MODO OSCURO (SLATE NAVY & BLUE)
+   ========================================================= */
+html.dark {
+  background-color: var(--color-bg-app);
+  color: var(--color-slate-text);
+
+  // Cards
+  .ant-card {
+    background-color: var(--color-surface) !important;
+    border-color: var(--color-border) !important;
+
+    .ant-card-head {
+      border-bottom-color: var(--color-border) !important;
+
+      .ant-card-head-title {
+        color: var(--color-navy) !important;
+      }
+    }
+  }
+
+  // Estadísticas
+  .ant-statistic-title {
+    color: var(--color-slate-muted) !important;
+  }
+  .ant-statistic-content-value {
+    color: var(--color-navy) !important;
+  }
+
+  // Tablas
+  .ant-table {
+    background: transparent !important;
+
+    .ant-table-thead > tr > th {
+      background-color: #111a33 !important;
+      color: var(--color-slate-muted) !important;
+      border-bottom-color: var(--color-border) !important;
+    }
+
+    .ant-table-tbody > tr > td {
+      background-color: var(--color-surface) !important;
+      color: var(--color-slate-text) !important;
+      border-bottom-color: var(--color-border) !important;
+    }
+
+    .ant-table-tbody > tr:hover > td {
+      background-color: var(--color-surface-hover) !important;
+    }
+
+    .ant-table-placeholder {
+      background-color: var(--color-surface) !important;
+    }
+  }
+
+  // Inputs y Selects
+  .ant-input,
+  .ant-input-number,
+  .ant-select:not(.ant-select-customize-input) .ant-select-selector {
+    background-color: #111a33 !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-navy) !important;
+
+    &:hover {
+      border-color: #3b82f6 !important;
+    }
+
+    &:focus,
+    &.ant-select-focused .ant-select-selector {
+      border-color: var(--color-blue-primary) !important;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15) !important;
+    }
+  }
+
+  .ant-select-selection-item,
+  .ant-select-selection-placeholder {
+    color: var(--color-navy) !important;
+  }
+
+  .ant-select-arrow {
+    color: var(--color-slate-muted) !important;
+  }
+
+  // Dropdowns y Menús
+  .ant-dropdown-menu,
+  .ant-select-dropdown {
+    background-color: #0f172a !important;
+    border: 1px solid var(--color-border) !important;
+    box-shadow: var(--shadow-dropdown) !important;
+
+    .ant-dropdown-menu-item,
+    .ant-select-item {
+      color: #e2e8f0 !important;
+
+      &:hover,
+      &-active {
+        background-color: #1e293b !important;
+        color: #ffffff !important;
+      }
+
+      &-selected {
+        background-color: rgba(56, 189, 248, 0.15) !important;
+        color: var(--color-blue-primary) !important;
+        font-weight: 600;
+      }
+    }
+
+    .ant-dropdown-menu-item-divider {
+      background-color: var(--color-border) !important;
+    }
+  }
+
+  // DatePicker
+  .ant-picker {
+    background-color: #111a33 !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-navy) !important;
+
+    .ant-picker-input > input {
+      color: var(--color-navy) !important;
+    }
+    .ant-picker-suffix,
+    .ant-picker-separator {
+      color: var(--color-slate-muted) !important;
+    }
+  }
+
+  .ant-picker-dropdown {
+    .ant-picker-panel-container {
+      background-color: #0f172a !important;
+      border: 1px solid var(--color-border) !important;
+      box-shadow: var(--shadow-dropdown) !important;
+    }
+
+    .ant-picker-header {
+      color: var(--color-navy) !important;
+      border-bottom-color: var(--color-border) !important;
+
+      button {
+        color: var(--color-slate-muted) !important;
+        &:hover {
+          color: #ffffff !important;
+        }
+      }
+    }
+
+    .ant-picker-content th {
+      color: var(--color-slate-muted) !important;
+    }
+
+    .ant-picker-cell {
+      color: #94a3b8 !important;
+
+      &:hover .ant-picker-cell-inner {
+        background-color: #1e293b !important;
+      }
+
+      &.ant-picker-cell-in-view {
+        color: #e2e8f0 !important;
+      }
+
+      &.ant-picker-cell-selected .ant-picker-cell-inner {
+        background-color: #2563eb !important;
+        color: #ffffff !important;
+      }
+    }
+  }
+
+  // Radio Buttons (Filtros de temporalidad)
+  .ant-radio-button-wrapper {
+    background-color: #111a33 !important;
+    border-color: var(--color-border) !important;
+    color: var(--color-slate-muted) !important;
+
+    &:hover {
+      color: #ffffff !important;
+      background-color: #1e293b !important;
+    }
+
+    &.ant-radio-button-wrapper-checked {
+      background-color: #1e293b !important;
+      border-color: var(--color-blue-primary) !important;
+      color: var(--color-blue-primary) !important;
+      box-shadow: -1px 0 0 0 var(--color-blue-primary) !important;
+    }
+  }
+
+  // Modales
+  .ant-modal-content {
+    background-color: #0f172a !important;
+    border-color: var(--color-border) !important;
+
+    .ant-modal-header {
+      background-color: #0f172a !important;
+      border-bottom-color: var(--color-border) !important;
+
+      .ant-modal-title {
+        color: #f8fafc !important;
+      }
+    }
+
+    .ant-modal-close {
+      color: #94a3b8 !important;
+      &:hover {
+        color: #ffffff !important;
+      }
+    }
+
+    .ant-modal-footer {
+      background-color: #0f172a !important;
+      border-top-color: var(--color-border) !important;
+    }
+  }
+
+  // Tags
+  .ant-tag {
+    border-color: transparent !important;
+  }
+
+  // Botones secundarios
+  .ant-btn-default {
+    background-color: #111a33 !important;
+    border-color: var(--color-border) !important;
+    color: #e2e8f0 !important;
+
+    &:hover {
+      background-color: #1e293b !important;
+      border-color: #475569 !important;
+      color: #ffffff !important;
+    }
+  }
+
+  // Tooltip
+  .ant-tooltip-inner {
+    background-color: #020617 !important;
+    color: #f8fafc !important;
+    border: 1px solid #1e293b !important;
+  }
+}
+

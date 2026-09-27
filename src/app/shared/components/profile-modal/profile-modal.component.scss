@@ -1,0 +1,97 @@
+// src/app/shared/components/profile-modal/profile-modal.component.scss
+
+:host {
+  display: block;
+}
+
+.enterprise-modal-tabs {
+  ::ng-deep {
+    .ant-tabs-nav {
+      margin-bottom: 20px !important;
+
+      &::before {
+        border-bottom-color: #e2e8f0 !important;
+      }
+    }
+
+    .ant-tabs-tab {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #64748b;
+      padding: 10px 14px !important;
+
+      &:hover {
+        color: #0f172a;
+      }
+
+      &.ant-tabs-tab-active .ant-tabs-tab-btn {
+        color: #0f172a !important;
+        font-weight: 700;
+      }
+    }
+
+    .ant-tabs-ink-bar {
+      background-color: #0f172a !important;
+      height: 2.5px !important;
+    }
+  }
+}
+
+.profile-form {
+  ::ng-deep {
+    .ant-form-item-label > label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .ant-input,
+    .ant-input-password {
+      border-radius: 8px !important;
+    }
+  }
+
+  .full-width {
+    width: 100%;
+  }
+
+  .input-prefix-icon {
+    color: #94a3b8;
+    margin-right: 6px;
+  }
+}
+
+.modal-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+
+  .btn-cancel {
+    border-radius: 8px;
+    font-weight: 600;
+    height: 38px;
+  }
+
+  .btn-save-profile {
+    border-radius: 8px;
+    background-color: #0f172a !important;
+    border-color: #0f172a !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    height: 38px;
+
+    &:hover {
+      background-color: #1e293b !important;
+    }
+  }
+
+  .btn-update-password {
+    border-radius: 8px;
+    height: 38px;
+    font-weight: 600;
+  }
+}

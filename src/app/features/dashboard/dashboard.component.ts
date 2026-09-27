@@ -17,6 +17,9 @@ import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { NzDropdownModule } from 'ng-zorro-antd/dropdown';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzDrawerModule } from 'ng-zorro-antd/drawer';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
+
+import { ThemeService } from '../../core/services/theme.service';
 
 // Importamos la librería de Onboarding y su tipado estricto
 import { driver, DriveStep } from 'driver.js';
@@ -35,6 +38,7 @@ import { driver, DriveStep } from 'driver.js';
     NzAvatarModule,
     NzDropdownModule,
     NzDrawerModule,
+    NzTooltipModule,
     ProfileModalComponent
   ],
   templateUrl: './dashboard.component.html',
@@ -46,6 +50,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   private readonly message = inject(NzMessageService);
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly destroyRef = inject(DestroyRef);
+  readonly themeService = inject(ThemeService);
 
   readonly profileModal = viewChild(ProfileModalComponent);
   readonly user = this.authService.currentUser;

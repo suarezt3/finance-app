@@ -1,24 +1,33 @@
 <!-- src/app/features/dashboard/dashboard.component.html -->
 
-<!-- 1. TEMPLATE DEL MENÚ (Ahora recibe una variable 'prefix') -->
+<!-- 1. TEMPLATE DEL MENÚ REUTILIZABLE -->
 <ng-template #menuItemsTemplate let-prefix="prefix">
-  <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isDesktopCollapsed()">
+  <div class="menu-section-header" [class.collapsed]="isDesktopCollapsed()">
+    <span>GESTIÓN FINANCIERA</span>
+  </div>
 
-    <li nz-submenu nzOpen nzTitle="Panel Principal" nzIcon="dashboard">
-      <ul>
-        <!-- Generación dinámica de ID para evitar duplicidad en el DOM -->
-        <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()" [id]="prefix + '-resumen'">
-          <a routerLink="/dashboard/resumen">Resumen Financiero</a>
-        </li>
-        <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()" [id]="prefix + '-transacciones'">
-          <a routerLink="/dashboard/transacciones">Transacciones</a>
-        </li>
-      </ul>
+  <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isDesktopCollapsed()" class="enterprise-nav-menu">
+    <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()" [id]="prefix + '-resumen'">
+      <a routerLink="/dashboard/resumen">
+        <span nz-icon nzType="dashboard" nzTheme="outline"></span>
+        <span>Resumen Ejecutivo</span>
+      </a>
     </li>
+
+    <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()" [id]="prefix + '-transacciones'">
+      <a routerLink="/dashboard/transacciones">
+        <span nz-icon nzType="table" nzTheme="outline"></span>
+        <span>Libro de Transacciones</span>
+      </a>
+    </li>
+
+    <div class="menu-section-header" [class.collapsed]="isDesktopCollapsed()">
+      <span>SISTEMA</span>
+    </div>
 
     <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()" [id]="prefix + '-config'">
       <a routerLink="/dashboard/configuracion">
-        <span nz-icon nzType="setting"></span>
+        <span nz-icon nzType="setting" nzTheme="outline"></span>
         <span>Configuración</span>
       </a>
     </li>
@@ -27,82 +36,165 @@
 
 <nz-layout class="app-layout">
 
-  <!-- 2. SIDEBAR DESKTOP -->
+  <!-- 2. SIDEBAR DESKTOP CORPORATIVO -->
   <nz-sider
     class="desktop-sidebar"
     nzCollapsible
-    nzWidth="256px"
+    nzWidth="260px"
+    [nzCollapsedWidth]="72"
     [nzCollapsed]="isDesktopCollapsed()"
     (nzCollapsedChange)="isDesktopCollapsed.set($event)"
     [nzTrigger]="null">
 
-    <div class="sidebar-logo">
-      <h1>{{ isDesktopCollapsed() ? 'FA' : 'FinanceApp' }}</h1>
+    <!-- Header / Logo del Sidebar -->
+    <div class="sidebar-logo" [class.is-collapsed]="isDesktopCollapsed()">
+      <div class="logo-badge-icon">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" class="vault-svg">
+          <rect x="2" y="4" width="28" height="24" rx="6" stroke="currentColor" stroke-width="2.2" />
+          <circle cx="16" cy="16" r="6" stroke="currentColor" stroke-width="2.2" />
+          <circle cx="16" cy="16" r="2" fill="currentColor" />
+          <path d="M16 10V6M16 26V22M10 16H6M26 16H22" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+        </svg>
+      </div>
+
+      @if (!isDesktopCollapsed()) {
+        <div class="logo-text-wrapper">
+          <span class="logo-title">FinanceApp</span>
+          <span class="logo-tier">ENTERPRISE</span>
+        </div>
+      }
     </div>
 
-    <!-- Renderizamos la plantilla pasando el prefijo 'desktop' -->
-    <ng-container *ngTemplateOutlet="menuItemsTemplate; context: { prefix: 'desktop' }"></ng-container>
+    <!-- Menú de Navegación -->
+    <div class="sidebar-nav-container">
+      <ng-container *ngTemplateOutlet="menuItemsTemplate; context: { prefix: 'desktop' }"></ng-container>
+    </div>
+
+    <!-- Footer del Sidebar con Estado del Sistema -->
+    @if (!isDesktopCollapsed()) {
+      <div class="sidebar-footer">
+        <div class="security-status-indicator">
+          <span class="status-live-dot"></span>
+          <div class="status-details">
+            <span class="status-title">Conexión Cifrada</span>
+            <span class="status-sub">TLS 1.3 · SOC-2</span>
+          </div>
+        </div>
+      </div>
+    }
+
   </nz-sider>
 
-  <!-- 3. DRAWER MÓVIL -->
+  <!-- 3. DRAWER MÓVIL CORPORATIVO -->
   <nz-drawer
     [nzVisible]="isMobileMenuOpen()"
     nzPlacement="left"
-    nzTitle="FinanceApp"
+    nzTitle="FinanceApp Enterprise"
     (nzOnClose)="closeMobileMenu()"
     class="mobile-drawer"
     [nzClosable]="true"
-    [nzBodyStyle]="{ padding: '0' }">
+    [nzWidth]="280"
+    [nzBodyStyle]="{ padding: '0', backgroundColor: '#0b1329' }">
     <ng-container *nzDrawerContent>
-      <!-- Renderizamos la plantilla pasando el prefijo 'mobile' -->
-      <ng-container *ngTemplateOutlet="menuItemsTemplate; context: { prefix: 'mobile' }"></ng-container>
+      <div class="mobile-drawer-inner">
+        <ng-container *ngTemplateOutlet="menuItemsTemplate; context: { prefix: 'mobile' }"></ng-container>
+      </div>
     </ng-container>
   </nz-drawer>
 
   <!-- 4. CONTENEDOR PRINCIPAL -->
-  <nz-layout>
-    <nz-header>
-      <div class="app-header">
+  <nz-layout class="main-content-layout">
 
-        <!-- FIX: Añadimos el ID 'tour-hamburger-btn' para que Driver.js pueda anclarse en móvil -->
-        <span class="header-trigger" (click)="toggleMenu()" id="tour-hamburger-btn">
-          <span nz-icon [nzType]="getMenuIcon()"></span>
-        </span>
+    <!-- Header Superior Limpio (Apple Style) -->
+    <nz-header class="enterprise-header">
+      <div class="app-header-bar">
 
-        <div class="header-actions">
+        <!-- Lado Izquierdo: Botón Colapso y Breadcrumb Contextual -->
+        <div class="header-left">
+          <button
+            type="button"
+            class="header-toggle-btn"
+            (click)="toggleMenu()"
+            id="tour-hamburger-btn"
+            [attr.aria-label]="isDesktopCollapsed() ? 'Expandir barra lateral' : 'Colapsar barra lateral'">
+            <span nz-icon [nzType]="getMenuIcon()" class="toggle-icon"></span>
+          </button>
+
+          <div class="header-context-title">
+            <span class="context-workspace">Workspace Corporativo</span>
+            <span class="context-separator">/</span>
+            <span class="context-current">Consola Financiera</span>
+          </div>
+        </div>
+
+        <!-- Lado Derecho: Indicadores de Seguridad y Perfil de Usuario -->
+        <div class="header-right">
+
+          <div class="security-lock-badge hide-on-mobile">
+            <span class="ssl-live-dot"></span>
+            <span nz-icon nzType="lock" class="lock-icon"></span>
+            <span class="ssl-label">SSL 256-BIT</span>
+          </div>
+
+          <!-- Botón de Conmutación de Modo Oscuro -->
+          <button
+            type="button"
+            class="theme-toggle-btn"
+            (click)="themeService.toggleTheme()"
+            [nzTooltipTitle]="themeService.isDarkMode() ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+            nzTooltipPlacement="bottom"
+            nz-tooltip
+            [attr.aria-label]="themeService.isDarkMode() ? 'Activar modo claro' : 'Activar modo oscuro'"
+            id="tour-theme-toggle">
+            @if (themeService.isDarkMode()) {
+              <span nz-icon nzType="sun" class="theme-icon sun-icon"></span>
+            } @else {
+              <span nz-icon nzType="moon" class="theme-icon moon-icon"></span>
+            }
+          </button>
+
           @if (user()) {
-            <!-- Este elemento no está en un template duplicado, su ID fijo está bien -->
-            <a nz-dropdown [nzDropdownMenu]="userMenu" class="user-dropdown" id="tour-user-menu">
+            <a nz-dropdown [nzDropdownMenu]="userMenu" class="user-profile-btn" id="tour-user-menu">
               <nz-avatar
                 [nzText]="userInitial()"
-                nzSize="default"
-                style="background-color: #1890ff;">
+                nzSize="small"
+                class="enterprise-avatar">
               </nz-avatar>
-              <span class="user-name hide-on-mobile">{{ userName() }}</span>
-              <span nz-icon nzType="down"></span>
+              <div class="user-meta hide-on-mobile">
+                <span class="user-name">{{ userName() }}</span>
+                <span class="user-role">Administrador</span>
+              </div>
+              <span nz-icon nzType="down" class="dropdown-chevron"></span>
             </a>
 
             <nz-dropdown-menu #userMenu="nzDropdownMenu">
-              <ul nz-menu>
+              <ul nz-menu class="enterprise-dropdown-menu">
+                <li class="dropdown-user-header">
+                  <span class="header-email">{{ user()?.email }}</span>
+                </li>
+                <li nz-menu-divider></li>
                 <li nz-menu-item (click)="openProfile()">
-                  <span nz-icon nzType="user"></span> Mi Perfil
+                  <span nz-icon nzType="user"></span> Mi Perfil y Cuenta
                 </li>
                 <li nz-menu-divider></li>
                 <li nz-menu-item nzDanger (click)="onLogout()">
-                  <span nz-icon nzType="logout"></span> Cerrar Sesión
+                  <span nz-icon nzType="logout"></span> Cerrar Sesión Segura
                 </li>
               </ul>
             </nz-dropdown-menu>
           }
+
         </div>
       </div>
     </nz-header>
 
-    <nz-content>
-      <div class="inner-content">
+    <!-- Área de Trabajo con Scroll Independiente -->
+    <nz-content class="enterprise-viewport">
+      <div class="inner-workspace">
         <router-outlet></router-outlet>
       </div>
     </nz-content>
+
   </nz-layout>
 
   <app-profile-modal></app-profile-modal>

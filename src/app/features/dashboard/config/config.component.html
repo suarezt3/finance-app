@@ -4,52 +4,54 @@
   <!-- CABECERA -->
   <header class="config-header">
     <div class="header-title">
-      <h2>Configuración del Espacio de Trabajo</h2>
-      <p>Administra tus catálogos de categorías y métodos de pago.</p>
+      <div class="title-with-badge">
+        <h2>Configuración del Espacio de Trabajo</h2>
+        <span class="catalog-badge">CATÁLOGOS</span>
+      </div>
+      <p>Administra las categorías de clasificación y los métodos de pago autorizados.</p>
     </div>
   </header>
 
-  <nz-tabs class="config-tabs">
+  <nz-tabs class="enterprise-config-tabs">
     <!-- ============================================== -->
     <!-- PESTAÑA 1: CATEGORÍAS                          -->
     <!-- ============================================== -->
-    <nz-tab nzTitle="Categorías">
-      <div class="tab-actions">
-        <button nz-button nzType="primary" (click)="openCategoryModal()">
+    <nz-tab nzTitle="Categorías de Transacción">
+      <div class="tab-toolbar">
+        <span class="tab-description">Define las categorías contables para ingresos y egresos.</span>
+        <button nz-button nzType="primary" (click)="openCategoryModal()" class="btn-create-item">
           <span nz-icon nzType="plus"></span>
           <span class="btn-text">Nueva Categoría</span>
         </button>
       </div>
 
       <div class="table-container">
-        <!-- FIX 1: Eliminamos [nzScroll] para permitir diseño fluido al 100% -->
         <nz-table
           #categoryTable
           [nzData]="categories()"
           [nzLoading]="isLoading()"
-          nzSize="small">
+          nzSize="middle"
+          class="enterprise-config-table">
           <thead>
             <tr>
-              <th>Nombre</th>
-              <!-- FIX 2: Ancho exacto para el Tag, centrado -->
-              <th nzWidth="100px" nzAlign="center">Naturaleza</th>
-              <!-- FIX 3: Eliminamos nzRight porque ya no hay scroll -->
-              <th nzWidth="80px" nzAlign="center">Acciones</th>
+              <th>Nombre de Categoría</th>
+              <th nzWidth="140px" nzAlign="center">Naturaleza</th>
+              <th nzWidth="100px" nzAlign="center">Acciones</th>
             </tr>
           </thead>
           <tbody>
             @for (cat of categoryTable.data; track cat.id) {
               <tr>
-                <td>{{ cat.name }}</td>
+                <td class="item-name">{{ cat.name }}</td>
                 <td nzAlign="center">
                   @if (cat.type === 'INCOME') {
-                    <nz-tag nzColor="success">Ingreso</nz-tag>
+                    <span class="nature-badge income">Ingreso</span>
                   } @else {
-                    <nz-tag nzColor="error">Gasto</nz-tag>
+                    <span class="nature-badge expense">Gasto</span>
                   }
                 </td>
                 <td nzAlign="center">
-                  <button nz-button nzType="text" nzDanger nz-tooltip nzTooltipTitle="Eliminar" (click)="onDeleteCategory(cat.id)">
+                  <button nz-button nzType="text" nzDanger nz-tooltip nzTooltipTitle="Eliminar" (click)="onDeleteCategory(cat.id)" class="btn-action-delete">
                     <span nz-icon nzType="delete" nzTheme="outline"></span>
                     <span class="action-text">Eliminar</span>
                   </button>
@@ -64,34 +66,34 @@
     <!-- ============================================== -->
     <!-- PESTAÑA 2: MÉTODOS DE PAGO                     -->
     <!-- ============================================== -->
-    <nz-tab nzTitle="Métodos de Pago">
-      <div class="tab-actions">
-        <button nz-button nzType="primary" (click)="openMethodModal()">
+    <nz-tab nzTitle="Métodos y Billeteras">
+      <div class="tab-toolbar">
+        <span class="tab-description">Administra tus cuentas bancarias, billeteras digitales y tarjetas.</span>
+        <button nz-button nzType="primary" (click)="openMethodModal()" class="btn-create-item">
           <span nz-icon nzType="plus"></span>
           <span class="btn-text">Nuevo Método</span>
         </button>
       </div>
 
       <div class="table-container">
-        <!-- FIX 1: Eliminamos [nzScroll] -->
         <nz-table
           #methodsTable
           [nzData]="paymentMethods()"
           [nzLoading]="isLoading()"
-          nzSize="small">
+          nzSize="middle"
+          class="enterprise-config-table">
           <thead>
             <tr>
-              <th>Nombre</th>
-              <!-- FIX 3: Eliminamos nzRight -->
-              <th nzWidth="80px" nzAlign="center">Acciones</th>
+              <th>Nombre de Cuenta o Billetera</th>
+              <th nzWidth="100px" nzAlign="center">Acciones</th>
             </tr>
           </thead>
           <tbody>
             @for (method of methodsTable.data; track method.id) {
               <tr>
-                <td>{{ method.name }}</td>
+                <td class="item-name">{{ method.name }}</td>
                 <td nzAlign="center">
-                  <button nz-button nzType="text" nzDanger nz-tooltip nzTooltipTitle="Eliminar" (click)="onDeleteMethod(method.id)">
+                  <button nz-button nzType="text" nzDanger nz-tooltip nzTooltipTitle="Eliminar" (click)="onDeleteMethod(method.id)" class="btn-action-delete">
                     <span nz-icon nzType="delete" nzTheme="outline"></span>
                     <span class="action-text">Eliminar</span>
                   </button>
@@ -104,34 +106,32 @@
     </nz-tab>
   </nz-tabs>
 
-  <!-- ============================================== -->
-  <!-- MODAL: CREAR CATEGORÍA                         -->
-  <!-- ============================================== -->
+  <!-- MODAL: CREAR CATEGORÍA -->
   <nz-modal
     [nzVisible]="isCategoryModalVisible()"
-    nzTitle="Nueva Categoría"
+    nzTitle="Nueva Categoría Contable"
     (nzOnCancel)="closeCategoryModal()"
     (nzOnOk)="onSubmitCategory()"
     [nzOkLoading]="isSubmitting()"
-    nzOkText="Guardar"
+    nzOkText="Crear Categoría"
     nzCancelText="Cancelar"
     nzWidth="90%"
-    [nzStyle]="{ maxWidth: '500px' }"
+    [nzStyle]="{ maxWidth: '480px' }"
   >
     <ng-container *nzModalContent>
-      <form nz-form [formGroup]="categoryForm" nzLayout="vertical">
+      <form nz-form [formGroup]="categoryForm" nzLayout="vertical" class="enterprise-modal-form">
         <nz-form-item>
-          <nz-form-label nzRequired>Nombre</nz-form-label>
+          <nz-form-label nzRequired>Nombre de la Categoría</nz-form-label>
           <nz-form-control nzErrorTip="Ingrese un nombre válido (Mínimo 3 caracteres)">
-            <input nz-input formControlName="name" placeholder="Ej. Transporte, Nómina..." />
+            <input nz-input formControlName="name" placeholder="Ej. Nómina, Transporte, Servidores Cloud..." nzSize="large" />
           </nz-form-control>
         </nz-form-item>
 
         <nz-form-item>
-          <nz-form-label nzRequired>Naturaleza</nz-form-label>
+          <nz-form-label nzRequired>Naturaleza Contable</nz-form-label>
           <nz-form-control nzErrorTip="Seleccione si es ingreso o gasto">
-            <nz-select formControlName="type">
-              <nz-option nzValue="EXPENSE" nzLabel="Gasto"></nz-option>
+            <nz-select formControlName="type" nzSize="large">
+              <nz-option nzValue="EXPENSE" nzLabel="Gasto (Egreso)"></nz-option>
               <nz-option nzValue="INCOME" nzLabel="Ingreso"></nz-option>
             </nz-select>
           </nz-form-control>
@@ -140,26 +140,24 @@
     </ng-container>
   </nz-modal>
 
-  <!-- ============================================== -->
-  <!-- MODAL: CREAR MÉTODO DE PAGO                    -->
-  <!-- ============================================== -->
+  <!-- MODAL: CREAR MÉTODO DE PAGO -->
   <nz-modal
     [nzVisible]="isMethodModalVisible()"
-    nzTitle="Nuevo Método de Pago"
+    nzTitle="Nuevo Método o Billetera"
     (nzOnCancel)="closeMethodModal()"
     (nzOnOk)="onSubmitMethod()"
     [nzOkLoading]="isSubmitting()"
-    nzOkText="Guardar"
+    nzOkText="Crear Método"
     nzCancelText="Cancelar"
     nzWidth="90%"
-    [nzStyle]="{ maxWidth: '500px' }"
+    [nzStyle]="{ maxWidth: '480px' }"
   >
     <ng-container *nzModalContent>
-      <form nz-form [formGroup]="methodForm" nzLayout="vertical">
+      <form nz-form [formGroup]="methodForm" nzLayout="vertical" class="enterprise-modal-form">
         <nz-form-item>
-          <nz-form-label nzRequired>Nombre del Método</nz-form-label>
+          <nz-form-label nzRequired>Nombre del Método o Billetera</nz-form-label>
           <nz-form-control nzErrorTip="Ingrese un nombre válido (Mínimo 3 caracteres)">
-            <input nz-input formControlName="name" placeholder="Ej. Tarjeta de Crédito, Transferencia..." />
+            <input nz-input formControlName="name" placeholder="Ej. Cuenta Corriente Corporativa, Tarjeta Débito..." nzSize="large" />
           </nz-form-control>
         </nz-form-item>
       </form>

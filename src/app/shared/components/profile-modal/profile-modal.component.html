@@ -1,28 +1,31 @@
 <!-- src/app/shared/components/profile-modal/profile-modal.component.html -->
 <nz-modal
   [nzVisible]="isVisible()"
-  nzTitle="Configuración de Perfil"
+  nzTitle="Configuración de Perfil y Seguridad"
   (nzOnCancel)="closeModal()"
   [nzFooter]="null"
-  nzWidth="500px"
+  nzWidth="520px"
+  class="enterprise-profile-modal"
 >
   <ng-container *nzModalContent>
-    <nz-tabs>
+    <nz-tabs class="enterprise-modal-tabs">
 
       <!-- PESTAÑA 1: DATOS PERSONALES -->
       <nz-tab nzTitle="Datos Personales">
-        <form nz-form [formGroup]="profileForm" (ngSubmit)="updateProfile()" nzLayout="vertical">
+        <form nz-form [formGroup]="profileForm" (ngSubmit)="updateProfile()" nzLayout="vertical" class="profile-form">
           <nz-form-item>
             <nz-form-label nzRequired nzFor="fullName">Nombre Completo</nz-form-label>
             <nz-form-control nzErrorTip="Por favor ingresa un nombre válido (mín. 3 caracteres).">
-              <nz-input-group nzPrefixIcon="user">
-                <input type="text" nz-input formControlName="fullName" id="fullName" placeholder="Ej. Eyder Suárez" />
-              </nz-input-group>
+              <nz-input-wrapper class="full-width">
+                <span nz-icon nzType="user" nzInputPrefix class="input-prefix-icon"></span>
+                <input type="text" nz-input formControlName="fullName" id="fullName" placeholder="Ej. Roberto Gómez" nzSize="large" />
+              </nz-input-wrapper>
             </nz-form-control>
           </nz-form-item>
-          <div style="text-align: right; margin-top: 24px;">
-            <button nz-button type="button" (click)="closeModal()" style="margin-right: 8px;">Cancelar</button>
-            <button nz-button nzType="primary" type="submit" [nzLoading]="isSavingProfile()">
+
+          <div class="modal-footer-actions">
+            <button nz-button type="button" (click)="closeModal()" class="btn-cancel">Cancelar</button>
+            <button nz-button nzType="primary" type="submit" [nzLoading]="isSavingProfile()" class="btn-save-profile">
               Guardar Cambios
             </button>
           </div>
@@ -30,51 +33,52 @@
       </nz-tab>
 
       <!-- PESTAÑA 2: SEGURIDAD (CONTRASEÑA) -->
-      <nz-tab nzTitle="Seguridad">
-        <form nz-form [formGroup]="securityForm" (ngSubmit)="updatePassword()" nzLayout="vertical">
+      <nz-tab nzTitle="Seguridad & Acceso">
+        <form nz-form [formGroup]="securityForm" (ngSubmit)="updatePassword()" nzLayout="vertical" class="profile-form">
 
           <nz-form-item>
             <nz-form-label nzRequired nzFor="newPassword">Nueva Contraseña</nz-form-label>
             <nz-form-control nzErrorTip="Debe contener al menos 8 caracteres, una mayúscula, una minúscula y un carácter especial.">
-              <!-- Se añade el sufijo para el ojito -->
-              <nz-input-password nzPrefixIcon="lock">
-                <input [type]="passVisible() ? 'text' : 'password'" nz-input formControlName="newPassword" id="newPassword" placeholder="Mínimo 8 caracteres" />
+              <nz-input-password nzSize="large" class="full-width">
+                <span nz-icon nzType="lock" nzInputPrefix class="input-prefix-icon"></span>
+                <input
+                  [type]="passVisible() ? 'text' : 'password'"
+                  nz-input
+                  formControlName="newPassword"
+                  id="newPassword"
+                  placeholder="Mínimo 8 caracteres"
+                  nzSize="large" />
               </nz-input-password>
-              <!-- Template del icono interactivo -->
-              <ng-template #suffixPassIcon>
-                <span nz-icon [nzType]="passVisible() ? 'eye' : 'eye-invisible'"
-                      (click)="passVisible.set(!passVisible())"
-                      style="cursor: pointer; color: #8c8c8c;"></span>
-              </ng-template>
             </nz-form-control>
           </nz-form-item>
 
           <nz-form-item>
             <nz-form-label nzRequired nzFor="confirmPassword">Confirmar Contraseña</nz-form-label>
             <nz-form-control [nzErrorTip]="passwordErrorTpl">
-              <nz-input-password nzPrefixIcon="lock">
-                <input [type]="confirmVisible() ? 'text' : 'password'" nz-input formControlName="confirmPassword" id="confirmPassword" placeholder="Repite la nueva contraseña" />
+              <nz-input-password nzSize="large" class="full-width">
+                <span nz-icon nzType="lock" nzInputPrefix class="input-prefix-icon"></span>
+                <input
+                  [type]="confirmVisible() ? 'text' : 'password'"
+                  nz-input
+                  formControlName="confirmPassword"
+                  id="confirmPassword"
+                  placeholder="Repite la nueva contraseña"
+                  nzSize="large" />
               </nz-input-password>
-              <!-- Template del icono interactivo -->
-              <ng-template #suffixConfirmIcon>
-                <span nz-icon [nzType]="confirmVisible() ? 'eye' : 'eye-invisible'"
-                      (click)="confirmVisible.set(!confirmVisible())"
-                      style="cursor: pointer; color: #8c8c8c;"></span>
-              </ng-template>
 
               <ng-template #passwordErrorTpl let-control>
                 @if (securityForm.get('confirmPassword')?.hasError('passwordMismatch')) {
-                  Las contraseñas no coinciden.
+                  <span>Las contraseñas no coinciden.</span>
                 } @else {
-                  Por favor confirma tu contraseña.
+                  <span>Por favor confirma tu contraseña.</span>
                 }
               </ng-template>
             </nz-form-control>
           </nz-form-item>
 
-          <div style="text-align: right; margin-top: 24px;">
-            <button nz-button type="button" (click)="closeModal()" style="margin-right: 8px;">Cancelar</button>
-            <button nz-button nzType="primary" nzDanger type="submit" [nzLoading]="isSavingPassword()">
+          <div class="modal-footer-actions">
+            <button nz-button type="button" (click)="closeModal()" class="btn-cancel">Cancelar</button>
+            <button nz-button nzType="primary" nzDanger type="submit" [nzLoading]="isSavingPassword()" class="btn-update-password">
               Actualizar Contraseña
             </button>
           </div>

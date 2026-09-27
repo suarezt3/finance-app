@@ -2,131 +2,496 @@
 
 .app-layout {
   height: 100vh;
-  overflow: hidden; // 1. Bloqueamos el scroll del navegador a nivel global
+  overflow: hidden;
+  background-color: var(--color-bg-app);
 }
 
 // ==========================================
-// 1. BARRA LATERAL DESKTOP (Sider)
+// 1. SIDEBAR CORPORATIVO (Dark Slate Navy)
 // ==========================================
 .desktop-sidebar {
   position: relative;
-  z-index: 10;
-  height: 100%; // 2. El sidebar hereda estrictamente el 100vh del contenedor padre
-  box-shadow: 2px 0 6px rgba(0, 21, 41, 0.35);
+  z-index: 20;
+  height: 100%;
+  background: linear-gradient(180deg, #090e1a 0%, #0b1329 100%) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 2px 0 12px rgba(11, 19, 41, 0.15);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.25s cubic-bezier(0.2, 0, 0, 1) !important;
 
-  // ARQUITECTURA RESPONSIVA:
-  // Desaparece por completo en móviles (< 768px). El Drawer toma el control.
+  ::ng-deep .ant-layout-sider-children {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow-x: hidden;
+  }
+
   @media (max-width: 767px) {
     display: none !important;
   }
 }
 
+// Logo del Sidebar
 .sidebar-logo {
-  position: relative;
   height: 64px;
-  padding-left: 24px;
-  overflow: hidden;
-  line-height: 64px;
-  background: #001529;
-  transition: all 0.3s;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
 
-  h1 {
-    color: #fff;
-    font-size: 20px;
-    margin: 0;
-    font-weight: 600;
-    white-space: nowrap;
+  &.is-collapsed {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .logo-badge-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+
+    .vault-svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .logo-text-wrapper {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    .logo-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    .logo-tier {
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #93c5fd;
+      text-transform: uppercase;
+    }
   }
 }
 
-// ==========================================
-// 2. CABECERA (Header)
-// ==========================================
-nz-header {
-  background: #fff;
-  padding: 0;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
-  z-index: 9;
+// Contenedor del Menú
+.sidebar-nav-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 8px;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+  }
 }
 
-.app-header {
+// Separadores de Sección en Menú
+.menu-section-header {
+  padding: 12px 14px 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  text-transform: uppercase;
+
+  &.collapsed {
+    text-align: center;
+    font-size: 0.55rem;
+    padding: 8px 0 4px;
+  }
+}
+
+// Menú de Navegación NG-ZORRO Overrides
+.enterprise-nav-menu {
+  background: transparent !important;
+  border-right: none !important;
+
+  ::ng-deep {
+    .ant-menu-item {
+      border-radius: 8px;
+      margin: 4px 0 !important;
+      height: 42px !important;
+      line-height: 42px !important;
+      color: #94a3b8 !important;
+      font-weight: 500;
+      font-size: 0.875rem;
+      transition: all 0.15s ease;
+
+      span[nz-icon] {
+        font-size: 1rem;
+        color: #94a3b8;
+        transition: color 0.15s ease;
+      }
+
+      &:hover {
+        color: #ffffff !important;
+        background-color: rgba(255, 255, 255, 0.05) !important;
+
+        span[nz-icon] {
+          color: #ffffff;
+        }
+      }
+
+      &.ant-menu-item-selected {
+        background-color: rgba(37, 99, 235, 0.18) !important;
+        color: #ffffff !important;
+        font-weight: 600;
+        box-shadow: inset 3px 0 0 #3b82f6;
+
+        span[nz-icon] {
+          color: #60a5fa !important;
+        }
+      }
+    }
+  }
+}
+
+// Footer del Sidebar (Status)
+.sidebar-footer {
+  padding: 14px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(0, 0, 0, 0.15);
+
+  .security-status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .status-live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #10b981;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+      flex-shrink: 0;
+    }
+
+    .status-details {
+      display: flex;
+      flex-direction: column;
+
+      .status-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #e2e8f0;
+      }
+
+      .status-sub {
+        font-size: 0.65rem;
+        color: #64748b;
+      }
+    }
+  }
+}
+
+// Drawer Móvil
+.mobile-drawer-inner {
+  padding: 16px 8px;
+  background-color: #0b1329;
+  height: 100%;
+}
+
+// ==========================================
+// 2. CABECERA SUPERIOR (Apple Style / Clean White)
+// ==========================================
+.enterprise-header {
+  background: var(--color-surface) !important;
+  padding: 0 !important;
+  height: 64px !important;
+  line-height: 64px !important;
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.03);
+  z-index: 10;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.app-header-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 0 24px;
   height: 100%;
 
-  // UX: Reducimos el padding lateral para ganar espacio en celular
   @media (max-width: 767px) {
     padding: 0 16px;
   }
 }
 
-.header-trigger {
-  font-size: 20px;
-  cursor: pointer;
-  transition: color 0.3s;
-
-  // ACCESIBILIDAD (A11y): Ampliamos el área de toque táctil
-  padding: 8px 12px;
-  margin-left: -12px;
-  border-radius: 4px;
-
-  &:hover, &:active {
-    color: #1890ff;
-    background-color: rgba(0, 0, 0, 0.025);
-  }
-}
-
-// ==========================================
-// 3. ACCIONES DE USUARIO (Dropdown)
-// ==========================================
-.user-dropdown {
+.header-left {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 14px;
+
+  .header-toggle-btn {
+    background: none;
+    border: none;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background-color: #f1f5f9;
+      color: #0f172a;
+    }
+
+    .toggle-icon {
+      font-size: 1.15rem;
+    }
+  }
+
+  .header-context-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8125rem;
+
+    .context-workspace {
+      color: var(--color-slate-muted);
+      font-weight: 500;
+    }
+
+    .context-separator {
+      color: var(--color-border);
+    }
+
+    .context-current {
+      color: var(--color-navy);
+      font-weight: 600;
+    }
+
+    @media (max-width: 640px) {
+      .context-workspace,
+      .context-separator {
+        display: none;
+      }
+    }
+  }
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  .security-lock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    max-height: 26px;
+    line-height: normal;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #065f46;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    padding: 0 10px;
+    border-radius: 6px;
+    box-sizing: border-box;
+
+    .ssl-live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: #10b981;
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+      flex-shrink: 0;
+      animation: pulse-ssl-dot 2s infinite ease-in-out;
+    }
+
+    .lock-icon {
+      font-size: 0.75rem;
+      color: #059669;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .ssl-label {
+      line-height: 1;
+    }
+
+    html.dark & {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #34d399;
+
+      .lock-icon {
+        color: #10b981;
+      }
+    }
+  }
+
+  .theme-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    cursor: pointer;
+    color: var(--color-slate-muted);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: var(--color-surface-hover);
+      color: var(--color-navy);
+      border-color: var(--color-border-subtle);
+    }
+
+    .theme-icon {
+      font-size: 1.05rem;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .sun-icon {
+      color: #f59e0b;
+      filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4));
+    }
+
+    .moon-icon {
+      color: #64748b;
+    }
+
+    &:hover .theme-icon {
+      transform: rotate(18deg) scale(1.1);
+    }
+  }
+
+  @keyframes pulse-ssl-dot {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.45;
+      transform: scale(0.85);
+    }
+  }
+}
+
+// User Profile Button
+.user-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px;
+  border-radius: 8px;
   cursor: pointer;
-  color: rgba(0, 0, 0, 0.85);
-  padding: 0 8px;
-  height: 100%;
-  transition: background-color 0.3s;
-  border-radius: 4px;
+  transition: background-color 0.15s ease;
 
-  &:hover, &:active {
-    background-color: rgba(0, 0, 0, 0.025);
+  &:hover {
+    background-color: var(--color-surface-hover);
   }
 
-  .user-name {
-    font-weight: 500;
-    font-size: 14px;
+  .enterprise-avatar {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 0.8rem;
+  }
+
+  .user-meta {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+
+    .user-name {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--color-navy);
+    }
+
+    .user-role {
+      font-size: 0.7rem;
+      color: var(--color-slate-muted);
+    }
+  }
+
+  .dropdown-chevron {
+    font-size: 0.7rem;
+    color: #94a3b8;
+  }
+}
+
+// User Dropdown Menu
+.enterprise-dropdown-menu {
+  border-radius: 12px !important;
+  box-shadow: var(--shadow-dropdown) !important;
+  border: 1px solid var(--color-border) !important;
+  min-width: 200px !important;
+  padding: 6px !important;
+
+  .dropdown-user-header {
+    padding: 8px 12px;
+    font-size: 0.775rem;
+    color: #64748b;
+    word-break: break-all;
   }
 }
 
 // ==========================================
-// 4. ÁREA DE TRABAJO PRINCIPAL (Content)
+// 3. ÁREA DE TRABAJO PRINCIPAL (Viewport)
 // ==========================================
-nz-content {
-  // 3. MAGIA ARQUITECTÓNICA: Delegamos el scroll exclusivamente a este contenedor
-  height: calc(100vh - 64px); // Altura total de la ventana menos el Header
-  overflow-y: auto; // Se genera la barra de desplazamiento interna
+.main-content-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
 }
 
-.inner-content {
-  padding: 24px;
-  background: #f0f2f5;
-  min-height: 100%; // Garantizamos que el fondo gris cubra al menos la pantalla visible
+.enterprise-viewport {
+  flex: 1;
+  overflow-y: auto;
+  background-color: var(--color-bg-app);
 
-  // UX: Minimizamos los márgenes muertos en pantallas pequeñas
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+}
+
+.inner-workspace {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 28px;
+  box-sizing: border-box;
+
   @media (max-width: 767px) {
     padding: 16px;
   }
 }
 
-// ==========================================
-// 5. CLASES UTILITARIAS Y DE APOYO
-// ==========================================
-
-// Oculta elementos estrictamente en el breakpoint móvil
+// Helper Responsive
 .hide-on-mobile {
   @media (max-width: 767px) {
     display: none !important;

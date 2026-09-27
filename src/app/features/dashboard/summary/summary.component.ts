@@ -8,8 +8,6 @@ import { BreakpointObserver } from '@angular/cdk/layout';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzStatisticModule } from 'ng-zorro-antd/statistic';
-import { NgxEchartsDirective } from 'ngx-echarts';
-import { EChartsOption } from 'echarts';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
@@ -20,10 +18,12 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { FinancialSummary } from './summary.model';
 import { TransactionWithDetails } from '../../../core/models/transaction.model';
-import { FinancialChartService } from '../../../core/services/charts/financial-chart.service';
 import { TransactionService } from '../../../core/services/transaction.service';
 import { CatalogService, PaymentMethod } from '../../../core/services/catalog.service';
 import { TransactionModalComponent } from '../../../shared/components/transaction-modal/transaction-modal.component';
+import { ExpensesDonutChart, ExpenseCategorySlice } from './expenses-donut-chart/expenses-donut-chart';
+import { BalanceAreaChart } from './balance-area-chart/balance-area-chart';
+import { ThemeService } from '../../../core/services/theme.service';
 
 type Timeframe = '7d' | '30d' | '1y' | 'all' | 'custom-year';
 
@@ -45,18 +45,18 @@ export interface TransactionView extends TransactionWithDetails {
   standalone: true,
   imports: [
     DecimalPipe, DatePipe, FormsModule,
-    NzGridModule, NzCardModule, NzStatisticModule, NgxEchartsDirective,
+    NzGridModule, NzCardModule, NzStatisticModule,
     NzButtonModule, NzIconModule, NzRadioModule, NzDatePickerModule,
     NzSelectModule, NzTableModule, NzTagModule,
-    TransactionModalComponent
+    TransactionModalComponent, ExpensesDonutChart, BalanceAreaChart
   ],
   templateUrl: './summary.component.html',
   styleUrl: './summary.component.scss'
 })
 export class SummaryComponent implements OnInit {
-  private readonly chartService = inject(FinancialChartService);
   private readonly transactionService = inject(TransactionService);
   private readonly catalogService = inject(CatalogService);
+  readonly themeService = inject(ThemeService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly breakpointObserver = inject(BreakpointObserver);
 
@@ -234,13 +234,12 @@ export class SummaryComponent implements OnInit {
     };
   });
 
-  // -- GRÁFICO DE BALANCE --
-  readonly balanceChartOptions = computed<EChartsOption | null>(() => {
+  // -- DATOS PARA EL GRÁFICO DE BALANCE D3 (CURVA Y GRADIENTE) --
+  readonly balanceChartData = computed<{ dates: string[]; values: number[] }>(() => {
     const txs = this.masterFilteredTransactions();
     const tf = this.timeframe();
     const methodId = this.selectedPaymentMethod();
-    const isMobile = this.isMobileView();
-    if (txs.length === 0) return null;
+    if (txs.length === 0) return { dates: [], values: [] };
 
     const isMonthly = tf === '1y' || tf === 'all' || tf === 'custom-year';
     const sortedTxs = [...txs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -250,7 +249,6 @@ export class SummaryComponent implements OnInit {
       const dateObj = new Date(tx.date);
       let key = isMonthly ? `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-01` : tx.date;
 
-      // Calculamos el neto diario respetando el impacto de transferencia
       let net = 0;
       if (!tx.isTransfer) {
         net = tx.type === 'INCOME' ? Number(tx.amount) : -Number(tx.amount);
@@ -264,46 +262,85 @@ export class SummaryComponent implements OnInit {
     const dates: string[] = [];
     const values: number[] = [];
     let runningBalance = 0;
-    const monthFormatter = new Intl.DateTimeFormat('es-CO', { month: 'short', year: 'numeric' });
 
     for (const [dateString, net] of groupedNet.entries()) {
       runningBalance += net;
-      if (isMonthly) {
-        const dateObj = new Date(`${dateString}T00:00:00`);
-        const formatted = monthFormatter.format(dateObj).replace(/^\w/, (c) => c.toUpperCase());
-        dates.push(formatted);
-      } else {
-        dates.push(dateString);
-      }
+      dates.push(dateString);
       values.push(runningBalance);
     }
 
-    return this.chartService.getBalanceHistoryOptions(dates, values, isMobile);
+    return { dates, values };
   });
 
-  // -- GRÁFICO DE GASTOS --
-  readonly expensesChartOptions = computed<EChartsOption | null>(() => {
+  // -- DATOS PARA EL GRÁFICO DE ANILLOS D3 (SLATE NAVY & FINANCIAL BLUE) --
+  readonly expenseCategoriesData = computed<ExpenseCategorySlice[]>(() => {
     const txs = this.masterFilteredTransactions();
-    const isMobile = this.isMobileView();
-    // Filtramos estrictamente transferencias para no inflar las categorías de gasto
     const expenses = txs.filter(t => t.type === 'EXPENSE' && !t.isTransfer && t.categories?.name);
-    if (expenses.length === 0) return null;
+    if (expenses.length === 0) return [];
 
     const categoryTotals = new Map<string, number>();
+    let total = 0;
+
     for (const exp of expenses) {
       const catName = exp.categories!.name;
-      categoryTotals.set(catName, (categoryTotals.get(catName) || 0) + Number(exp.amount));
+      const amt = Number(exp.amount);
+      categoryTotals.set(catName, (categoryTotals.get(catName) || 0) + amt);
+      total += amt;
     }
 
-    const sortedCategories = Array.from(categoryTotals.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
+    if (total === 0) return [];
 
-    return this.chartService.getExpensesByCategoryOptions(
-      sortedCategories.map(item => item[0]),
-      sortedCategories.map(item => item[1]),
-      isMobile
-    );
+    const sorted = Array.from(categoryTotals.entries())
+      .sort((a, b) => b[1] - a[1]);
+
+    // Paleta Slate Navy & Financial Blue reactiva al modo oscuro
+    const isDark = this.themeService.isDarkMode();
+    const colors = isDark ? [
+      '#38bdf8', // Sky Blue 400 (Vibrante)
+      '#60a5fa', // Blue 400 (Eléctrico)
+      '#3b82f6', // Financial Blue 500
+      '#818cf8', // Indigo Slate 400
+      '#a78bfa', // Violet Tint 400
+    ] : [
+      '#0f172a', // Slate Navy Profundo (Top 1)
+      '#1e3a8a', // Deep Navy (Top 2)
+      '#2563eb', // Financial Blue (Top 3)
+      '#3b82f6', // Electric Blue (Top 4)
+      '#60a5fa', // Sky Blue (Top 5)
+    ];
+
+    const otherColor = isDark ? '#64748b' : '#94a3b8';
+
+    const result: ExpenseCategorySlice[] = [];
+    const topLimit = 5;
+
+    for (let i = 0; i < Math.min(topLimit, sorted.length); i++) {
+      const [name, amount] = sorted[i];
+      result.push({
+        name,
+        amount,
+        percentage: (amount / total) * 100,
+        color: colors[i] || otherColor
+      });
+    }
+
+    if (sorted.length > topLimit) {
+      const othersAmount = sorted.slice(topLimit).reduce((sum, item) => sum + item[1], 0);
+      if (othersAmount > 0) {
+        result.push({
+          name: 'Otras categorías',
+          amount: othersAmount,
+          percentage: (othersAmount / total) * 100,
+          color: otherColor
+        });
+      }
+    }
+
+    return result;
+  });
+
+  readonly totalExpensesSum = computed<number>(() => {
+    return this.expenseCategoriesData().reduce((acc, cat) => acc + cat.amount, 0);
   });
 
   readonly timeframeText = computed(() => {

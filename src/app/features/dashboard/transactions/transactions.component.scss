@@ -1,176 +1,327 @@
 // src/app/features/dashboard/transactions/transactions.component.scss
 
 .transactions-container {
-  /* En escritorio usamos padding normal, en móvil lo reducimos al mínimo */
-  padding: 24px;
+  padding: 24px 28px;
   background-color: #ffffff;
-  border-radius: 8px;
-  min-height: calc(100vh - 150px);
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  min-height: calc(100vh - 140px);
 
   @media (max-width: 767px) {
-    padding: 12px;
+    padding: 16px;
+    border-radius: 12px;
   }
 }
 
-/* ==========================================
-   1. CABECERA Y ACCIONES
-   ========================================== */
+// ==========================================
+// 1. CABECERA
+// ==========================================
 .transactions-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
   gap: 16px;
-}
 
-.header-title {
-  h2 {
-    margin: 0;
-    color: #262626;
-    font-size: 24px;
-    font-weight: 600;
+  .header-title {
+    .title-with-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
 
-    @media (max-width: 767px) {
-      font-size: 20px;
+      h2 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+      }
+
+      .count-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #475569;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        padding: 2px 8px;
+        border-radius: 9999px;
+      }
+    }
+
+    p {
+      color: #64748b;
+      margin-top: 4px;
+      margin-bottom: 0;
+      font-size: 0.8125rem;
     }
   }
-  p {
-    color: #8c8c8c;
-    margin-top: 4px;
-    margin-bottom: 0;
-  }
-}
 
-.header-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
+  .header-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
 
-  /* Transformación de botones: Oculta el texto en pantallas muy pequeñas */
-  .btn-text {
-    @media (max-width: 575px) {
-      display: none;
+    .btn-action-export {
+      border-radius: 8px;
+      font-weight: 600;
+      height: 38px;
+    }
+
+    .btn-action-new {
+      border-radius: 8px;
+      background-color: #0f172a !important;
+      border-color: #0f172a !important;
+      color: #ffffff !important;
+      font-weight: 600;
+      height: 38px;
+
+      &:hover {
+        background-color: #1e293b !important;
+      }
     }
   }
 }
 
-/* ==========================================
-   2. TARJETAS KPI (Zorro Overrides)
-   ========================================== */
+// ==========================================
+// 2. TARJETAS KPI COMPACTAS
+// ==========================================
 .kpi-row {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+
+  .kpi-col {
+    margin-bottom: 8px;
+  }
 }
 
-.kpi-col {
-  margin-bottom: 16px;
-}
+.tx-kpi-card {
+  border-radius: 12px !important;
+  border: 1px solid #e2e8f0 !important;
+  background-color: #ffffff !important;
+  padding: 12px 16px !important;
+  transition: all 0.15s ease;
 
-/* Restauración del estilo de la tarjeta de Saldo Global */
-.highlight-card {
-  background-color: #f0f5ff !important;
-  border-color: #adc6ff !important;
-}
+  &:hover {
+    border-color: #cbd5e1 !important;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  }
 
-/* Modificamos los estilos internos de NG-Zorro sin afectar la app global */
-:host ::ng-deep {
-  .kpi-card {
-    .ant-card-body {
-      @media (max-width: 767px) {
-        padding: 12px; /* Recuperamos espacio interno */
+  &.highlight-card {
+    background-color: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+  }
+
+  ::ng-deep .ant-card-body {
+    padding: 0 !important;
+  }
+
+  .kpi-title {
+    display: block;
+    font-size: 0.725rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+  }
+
+  .kpi-value-wrap {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+
+    .kpi-currency {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #64748b;
+
+      &.income {
+        color: #059669;
+      }
+
+      &.expense {
+        color: #dc2626;
       }
     }
 
-    .ant-statistic-title {
-      @media (max-width: 767px) {
-        font-size: 12px;
-        margin-bottom: 4px;
-      }
-    }
+    .kpi-num {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
 
-    .ant-statistic-content-value {
-      @media (max-width: 767px) {
-        font-size: 16px; /* Evita que cifras millonarias desborden el 2x2 */
+      &.income {
+        color: #059669;
+      }
+
+      &.expense {
+        color: #dc2626;
+      }
+
+      &.negative {
+        color: #dc2626;
       }
     }
   }
 }
 
-/* ==========================================
-   3. BARRA DE FILTROS
-   ========================================== */
-.filters-container {
-  margin-bottom: 24px;
-  padding: 16px;
-  background-color: #fafafa;
-  border-radius: 8px;
-  border: 1px solid #f0f0f0;
+// ==========================================
+// 3. BARRA DE FILTROS AVANZADA
+// ==========================================
+.filters-card-wrapper {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
 
-  @media (max-width: 767px) {
-    padding: 12px;
+  .full-width {
+    width: 100%;
   }
-}
 
-.full-width {
-  width: 100%;
-}
-
-.filter-actions {
-  display: flex;
-  align-items: flex-end;
-
-  @media (max-width: 767px) {
-    margin-top: 8px; /* Separación extra cuando los filtros se apilan en móvil */
+  .search-input-wrapper {
+    .search-prefix-icon {
+      color: #94a3b8;
+      font-size: 0.95rem;
+    }
   }
-}
 
-/* ==========================================
-   4. TABLA RESPONSIVA Y ACCIONES
-   ========================================== */
-.table-container {
-  width: 100%;
-  max-width: 100%;
-  overflow: hidden; /* Delega el scroll horizontal al componente interno de Zorro */
-}
-
-.action-buttons {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-
-  .btn-edit {
-    color: #1890ff;
+  .btn-clear-filters {
+    border-radius: 8px;
+    height: 38px;
+    color: #64748b;
+    font-weight: 600;
 
     &:hover {
-      color: #40a9ff;
-      background-color: rgba(24, 144, 255, 0.1);
+      color: #0f172a;
+      border-color: #cbd5e1;
     }
   }
 }
 
-/* ==========================================
-   5. PERSONALIZACIÓN DE TABLA (Header UI)
-   ========================================== */
-:host ::ng-deep {
-  .ant-table-thead > tr > th {
-    /* Fondo azul hielo para separar visualmente la cabecera del contenido */
-    background-color: #f0f5ff !important;
+// ==========================================
+// 4. TABLA DE TRANSACCIONES
+// ==========================================
+.table-container {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #ffffff;
+}
 
-    /* Texto azul oscuro para mantener contraste y legibilidad (A11y) */
-    color: #1d39c4 !important;
-
-    /* Micro-tipografía moderna para datos tabulares */
-    font-weight: 600;
-    text-transform: uppercase;
-    font-size: 12px;
-    letter-spacing: 0.5px;
-
-    /* Borde inferior sólido para anclar la cabecera visualmente */
-    border-bottom: 2px solid #adc6ff !important;
+.enterprise-tx-table {
+  .cell-date {
+    font-size: 0.8125rem;
+    color: #475569;
+    font-weight: 500;
   }
 
-  /* Opcional: Un sutil efecto hover en las filas para mejorar la lectura en móvil */
-  .ant-table-tbody > tr:hover > td {
-    background-color: rgba(24, 144, 255, 0.02) !important;
+  .cell-desc {
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 0.875rem;
+  }
+
+  .cell-category {
+    .category-name {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #334155;
+    }
+  }
+
+  .cell-method {
+    .method-single {
+      font-size: 0.8125rem;
+      color: #64748b;
+    }
+
+    .method-transfer-flow {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.8125rem;
+      color: #475569;
+
+      .flow-arrow {
+        color: #2563eb;
+        font-size: 0.7rem;
+      }
+    }
+  }
+
+  .status-tag {
+    display: inline-block;
+    font-size: 0.725rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+
+    &.tag-income {
+      background-color: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+
+    &.tag-expense {
+      background-color: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+
+    &.tag-transfer {
+      background-color: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+    }
+  }
+
+  .cell-amount {
+    font-size: 0.925rem;
+    font-weight: 700;
+    color: #475569;
+
+    &.income {
+      color: #059669;
+    }
+
+    &.expense {
+      color: #dc2626;
+    }
+  }
+
+  .action-buttons-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+
+    .action-btn {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+
+      &.edit {
+        color: #475569;
+
+        &:hover {
+          background-color: #f1f5f9;
+          color: #0f172a;
+        }
+      }
+
+      &.delete {
+        color: #dc2626;
+
+        &:hover {
+          background-color: #fef2f2;
+        }
+      }
+    }
   }
 }

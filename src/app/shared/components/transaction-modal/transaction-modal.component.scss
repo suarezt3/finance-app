@@ -1,71 +1,149 @@
 // src/app/shared/components/transaction-modal/transaction-modal.component.scss
+
 :host {
   display: block;
 }
 
-/* 1. TIPO DE TRANSACCIÓN: Grupo de radios distribuido equitativamente */
+.transaction-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  ::ng-deep {
+    .ant-form-item {
+      margin-bottom: 14px;
+    }
+
+    .ant-form-item-label > label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .ant-input,
+    .ant-select-selector,
+    .ant-picker {
+      border-radius: 8px !important;
+    }
+  }
+}
+
+// 1. SELECTOR DE TIPO (Apple Style Segmented Control)
+.type-form-item {
+  margin-bottom: 16px !important;
+}
+
 .type-selector-group {
   display: flex;
   width: 100%;
-  margin-bottom: 8px;
+  background-color: #f1f5f9;
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
 
-  /* ... (Mantén aquí el código ::ng-deep label.ant-radio-button-wrapper que ya tenías para el flexbox y modo responsivo) ... */
+  ::ng-deep {
+    label.ant-radio-button-wrapper {
+      flex: 1;
+      text-align: center;
+      border: none !important;
+      background: transparent !important;
+      color: #64748b;
+      font-size: 0.85rem;
+      font-weight: 600;
+      height: 36px;
+      line-height: 36px;
+      border-radius: 7px;
+      transition: all 0.15s ease;
 
-  /* =======================================================
-     TEMAS SEMÁNTICOS (Sobrescribiendo el azul por defecto)
-     ======================================================= */
+      &::before {
+        display: none !important;
+      }
 
-  /* TEMA: GASTO (Rojo Suave / Alerta) */
+      &:hover {
+        color: #0f172a;
+      }
+    }
+  }
+
+  // TEMA: GASTO
   &.theme-expense {
     ::ng-deep .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
-      background-color: #ff4d4f; // Color rojo semántico
-      border-color: #ff4d4f;
-      color: #fff;
-      &:hover {
-        background-color: #ff7875;
-        border-color: #ff7875;
-      }
+      background-color: #ffffff !important;
+      color: #dc2626 !important;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+      font-weight: 700;
     }
   }
 
-  /* TEMA: INGRESO (Verde Éxito) */
+  // TEMA: INGRESO
   &.theme-income {
     ::ng-deep .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
-      background-color: #52c41a; // Color verde semántico
-      border-color: #52c41a;
-      color: #fff;
-      &:hover {
-        background-color: #73d13d;
-        border-color: #73d13d;
-      }
+      background-color: #ffffff !important;
+      color: #059669 !important;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+      font-weight: 700;
     }
   }
 
-  /* TEMA: TRANSFERENCIA (Mantiene el azul estándar neutral) */
+  // TEMA: TRANSFERENCIA
   &.theme-transfer {
     ::ng-deep .ant-radio-button-wrapper-checked:not(.ant-radio-button-wrapper-disabled) {
-      background-color: #1890ff;
-      border-color: #1890ff;
-      color: #fff;
-      &:hover {
-        background-color: #40a9ff;
-        border-color: #40a9ff;
-      }
+      background-color: #ffffff !important;
+      color: #2563eb !important;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+      font-weight: 700;
     }
   }
 }
 
-/* 2. MONTO: Aumento de jerarquía visual */
+// 2. MONTO
 .amount-field {
-  ::ng-deep .ant-input-number-input {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1f1f1f;
+  .enterprise-amount-input {
+    border-radius: 8px;
+
+    ::ng-deep .ant-input-number-input {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
   }
 }
 
-/* 3. UTILIDADES: Ajustes menores de espaciado */
-.form-icon {
-  margin-right: 8px;
-  color: #8c8c8c;
+.insufficient-balance-alert {
+  font-weight: 600;
+  color: #dc2626;
+  font-size: 0.775rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// 3. INDICADOR DE SALDO
+.balance-indicator {
+  font-size: 0.75rem;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #64748b;
+  font-weight: 500;
+
+  &.checking {
+    color: #2563eb;
+  }
+
+  &.alert {
+    color: #dc2626;
+    font-weight: 600;
+  }
+}
+
+// 4. DESCRIPCIÓN WRAPPER
+.custom-desc-wrapper {
+  .desc-prefix-icon {
+    color: #94a3b8;
+    margin-right: 4px;
+  }
 }

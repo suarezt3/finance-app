@@ -1,92 +1,199 @@
 // src/app/features/dashboard/config/config.component.scss
 
 .config-container {
-  padding: 24px;
+  padding: 24px 28px;
   background-color: #ffffff;
-  border-radius: 8px;
-  min-height: calc(100vh - 150px);
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  min-height: calc(100vh - 140px);
 
   @media (max-width: 767px) {
     padding: 16px;
+    border-radius: 12px;
   }
 }
 
+// ==========================================
+// 1. CABECERA
+// ==========================================
 .config-header {
   margin-bottom: 24px;
 
   .header-title {
-    h2 {
-      margin: 0;
-      color: #262626;
-      font-size: 24px;
-      font-weight: 600;
+    .title-with-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
 
-      @media (max-width: 767px) {
-        font-size: 20px;
+      h2 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: -0.025em;
+      }
+
+      .catalog-badge {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: #475569;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        padding: 2px 8px;
+        border-radius: 9999px;
       }
     }
+
     p {
-      color: #8c8c8c;
+      color: #64748b;
       margin-top: 4px;
       margin-bottom: 0;
+      font-size: 0.8125rem;
     }
   }
 }
 
-.tab-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 16px;
+// ==========================================
+// 2. PESTAÑAS Y TOOLBAR
+// ==========================================
+.enterprise-config-tabs {
+  ::ng-deep {
+    .ant-tabs-nav {
+      margin-bottom: 20px !important;
 
-  .btn-text {
-    @media (max-width: 575px) {
-      display: none; // Oculta el texto en móviles, deja solo el icono de "+"
-    }
-  }
-}
-
-.table-container {
-  width: 100%;
-  max-width: 100%;
-  overflow: hidden; // Permite el scroll nativo x-axis de NG-Zorro
-}
-
-/* ==========================================
-   OPTIMIZACIÓN DE ZORRO PARA MÓVILES
-   ========================================== */
-:host ::ng-deep {
-  .config-tabs {
-    .ant-tabs-nav-list {
-      @media (max-width: 767px) {
-        width: 100%; // Las pestañas ocupan el 100% del ancho
+      &::before {
+        border-bottom-color: #e2e8f0 !important;
       }
     }
 
     .ant-tabs-tab {
-      @media (max-width: 767px) {
-        flex: 1; // Distribuye las pestañas de manera equitativa
-        justify-content: center;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: #64748b;
+      padding: 10px 16px !important;
+
+      &:hover {
+        color: #0f172a;
+      }
+
+      &.ant-tabs-tab-active .ant-tabs-tab-btn {
+        color: #0f172a !important;
+        font-weight: 700;
+      }
+    }
+
+    .ant-tabs-ink-bar {
+      background-color: #0f172a !important;
+      height: 2.5px !important;
+    }
+  }
+}
+
+.tab-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  .tab-description {
+    font-size: 0.8125rem;
+    color: #64748b;
+  }
+
+  .btn-create-item {
+    border-radius: 8px;
+    background-color: #0f172a !important;
+    border-color: #0f172a !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    height: 38px;
+
+    &:hover {
+      background-color: #1e293b !important;
+    }
+
+    .btn-text {
+      @media (max-width: 575px) {
+        display: none;
       }
     }
   }
 }
 
-/* ==========================================
-   OPTIMIZACIÓN DE TABLA PARA MÓVILES
-   ========================================== */
-.action-text {
-  /* En pantallas menores a 768px (Móviles y Tablets pequeñas) ocultamos el texto de las tablas */
-  @media (max-width: 767px) {
-    display: none;
+// ==========================================
+// 3. TABLAS DE CATÁLOGO
+// ==========================================
+.table-container {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #ffffff;
+}
+
+.enterprise-config-table {
+  .item-name {
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 0.875rem;
+  }
+
+  .nature-badge {
+    display: inline-block;
+    font-size: 0.725rem;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 6px;
+
+    &.income {
+      background-color: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+    }
+
+    &.expense {
+      background-color: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+  }
+
+  .btn-action-delete {
+    color: #dc2626;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.8125rem;
+
+    &:hover {
+      background-color: #fef2f2;
+    }
+
+    .action-text {
+      @media (max-width: 767px) {
+        display: none;
+      }
+    }
   }
 }
 
-/* Modificamos los estilos internos de NG-Zorro de la tabla */
-:host ::ng-deep {
-  .ant-table-cell-fix-right {
-    @media (max-width: 767px) {
-      /* Aseguramos que el botón del icono quede perfectamente centrado */
-      padding: 8px 4px !important;
+// ==========================================
+// 4. FORMULARIOS DENTRO DE MODALES
+// ==========================================
+.enterprise-modal-form {
+  ::ng-deep {
+    .ant-form-item-label > label {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .ant-input,
+    .ant-select-selector {
+      border-radius: 8px;
     }
   }
 }

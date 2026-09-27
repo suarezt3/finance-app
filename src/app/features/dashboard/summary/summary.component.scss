@@ -1,13 +1,12 @@
 // src/app/features/dashboard/summary/summary.component.scss
 
 .summary-container {
-  // Eliminamos el padding estático. El padre (.inner-content) ya gestiona los márgenes generales.
   width: 100%;
 }
 
-/* ==========================================
-   1. CABECERA Y CONTROLES
-   ========================================== */
+// ==========================================
+// 1. CABECERA Y FILTROS
+// ==========================================
 .summary-header {
   display: flex;
   justify-content: space-between;
@@ -16,123 +15,334 @@
   gap: 16px;
   margin-bottom: 24px;
 
-  @media (max-width: 767px) {
+  @media (max-width: 900px) {
     flex-direction: column;
     align-items: flex-start;
   }
 }
 
 .summary-title {
-  h2 {
-    margin: 0;
-    color: #262626;
-    font-size: 24px;
-    font-weight: 600;
+  .title-with-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    h2 {
+      margin: 0;
+      color: var(--color-navy);
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+    }
+
+    .live-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--color-blue-primary);
+      background: var(--color-blue-subtle);
+      border: 1px solid var(--color-border);
+      padding: 2px 8px;
+      border-radius: 9999px;
+    }
   }
-  p {
-    margin: 0;
-    color: #8c8c8c;
-    margin-top: 4px;
-    font-size: 14px;
+
+  .update-subline {
+    margin: 4px 0 0 0;
+    color: var(--color-slate-muted);
+    font-size: 0.8125rem;
   }
 }
 
 .summary-actions {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
   flex-wrap: wrap;
-  width: 100%;
 
-  @media (min-width: 768px) {
-    width: auto;
-    flex-wrap: nowrap;
+  @media (max-width: 767px) {
+    width: 100%;
+  }
+
+  .apple-segmented-control {
+    background-color: var(--color-surface-hover);
+    border: 1px solid var(--color-border);
+    padding: 3px;
+    border-radius: 9px;
+  }
+
+  .enterprise-select {
+    border-radius: 8px;
+
+    &.year-picker {
+      width: 130px;
+      @media (max-width: 767px) {
+        flex: 1;
+      }
+    }
+
+    &.wallet-selector {
+      min-width: 160px;
+      @media (max-width: 767px) {
+        flex: 1;
+      }
+    }
+  }
+
+  .btn-new-transaction {
+    height: 38px;
+    border-radius: 8px;
+    background-color: #0f172a !important;
+    border-color: #0f172a !important;
+    color: #ffffff !important;
+    font-weight: 600;
+    font-size: 0.85rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+
+    &:hover {
+      background-color: #1e293b !important;
+    }
+
+    html.dark & {
+      background-color: #2563eb !important;
+      border-color: #2563eb !important;
+      &:hover {
+        background-color: #1d4ed8 !important;
+      }
+    }
+
+    @media (max-width: 767px) {
+      width: 100%;
+    }
   }
 }
 
-/* ==========================================
-   2. UX MÓVIL: SCROLL HORIZONTAL OCULTO
-   ========================================== */
 .timeframe-scroll-container {
-  max-width: 100%;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch; /* Suavidad nativa en iOS */
-
-  /* Ocultamos el scrollbar para una UI más limpia */
+  scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
   }
-  scrollbar-width: none; /* Firefox */
+}
 
-  nz-radio-group {
-    display: inline-flex;
-    white-space: nowrap;
+// ==========================================
+// 2. TARJETAS KPI (Apple Style Single-Elevation)
+// ==========================================
+.kpi-grid-row {
+  margin-bottom: 20px;
+}
+
+.dashboard-kpi-card {
+  border-radius: 14px !important;
+  border: 1px solid var(--color-border) !important;
+  background-color: var(--color-surface) !important;
+  box-shadow: var(--shadow-card) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  margin-bottom: 12px;
+
+  &:hover {
+    border-color: var(--color-border-subtle) !important;
+    box-shadow: var(--shadow-hover) !important;
+    transform: translateY(-1px);
   }
-}
 
-.year-picker {
-  width: 140px;
-  @media (max-width: 767px) {
-    flex: 1; /* En móvil, ocupa el espacio sobrante junto al botón */
+  ::ng-deep .ant-card-body {
+    padding: 20px 22px !important;
   }
-}
 
-.btn-new-transaction {
-  @media (max-width: 767px) {
-    width: 100%; /* Botón de bloque completo para fácil acceso con el pulgar */
+  .kpi-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+
+    .kpi-label {
+      font-size: 0.775rem;
+      font-weight: 700;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .kpi-icon-wrap {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+
+      &.neutral {
+        background-color: var(--color-surface-hover);
+        color: var(--color-navy);
+      }
+
+      &.income {
+        background-color: #ecfdf5;
+        color: #059669;
+
+        html.dark & {
+          background-color: rgba(16, 185, 129, 0.15);
+          color: #34d399;
+        }
+      }
+
+      &.expense {
+        background-color: #fef2f2;
+        color: #dc2626;
+
+        html.dark & {
+          background-color: rgba(239, 68, 68, 0.15);
+          color: #f87171;
+        }
+      }
+    }
   }
-}
 
-/* ==========================================
-   3. OPTIMIZACIÓN DE TARJETAS (Zorro Overrides)
-   ========================================== */
-.dashboard-card {
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-  margin-bottom: 16px;
-}
+  .kpi-value-row {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin-bottom: 8px;
 
-/*
-  Arquitectura: Usamos :host para anclar el ::ng-deep y evitar
-  que esta regla de padding se fugue a otras vistas de la app.
-*/
-:host ::ng-deep {
-  .dashboard-card {
-    .ant-card-head {
-      @media (max-width: 767px) {
-        padding: 0 12px;
-        min-height: 40px;
+    .currency-symbol {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--color-slate-muted);
+
+      &.income-color {
+        color: #059669;
+        html.dark & { color: #34d399; }
+      }
+
+      &.expense-color {
+        color: #dc2626;
+        html.dark & { color: #f87171; }
       }
     }
 
-    .ant-card-head-title {
-      @media (max-width: 767px) {
-        padding: 12px 0;
-        font-size: 14px;
+    .kpi-amount {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--color-navy);
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+
+      &.income-color {
+        color: #059669;
+        html.dark & { color: #34d399; }
       }
+
+      &.expense-color {
+        color: #dc2626;
+        html.dark & { color: #f87171; }
+      }
+
+      &.negative {
+        color: #dc2626;
+        html.dark & { color: #f87171; }
+      }
+    }
+  }
+
+  .kpi-footer-status {
+    .kpi-meta-sub {
+      font-size: 0.75rem;
+      color: var(--color-slate-muted);
+    }
+  }
+
+  .variation-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.725rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+
+    &.success {
+      background-color: #ecfdf5;
+      color: #059669;
+      border: 1px solid #a7f3d0;
+
+      html.dark & {
+        background-color: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+        border-color: rgba(16, 185, 129, 0.3);
+      }
+    }
+
+    &.danger {
+      background-color: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+
+      html.dark & {
+        background-color: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+        border-color: rgba(239, 68, 68, 0.3);
+      }
+    }
+  }
+}
+
+// ==========================================
+// 3. GRÁFICOS Y ANALÍTICA
+// ==========================================
+.charts-row {
+  margin-bottom: 24px;
+}
+
+.dashboard-chart-card,
+.dashboard-table-card {
+  border-radius: 14px !important;
+  border: 1px solid var(--color-border) !important;
+  background-color: var(--color-surface) !important;
+  box-shadow: var(--shadow-card) !important;
+  margin-bottom: 12px;
+
+  ::ng-deep {
+    .ant-card-head {
+      border-bottom: 1px solid var(--color-border) !important;
+      padding: 0 20px !important;
+      min-height: 52px !important;
     }
 
     .ant-card-body {
-      @media (max-width: 767px) {
-        padding: 12px; /* Recuperamos 12px de espacio en cada lado para los gráficos */
-      }
+      padding: 18px !important;
+    }
+  }
+
+  .chart-header-group {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+
+    .chart-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--color-navy);
+      letter-spacing: -0.015em;
+    }
+
+    .chart-sub {
+      font-size: 0.725rem;
+      color: var(--color-slate-muted);
+      font-weight: 500;
     }
   }
 }
 
-/* ==========================================
-   4. ÁREA DE GRÁFICOS
-   ========================================== */
-.charts-row {
-  margin-top: 8px;
-}
-
-.chart-container, .empty-chart, .chart-skeleton {
+.chart-container,
+.empty-chart,
+.chart-skeleton {
   width: 100%;
-  height: 350px;
+  height: 330px;
 
   @media (max-width: 767px) {
-    height: 280px; /* Reducimos altura para mejorar la visibilidad en móviles */
+    height: 270px;
   }
 }
 
@@ -141,15 +351,17 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  color: #94a3b8;
 
   .empty-icon {
     font-size: 32px;
-    color: #d9d9d9;
+    margin-bottom: 8px;
+    color: #cbd5e1;
   }
 
   p {
-    color: #8c8c8c;
-    margin-top: 16px;
+    font-size: 0.85rem;
+    margin: 0;
   }
 }
 
@@ -157,46 +369,106 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fafafa;
-  color: #bfbfbf;
-  border-radius: 4px;
-}
-
-.wallet-selector {
-  min-width: 180px;
-
-  /* En móviles forzamos a que ocupe todo el ancho disponible si hay flex-wrap */
-  @media (max-width: 767px) {
-    flex: 1 1 100%;
-  }
+  background-color: #f8fafc;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  border-radius: 8px;
 }
 
 // ==========================================
-// ESTILOS PARA INDICADORES DE BI (Variaciones)
+// 4. TABLA DE ÚLTIMAS TRANSACCIONES
 // ==========================================
-.variation-indicator {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px dashed #e8e8e8;
-
-  // Animación sutil de entrada
-  animation: fadeIn 0.4s ease-in-out;
-
-  &.text-success {
-    color: #3f8600;
-  }
-
-  &.text-danger {
-    color: #cf1322;
-  }
+.recent-transactions-section {
+  margin-bottom: 24px;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+.enterprise-data-table {
+  .date-cell {
+    font-size: 0.825rem;
+    color: var(--color-slate-muted);
+    font-weight: 500;
+  }
+
+  .desc-cell {
+    font-weight: 600;
+    color: var(--color-navy);
+    font-size: 0.875rem;
+  }
+
+  .category-wallet-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    .nature-pill {
+      font-size: 0.725rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 6px;
+
+      &.income {
+        background-color: #ecfdf5;
+        color: #059669;
+        border: 1px solid #a7f3d0;
+
+        html.dark & {
+          background-color: rgba(16, 185, 129, 0.15);
+          color: #34d399;
+          border-color: rgba(16, 185, 129, 0.3);
+        }
+      }
+
+      &.expense {
+        background-color: #fef2f2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+
+        html.dark & {
+          background-color: rgba(239, 68, 68, 0.15);
+          color: #f87171;
+          border-color: rgba(239, 68, 68, 0.3);
+        }
+      }
+
+      &.transfer {
+        background-color: #eff6ff;
+        color: #2563eb;
+        border: 1px solid #bfdbfe;
+
+        html.dark & {
+          background-color: rgba(56, 189, 248, 0.15);
+          color: #38bdf8;
+          border-color: rgba(56, 189, 248, 0.3);
+        }
+      }
+    }
+
+    .wallet-track {
+      font-size: 0.775rem;
+      color: var(--color-slate-muted);
+
+      .transfer-arrow {
+        color: var(--color-blue-primary);
+        font-size: 0.65rem;
+        margin: 0 3px;
+      }
+    }
+  }
+
+  .amount-cell {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--color-navy);
+
+    &.income {
+      color: #059669;
+      html.dark & { color: #34d399; }
+    }
+
+    &.expense {
+      color: #dc2626;
+      html.dark & { color: #f87171; }
+    }
+  }
 }
