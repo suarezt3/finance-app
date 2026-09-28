@@ -1,6 +1,6 @@
 {
-  "summary":  "Plan para eliminar el parpadeo/rebote de scroll en móviles y corregir el desborde de botones en las tablas de Últimos Movimientos y Libro de Transacciones.",
-  "updatedAt":  "2026-09-27T00:44:51.689831698Z",
+  "summary":  "Plan de solución integral para la inicialización y sincronización de datos de sesión, catálogos (categorías y billeteras) y tarjetas KPI en el primer inicio de sesión. Resuelve condiciones de carrera post-login, añade reintentos con backoff para resolver el workspace, implementa reactividad al abrir el modal de transacciones y estados de carga visibles en los selectores.",
+  "updatedAt":  "2026-09-28T19:16:54.695483175Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

@@ -364,18 +364,34 @@ export class SummaryComponent implements OnInit {
       .subscribe(result => { this.isMobileView.set(result.matches); });
   }
 
-  async loadRealTransactions(): Promise<void> {
-    try {
-      const data = await this.transactionService.getTransactions();
-      this.transactions.set(data);
-    } catch (error) { console.error('Error al cargar transacciones:', error); }
+  async loadRealTransactions(retries = 2): Promise<void> {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const data = await this.transactionService.getTransactions();
+        this.transactions.set(data);
+        return;
+      } catch (error) {
+        console.error(`Error al cargar transacciones (intento ${attempt + 1}):`, error);
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+        }
+      }
+    }
   }
 
-  async loadCatalogs(): Promise<void> {
-    try {
-      const methods = await this.catalogService.getPaymentMethods();
-      this.paymentMethods.set(methods);
-    } catch (error) { console.error('Error al cargar métodos de pago:', error); }
+  async loadCatalogs(retries = 2): Promise<void> {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const methods = await this.catalogService.getPaymentMethods();
+        this.paymentMethods.set(methods);
+        return;
+      } catch (error) {
+        console.error(`Error al cargar métodos de pago (intento ${attempt + 1}):`, error);
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+        }
+      }
+    }
   }
 
   onYearSelected(date: Date): void {

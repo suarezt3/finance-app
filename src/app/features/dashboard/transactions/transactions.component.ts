@@ -233,25 +233,38 @@ export class TransactionsComponent implements OnInit {
       });
   }
 
-  public async loadTransactions(): Promise<void> {
+  public async loadTransactions(retries = 2): Promise<void> {
     this.isLoading.set(true);
-    try {
-      const data = await this.transactionService.getTransactions();
-      this.transactions.set(data);
-    } catch (error) {
-      console.error('Error cargando el libro mayor:', error);
-      this.message.error('Error al cargar el historial de transacciones');
-    } finally {
-      this.isLoading.set(false);
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const data = await this.transactionService.getTransactions();
+        this.transactions.set(data);
+        this.isLoading.set(false);
+        return;
+      } catch (error) {
+        console.error(`Error cargando el libro mayor (intento ${attempt + 1}):`, error);
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+        } else {
+          this.message.error('Error al cargar el historial de transacciones');
+        }
+      }
     }
+    this.isLoading.set(false);
   }
 
-  private async loadCatalogs(): Promise<void> {
-    try {
-      const methods = await this.catalogService.getPaymentMethods();
-      this.paymentMethods.set(methods);
-    } catch (error) {
-      console.error('Error al cargar métodos de pago:', error);
+  private async loadCatalogs(retries = 2): Promise<void> {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const methods = await this.catalogService.getPaymentMethods();
+        this.paymentMethods.set(methods);
+        return;
+      } catch (error) {
+        console.error(`Error al cargar métodos de pago (intento ${attempt + 1}):`, error);
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+        }
+      }
     }
   }
 

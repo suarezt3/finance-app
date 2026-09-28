@@ -49,10 +49,34 @@ export class AuthService {
   }
 
   async signIn(email: string, password: string): Promise<AuthResponse> {
-    return this.supabase.auth.signInWithPassword({
+    const response = await this.supabase.auth.signInWithPassword({
       email,
       password
     });
+
+    if (response.data?.user) {
+      this._currentUser.set(response.data.user);
+    }
+
+    return response;
+  }
+
+  /**
+   * Garantiza que la sesión y el token de acceso estén activos en el cliente
+   * antes de realizar navegaciones a vistas protegidas.
+   */
+  async ensureAuthenticatedSession(maxAttempts = 5, delayMs = 150): Promise<Session | null> {
+    for (let i = 0; i < maxAttempts; i++) {
+      const session = await this.getSession();
+      if (session?.user) {
+        this._currentUser.set(session.user);
+        return session;
+      }
+      if (i < maxAttempts - 1) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+    }
+    return null;
   }
 
   async signInWithGoogle(): Promise<void> {

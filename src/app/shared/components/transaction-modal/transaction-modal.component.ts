@@ -1,5 +1,4 @@
-// src/app/shared/components/transaction-modal/transaction-modal.component.ts
-import { Component, inject, input, output, signal, computed, OnInit, DestroyRef } from '@angular/core';
+import { Component, inject, input, output, signal, computed, OnInit, DestroyRef, effect } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -56,9 +55,22 @@ export class TransactionModalComponent implements OnInit {
   readonly categories = signal<Category[]>([]);
   readonly paymentMethods = signal<PaymentMethod[]>([]);
   readonly isSubmitting = signal<boolean>(false);
+  readonly isLoadingCatalogs = signal<boolean>(false);
 
   readonly availableBalance = signal<number | null>(null);
   readonly isCheckingBalance = signal<boolean>(false);
+
+  constructor() {
+    effect(() => {
+      const visible = this.isVisible();
+      if (visible) {
+        // Al abrir el modal, si los catálogos aún no están en memoria, refrescar de inmediato
+        if (this.categories().length === 0 || this.paymentMethods().length === 0) {
+          this.loadCatalogs();
+        }
+      }
+    });
+  }
 
   // -- FORMULARIO REACTIVO --
   readonly transactionForm: FormGroup = this.fb.nonNullable.group({
@@ -118,7 +130,13 @@ export class TransactionModalComponent implements OnInit {
     this.setupFormListeners();
   }
 
-  private async loadCatalogs(): Promise<void> {
+  public async loadCatalogs(force = false): Promise<void> {
+    if (this.isLoadingCatalogs()) return;
+    if (!force && this.categories().length > 0 && this.paymentMethods().length > 0) {
+      return;
+    }
+
+    this.isLoadingCatalogs.set(true);
     try {
       const [cats, methods] = await Promise.all([
         this.catalogService.getCategories(),
@@ -128,6 +146,19 @@ export class TransactionModalComponent implements OnInit {
       this.paymentMethods.set(methods);
     } catch (error) {
       console.error('Error al cargar catálogos:', error);
+      try {
+        await new Promise(r => setTimeout(r, 600));
+        const [cats, methods] = await Promise.all([
+          this.catalogService.getCategories(),
+          this.catalogService.getPaymentMethods()
+        ]);
+        this.categories.set(cats);
+        this.paymentMethods.set(methods);
+      } catch (retryErr) {
+        console.error('Fallo definitivo al cargar catálogos:', retryErr);
+      }
+    } finally {
+      this.isLoadingCatalogs.set(false);
     }
   }
 

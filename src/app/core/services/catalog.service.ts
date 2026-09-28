@@ -20,19 +20,64 @@ export interface PaymentMethod {
 })
 export class CatalogService {
   private readonly supabase = inject(SupabaseService).client;
+  private cachedWorkspaceId: string | null = null;
 
-  private async getWorkspaceId(): Promise<string> {
-    const { data: { session }, error: sessionError } = await this.supabase.auth.getSession();
-    if (sessionError || !session) throw new Error('No hay sesión activa');
+  constructor() {
+    this.supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        this.clearCache();
+      }
+    });
+  }
 
-    const { data, error } = await this.supabase
-      .from('profiles')
-      .select('workspace_id')
-      .eq('id', session.user.id)
-      .single();
+  public clearCache(): void {
+    this.cachedWorkspaceId = null;
+  }
 
-    if (error || !data?.workspace_id) throw new Error('No se pudo resolver el workspace');
-    return data.workspace_id;
+  /**
+   * Resuelve el workspace_id de forma resiliente, usando caché en memoria
+   * y reintentos exponenciales para tolerar la latencia de inicialización del token.
+   */
+  public async getWorkspaceId(maxAttempts = 4, delayMs = 200): Promise<string> {
+    if (this.cachedWorkspaceId) {
+      return this.cachedWorkspaceId;
+    }
+
+    let lastError: unknown = null;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const { data: { session }, error: sessionError } = await this.supabase.auth.getSession();
+        if (sessionError || !session?.user) {
+          throw new Error('No hay sesión activa');
+        }
+
+        const { data, error } = await this.supabase
+          .from('profiles')
+          .select('workspace_id')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        if (data?.workspace_id) {
+          this.cachedWorkspaceId = data.workspace_id;
+          return data.workspace_id;
+        }
+
+        throw new Error('El perfil de usuario aún no tiene workspace_id asignado');
+      } catch (err) {
+        lastError = err;
+        if (attempt < maxAttempts - 1) {
+          await new Promise(resolve => setTimeout(resolve, delayMs * (attempt + 1)));
+        }
+      }
+    }
+
+    console.error('Fallo al resolver workspace_id tras múltiples reintentos:', lastError);
+    throw new Error('No se pudo resolver el workspace corporativo');
   }
 
   // ==========================================

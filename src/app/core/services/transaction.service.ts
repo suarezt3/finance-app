@@ -2,6 +2,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Subject } from 'rxjs';
 import { SupabaseService } from './supabase.service';
+import { CatalogService } from './catalog.service';
 import { Transaction, TransactionWithDetails } from '../models/transaction.model';
 
 @Injectable({
@@ -9,12 +10,29 @@ import { Transaction, TransactionWithDetails } from '../models/transaction.model
 })
 export class TransactionService {
   private readonly supabase = inject(SupabaseService).client;
+  private readonly catalogService = inject(CatalogService);
 
   // Bus de eventos reactivo para notificar cambios a la app
   public readonly transactionsChanged$ = new Subject<void>();
 
   constructor() {
     this.setupRealtimeSubscription(); // Iniciamos la escucha al arrancar el servicio
+  }
+
+  /**
+   * Asegura que exista una sesión activa antes de consultar tablas protegidas por RLS.
+   */
+  private async ensureSession(maxAttempts = 4, delayMs = 150): Promise<boolean> {
+    for (let i = 0; i < maxAttempts; i++) {
+      const { data: { session } } = await this.supabase.auth.getSession();
+      if (session?.user) {
+        return true;
+      }
+      if (i < maxAttempts - 1) {
+        await new Promise(r => setTimeout(r, delayMs * (i + 1)));
+      }
+    }
+    return false;
   }
 
   /**
@@ -42,6 +60,8 @@ export class TransactionService {
    * con las tablas 'categories' y 'payment_methods'.
    */
   async getTransactions(): Promise<TransactionWithDetails[]> {
+    await this.ensureSession();
+
     const { data, error } = await this.supabase
       .from('transactions')
       .select(`
@@ -56,7 +76,7 @@ export class TransactionService {
       throw new Error(error.message);
     }
 
-    return data as TransactionWithDetails[];
+    return (data as TransactionWithDetails[]) || [];
   }
 
   /**
@@ -86,26 +106,17 @@ export class TransactionService {
    */
   async createTransaction(transactionData: Partial<Transaction>): Promise<void> {
     const { data: { session }, error: sessionError } = await this.supabase.auth.getSession();
-    if (sessionError || !session) throw new Error('No hay sesión activa');
+    if (sessionError || !session?.user) throw new Error('No hay sesión activa');
 
     const userId = session.user.id;
-
-    const { data: profile, error: profileError } = await this.supabase
-      .from('profiles')
-      .select('workspace_id')
-      .eq('id', userId)
-      .single();
-
-    if (profileError || !profile?.workspace_id) {
-      throw new Error('No se pudo determinar el espacio de trabajo del usuario');
-    }
+    const workspaceId = await this.catalogService.getWorkspaceId();
 
     const { error: insertError } = await this.supabase
       .from('transactions')
       .insert({
         ...transactionData,
         user_id: userId,
-        workspace_id: profile.workspace_id
+        workspace_id: workspaceId
       });
 
     if (insertError) {
@@ -125,19 +136,10 @@ export class TransactionService {
     source_method_id: string;
     destination_method_id: string;
   }): Promise<void> {
-
-    // 1. Validaciones de sesión y workspace (reutilizamos lógica base)
     const { data: { session }, error: sessionError } = await this.supabase.auth.getSession();
-    if (sessionError || !session) throw new Error('No hay sesión activa');
+    if (sessionError || !session?.user) throw new Error('No hay sesión activa');
     const userId = session.user.id;
-
-    const { data: profile, error: profileError } = await this.supabase
-      .from('profiles')
-      .select('workspace_id')
-      .eq('id', userId)
-      .single();
-
-    if (profileError || !profile?.workspace_id) throw new Error('Error al obtener el workspace');
+    const workspaceId = await this.catalogService.getWorkspaceId();
 
     // 2. Construcción de la Partida Doble
     const expenseTx = {
@@ -147,7 +149,7 @@ export class TransactionService {
       description: transferData.description || 'Transferencia enviada',
       payment_method_id: transferData.source_method_id,
       user_id: userId,
-      workspace_id: profile.workspace_id,
+      workspace_id: workspaceId,
       category_id: null // Las transferencias por lo general no afectan el presupuesto por categorías
     };
 
@@ -158,7 +160,7 @@ export class TransactionService {
       description: transferData.description || 'Transferencia recibida',
       payment_method_id: transferData.destination_method_id,
       user_id: userId,
-      workspace_id: profile.workspace_id,
+      workspace_id: workspaceId,
       category_id: null
     };
 

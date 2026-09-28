@@ -90,7 +90,13 @@
             <nz-form-item>
               <nz-form-label nzRequired>Categoría</nz-form-label>
               <nz-form-control nzErrorTip="Requerido">
-                <nz-select formControlName="category_id" nzPlaceHolder="Seleccione categoría..." nzAllowClear nzShowSearch nzSize="large">
+                <nz-select
+                  formControlName="category_id"
+                  [nzPlaceHolder]="isLoadingCatalogs() ? 'Cargando categorías...' : 'Seleccione categoría...'"
+                  [nzLoading]="isLoadingCatalogs()"
+                  nzAllowClear
+                  nzShowSearch
+                  nzSize="large">
                   @for (category of filteredCategories(); track category.id) {
                     <nz-option [nzValue]="category.id" [nzLabel]="category.name"></nz-option>
                   }
@@ -111,7 +117,12 @@
               {{ selectedType() === 'TRANSFER' ? 'Cuenta Origen' : 'Billetera / Cuenta' }}
             </nz-form-label>
             <nz-form-control nzErrorTip="Requerido">
-              <nz-select formControlName="payment_method_id" nzPlaceHolder="Ej. Cuenta Corriente, Tarjeta..." nzAllowClear nzSize="large">
+              <nz-select
+                formControlName="payment_method_id"
+                [nzPlaceHolder]="isLoadingCatalogs() ? 'Cargando billeteras...' : 'Ej. Cuenta Corriente, Tarjeta...'"
+                [nzLoading]="isLoadingCatalogs()"
+                nzAllowClear
+                nzSize="large">
                 @for (method of paymentMethods(); track method.id) {
                   <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
                 }
@@ -138,7 +149,12 @@
             <nz-form-item>
               <nz-form-label nzRequired>Cuenta Destino</nz-form-label>
               <nz-form-control nzErrorTip="Requerido">
-                <nz-select formControlName="destination_method_id" nzPlaceHolder="Selecciona cuenta receptora..." nzAllowClear nzSize="large">
+                <nz-select
+                  formControlName="destination_method_id"
+                  [nzPlaceHolder]="isLoadingCatalogs() ? 'Cargando billeteras...' : 'Selecciona cuenta receptora...'"
+                  [nzLoading]="isLoadingCatalogs()"
+                  nzAllowClear
+                  nzSize="large">
                   @for (method of availableDestinationMethods(); track method.id) {
                     <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
                   }

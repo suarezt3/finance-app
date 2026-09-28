@@ -1,46 +1,56 @@
-# Plan de Implementación: Corrección de Estabilidad y Desborde en Móviles
+# Plan de Implementación: Carga Inmediata y Resiliente de Datos en Primer Inicio de Sesión
 
 ## Diagnóstico del Problema
 
-1. **Efecto de Rebote Constante / Parpadeo (Jitter de Scroll en Móvil)**:
-   - **Causa Raíz**: En `.enterprise-viewport` y en los contenedores de las tablas (`nz-table` con `[nzScroll]`), al no contar con un gutter de scrollbar estable (`scrollbar-gutter: stable`), la aparición de la barra de scroll vertical reduce el ancho disponible en la pantalla en unos píxeles. Esto provoca que la tabla recalcule su ancho, reduciendo la altura total, lo que a su vez hace desaparecer la barra de scroll. Al desaparecer, el ancho vuelve a expandirse, aumentando la altura y reapareciendo la barra de scroll. Este bucle de retroalimentación se repite continuamente a 60 FPS, causando la sensación de que la tabla "salta arriba y abajo" rápidamente.
-   - Adicionalmente, los contenedores flex sin `min-width: 0` y `max-width: 100%` permiten que el scroll horizontal de la tabla interfiera con el scroll vertical del viewport.
+1. **Condición de Carrera en Autenticación Post-Login**:
+   - Al ejecutar `authService.signIn(...)` en el login, la aplicación redirige inmediatamente a `/dashboard` mediante `router.navigate(['/dashboard'])` sin esperar a que el estado interno del usuario (`_currentUser`) y las cabeceras de sesión de Supabase se sincronicen en el cliente.
+   
+2. **Ciclo de Vida del Modal Desacoplado**:
+   - `TransactionModalComponent` ejecuta `loadCatalogs()` **únicamente una vez** durante `ngOnInit()` (cuando el componente padre del dashboard se monta en segundo plano y el modal aún está oculto).
+   - Si en ese milisegundo la sesión o la consulta a `profiles` (`workspace_id`) aún está en resolución, la llamada falla silenciosamente en el bloque `catch` dejando `categories = []` y `paymentMethods = []`.
+   - Cuando el usuario hace clic en **"Nueva Transacción"**, el modal se abre pero nunca vuelve a intentar consultar los catálogos, mostrando "No hay datos" hasta que se recarga la página con F5 (cuando la sesión ya está persistida en `localStorage`).
 
-2. **Desborde de Botones de Acción en Móviles**:
-   - En la cabecera del **Libro de Transacciones** (`transactions.component.scss`), los botones `Exportar CSV` y `Nueva Transacción` utilizan flexbox horizontal con texto completo sin ajuste de rejilla en pantallas menores a 768px, desbordando el ancho de la pantalla.
-   - En el **Resumen Ejecutivo** (`summary.component.scss`), los selectores y el botón de nueva transacción requieren una distribución vertical u horizontal adaptada al 100% del ancho del viewport móvil.
+3. **Resolución Frágil de Workspace sin Reintentos**:
+   - En `CatalogService`, `getWorkspaceId()` realiza una consulta directa `.from('profiles').select('workspace_id').single()`. Si la base de datos o el token de sesión tarda 100-300ms en autenticarse ante RLS, la consulta arroja error y aborta la carga de categorías y billeteras.
 
----
-
-## Cambios Propuestos
-
-### 1. Estabilización del Viewport y Eliminación del Jitter (`dashboard.component.scss` y `styles.scss`)
-- Implementar `scrollbar-gutter: stable;` y `overflow-x: hidden;` en `.enterprise-viewport` y en el layout raíz.
-- Establecer `width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box;` en `.inner-workspace` para aislar el ancho de renderizado e impedir que las tablas expandan el contenedor padre.
-- Aplicar `overscroll-behavior-y: contain;` y `contain: paint;` controlado en las vistas principales para suprimir rebotes elásticos no deseados.
-
-### 2. Contención y Scroll Fluido en Tablas (`transactions.component.scss` y `summary.component.scss`)
-- **Libro de Transacciones (`.table-container`)**:
-  - Envolver la tabla en un contenedor con `width: 100%; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;`.
-  - Asegurar que `.ant-table-wrapper` y `.ant-table-container` respeten `max-width: 100%` sin forzar saltos de altura.
-- **Últimos Movimientos en Resumen (`.dashboard-table-card` y `.enterprise-data-table`)**:
-  - Configurar `overflow-x: auto` en el contenedor de tarjeta para que el scroll horizontal sea suave y completamente contenido dentro del card sin afectar el scroll vertical de la página.
-
-### 3. Distribución Equilibrada de Botones en Móvil (Mobile Actions)
-- **Cabecera de Transacciones**:
-  - En pantallas `< 768px`, organizar `.header-actions` en una cuadrícula equilibrada `grid-template-columns: 1fr 1fr; gap: 8px; width: 100%;`.
-  - Ambos botones ocuparán exactamente el 50% del ancho disponible, con padding compacto y sin desbordamiento horizontal.
-- **Cabecera de Resumen**:
-  - En pantallas `< 768px`, apilar los controles ordenadamente:
-    1. Selector de periodo (Segmented control) con scroll horizontal suave.
-    2. Fila con los selectores de año y billetera al 50% cada uno.
-    3. Botón `+ Nueva Transacción` al 100% del ancho con altura táctil ergonómica (40px).
+4. **Falta de Reintentos y Estados de Carga en Tarjetas y Selectores**:
+   - Las tarjetas de KPI en el resumen dependen de `loadRealTransactions()` y `loadCatalogs()`. Si fallan en el primer intento tras el login, no hay reintento automático ni estado de recarga visible.
+   - Los selectores `<nz-select>` dentro del modal no muestran indicador de carga (`nzLoading`), por lo que muestran inmediatamente el estado vacío "No hay datos".
 
 ---
 
-## Plan de Verificación
+## Plan de Solución
 
-1. **Compilación**: Ejecutar `compile_applet` para confirmar que los cambios de SCSS y HTML compilan sin errores.
-2. **Prueba de Comportamiento Móvil**:
-   - Verificar en resoluciones móviles (360px a 768px) que la tabla de *Últimos Movimientos* y la del *Libro de Transacciones* no sufran parpadeo, temblor ni salto cíclico de scroll.
-   - Confirmar que los botones de acción se ajusten con precisión al 100% del ancho de la pantalla sin desbordarse.
+### 1. `AuthService`: Sincronización Determinista del Estado de Sesión
+- En `auth.service.ts`, actualizar de inmediato la señal `_currentUser` tras `signInWithPassword` y esperar la confirmación de la sesión antes de completar el método.
+- Proveer un método `waitForSession()` para asegurar que cualquier servicio que requiera autenticación espere de forma segura a que Supabase tenga el token activo.
+- Limpiar cachés de catálogos y workspace al cerrar sesión (`signOut`).
+
+### 2. `CatalogService`: Caché Reactiva y Reintentos Resilientes de Workspace
+- En `catalog.service.ts`:
+  - Implementar un mecanismo de reintento progresivo (exponential backoff / 3 intentos breves: 150ms, 400ms, 800ms) en `getWorkspaceId()`.
+  - Cachear en memoria el `workspaceId` una vez resuelto para evitar consultas repetitivas a la tabla `profiles` desde múltiples componentes simultáneos.
+  - Implementar caché de catálogos con método de recarga explícita (`refreshCatalogs()`).
+
+### 3. `TransactionModalComponent`: Recarga Automática al Abrir el Modal y Feedback Visual
+- En `transaction-modal.component.ts`:
+  - Añadir una señal `isLoadingCatalogs`.
+  - Configurar un `effect()` o hook en la entrada `isVisible`: cada vez que el modal se abra (`isVisible() === true`), si `categories().length === 0` o `paymentMethods().length === 0`, disparar automáticamente la carga de catálogos.
+  - En `transaction-modal.component.html`, vincular `[nzLoading]="isLoadingCatalogs()"` en los `<nz-select>` de categoría y método de pago para que el usuario visualice un spinner mientras los datos se sincronizan.
+
+### 4. `SummaryComponent` y `TransactionsComponent`: Carga Robusta de Tarjetas y Filtros
+- En `summary.component.ts` y `transactions.component.ts`:
+  - Añadir reintentos automáticos si la primera consulta tras el inicio de sesión falla por sincronización de token.
+  - Garantizar que las tarjetas de KPIs y el selector de billeteras se actualicen apenas los datos estén disponibles.
+
+---
+
+## Verificación
+
+1. **Prueba de Inicio de Sesión en Limpio**:
+   - Iniciar sesión desde `/auth` y verificar que al redirigir al `/dashboard` las tarjetas de KPIs carguen de inmediato los montos e historial.
+2. **Prueba del Modal de Transacción**:
+   - Abrir el modal "Nueva Transacción" inmediatamente tras iniciar sesión sin recargar la página.
+   - Verificar que el selector de Categorías y Métodos de Pago muestren las opciones correctas (Gasto, Ingreso, Efectivo, Tarjeta, etc.) sin aparecer vacíos.
+3. **Compilación y Dev Server**:
+   - Ejecutar `compile_applet` para asegurar cero errores de tipos y `restart_dev_server`.

@@ -162,6 +162,9 @@ export class AuthComponent {
         const { error } = await this.authService.signIn(email, password);
         if (error) throw error;
 
+        // Asegurar que la sesión y tokens estén listos antes de navegar al dashboard
+        await this.authService.ensureAuthenticatedSession();
+
         this.message.success('Sesión corporativa iniciada con éxito.');
         this.authForm.reset();
         await this.router.navigate(['/dashboard']);
