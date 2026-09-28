@@ -47,8 +47,35 @@ export class ConfigComponent implements OnInit {
     name: ['', [Validators.required, Validators.minLength(3)]]
   });
 
+  readonly customApiKey = signal<string>('');
+
   async ngOnInit(): Promise<void> {
+    if (typeof window !== 'undefined') {
+      const savedKey = localStorage.getItem('custom_gemini_api_key') || '';
+      this.customApiKey.set(savedKey);
+    }
     await this.loadCatalogs();
+  }
+
+  saveCustomApiKey(apiKey: string): void {
+    if (typeof window !== 'undefined') {
+      const trimmed = apiKey.trim();
+      if (trimmed) {
+        localStorage.setItem('custom_gemini_api_key', trimmed);
+        this.customApiKey.set(trimmed);
+        this.message.success('Clave de Gemini API guardada correctamente.');
+      } else {
+        this.clearCustomApiKey();
+      }
+    }
+  }
+
+  clearCustomApiKey(): void {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('custom_gemini_api_key');
+      this.customApiKey.set('');
+      this.message.info('Se restauró la clave y cuota predeterminada del sistema.');
+    }
   }
 
   private async loadCatalogs(): Promise<void> {

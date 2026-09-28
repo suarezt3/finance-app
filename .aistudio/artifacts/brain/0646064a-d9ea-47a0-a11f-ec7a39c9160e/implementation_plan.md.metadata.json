@@ -1,6 +1,6 @@
 {
-  "summary":  "Plan de implementación revisado con garantías de compatibilidad web/PWA sin interrupciones y guía de herramientas para pruebas.",
-  "updatedAt":  "2026-09-28T19:35:00.799579733Z",
+  "summary":  "Plan de implementación para corregir el escaneo de facturas (Tiendas Ara y Dollarcity), compresión automática de fotos de cámara móvil, optimización de cuota de Gemini y opción de clave personal de Gemini Pro / AI Studio.",
+  "updatedAt":  "2026-09-28T20:18:12.952574022Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

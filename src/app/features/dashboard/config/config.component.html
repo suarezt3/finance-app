@@ -104,6 +104,88 @@
         </nz-table>
       </div>
     </nz-tab>
+
+    <!-- ============================================== -->
+    <!-- PESTAÑA 3: INTELIGENCIA ARTIFICIAL (GEMINI)    -->
+    <!-- ============================================== -->
+    <nz-tab nzTitle="Inteligencia Artificial (Gemini)">
+      <div class="ai-config-panel p-6 bg-slate-900/60 rounded-2xl border border-slate-800 space-y-6 mt-4">
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <span nz-icon nzType="thunderbolt" nzTheme="fill" class="text-amber-400 text-xl"></span>
+            <h3 class="text-lg font-bold text-white m-0">Motor de Escaneo de Comprobantes con Gemini</h3>
+          </div>
+          <p class="text-sm text-slate-400 leading-relaxed">
+            La aplicación utiliza <strong>Gemini 3.8 Flash</strong> con compresión inteligente en el dispositivo para escanear facturas colombianas (Tiendas Ara, Dollarcity, D1, Éxito) reconociendo totales, IVA y categorías contables.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
+            <div class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Plan Gratuito por Defecto</div>
+            <p class="text-xs text-slate-400">
+              No requiere ningún pago. Incluye cuota gratuita de Google AI Studio renovable por minuto y optimizada para uso cotidiano.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
+            <div class="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Clave Personal (Opcional)</div>
+            <p class="text-xs text-slate-400">
+              Si posees tu propia API Key de <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="text-indigo-400 underline hover:text-indigo-300">Google AI Studio</a>, puedes ingresarla aquí para gozar de cuota exclusiva.
+            </p>
+          </div>
+        </div>
+
+        <div class="space-y-3 pt-2">
+          <label class="block text-sm font-medium text-slate-300">
+            Clave de API Personal de Google AI Studio (Opcional):
+          </label>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <input
+              #apiKeyInput
+              nz-input
+              type="password"
+              [value]="customApiKey()"
+              placeholder="AIzaSy..."
+              class="flex-1 rounded-xl bg-slate-950 border-slate-700 text-white"
+            />
+            <div class="flex gap-2">
+              <button
+                nz-button
+                nzType="primary"
+                (click)="saveCustomApiKey(apiKeyInput.value)"
+                class="rounded-xl px-5"
+              >
+                <span nz-icon nzType="save"></span>
+                Guardar Clave
+              </button>
+              @if (customApiKey()) {
+                <button
+                  nz-button
+                  nzType="default"
+                  nzDanger
+                  (click)="clearCustomApiKey(); apiKeyInput.value = ''"
+                  class="rounded-xl"
+                >
+                  <span nz-icon nzType="delete"></span>
+                  Restablecer
+                </button>
+              }
+            </div>
+          </div>
+          @if (customApiKey()) {
+            <div class="text-xs text-emerald-400 flex items-center gap-1.5 pt-1">
+              <span nz-icon nzType="check-circle" nzTheme="fill"></span>
+              Usando tu API Key personalizada de Google AI Studio para el escaneo de facturas.
+            </div>
+          } @else {
+            <div class="text-xs text-slate-400 pt-1">
+              Usando la conexión del sistema con compresión optimizada en el dispositivo.
+            </div>
+          }
+        </div>
+      </div>
+    </nz-tab>
   </nz-tabs>
 
   <!-- MODAL: CREAR CATEGORÍA -->

@@ -22,11 +22,21 @@ export class ReceiptScannerService {
     const endpoint = '/api/scan-receipt';
 
     try {
+      let customApiKey = '';
+      if (typeof window !== 'undefined') {
+        customApiKey = localStorage.getItem('custom_gemini_api_key') || '';
+      }
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (customApiKey && customApiKey.trim().length > 10) {
+        headers['x-gemini-api-key'] = customApiKey.trim();
+      }
+
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           imageBase64,
           mimeType,

@@ -49,13 +49,16 @@ export class NativeDeviceService {
         }
 
         const format = photo.format || 'jpeg';
-        const mimeType = `image/${format}`;
-        const dataUrl = `data:${mimeType};base64,${photo.base64String}`;
+        const rawMimeType = `image/${format}`;
+        const rawDataUrl = `data:${rawMimeType};base64,${photo.base64String}`;
+
+        // Comprimir y redimensionar la imagen para envío óptimo
+        const compressed = await this.compressDataUrl(rawDataUrl);
 
         return {
-          base64: photo.base64String,
-          mimeType,
-          dataUrl
+          base64: compressed.cleanBase64,
+          mimeType: compressed.mimeType,
+          dataUrl: compressed.dataUrl
         };
       } catch (err: any) {
         // El usuario canceló la captura o denegó permisos
@@ -72,7 +75,7 @@ export class NativeDeviceService {
   }
 
   /**
-   * Fallback limpio para entorno Web / Escritorio / PWA
+   * Fallback limpio para entorno Web / Móvil / PWA con compresión automática
    */
   private pickImageViaWebInput(): Promise<CapturedImage | null> {
     return new Promise((resolve) => {
@@ -91,16 +94,27 @@ export class NativeDeviceService {
         }
 
         try {
-          const base64 = await this.fileToBase64(file);
-          const cleanBase64 = base64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+          // Comprimir la imagen del celular antes de procesarla
+          const compressed = await this.compressImageFile(file, 1600, 0.82);
           resolve({
-            base64: cleanBase64,
-            mimeType: file.type || 'image/jpeg',
-            dataUrl: base64
+            base64: compressed.cleanBase64,
+            mimeType: compressed.mimeType,
+            dataUrl: compressed.dataUrl
           });
         } catch (error) {
-          console.error('Error al leer imagen web:', error);
-          resolve(null);
+          console.error('Error al procesar y comprimir imagen:', error);
+          try {
+            // Fallback directo si canvas falla
+            const base64 = await this.fileToBase64(file);
+            const cleanBase64 = base64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+            resolve({
+              base64: cleanBase64,
+              mimeType: file.type || 'image/jpeg',
+              dataUrl: base64
+            });
+          } catch {
+            resolve(null);
+          }
         } finally {
           document.body.removeChild(input);
         }
@@ -113,6 +127,66 @@ export class NativeDeviceService {
 
       document.body.appendChild(input);
       input.click();
+    });
+  }
+
+  /**
+   * Redimensiona y comprime un archivo de imagen en el navegador del teléfono a un tamaño ideal
+   * manteniendo alta nitidez para OCR pero reduciendo el peso de ~15MB a ~300KB.
+   */
+  async compressImageFile(file: File, maxDimension = 1600, quality = 0.82): Promise<{ dataUrl: string; cleanBase64: string; mimeType: string }> {
+    const rawDataUrl = await this.fileToBase64(file);
+    return this.compressDataUrl(rawDataUrl, maxDimension, quality);
+  }
+
+  /**
+   * Redimensiona y comprime una Data URL en memoria con HTML5 Canvas
+   */
+  async compressDataUrl(dataUrl: string, maxDimension = 1600, quality = 0.82): Promise<{ dataUrl: string; cleanBase64: string; mimeType: string }> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          const cleanBase64 = dataUrl.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+          resolve({ dataUrl, cleanBase64, mimeType: 'image/jpeg' });
+          return;
+        }
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const mimeType = 'image/jpeg';
+        const compressedDataUrl = canvas.toDataURL(mimeType, quality);
+        const cleanBase64 = compressedDataUrl.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+
+        resolve({
+          dataUrl: compressedDataUrl,
+          cleanBase64,
+          mimeType
+        });
+      };
+
+      img.onerror = (err) => reject(err);
+      img.src = dataUrl;
     });
   }
 

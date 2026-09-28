@@ -40,18 +40,32 @@ app.post('/api/scan-receipt', async (req, res) => {
       return res.status(400).json({ success: false, error: 'No se recibió ninguna imagen de comprobante.' });
     }
 
+    // Optional custom API key provided by user in settings
+    const customApiKey = req.headers['x-gemini-api-key'] as string;
+    const activeAiClient = (customApiKey && customApiKey.trim().length > 10)
+      ? new GoogleGenAI({
+          apiKey: customApiKey.trim(),
+          httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+        })
+      : ai;
+
     // Strip prefix if standard data URL was provided
     const cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
 
     const prompt = `Analiza detenidamente esta imagen de factura, recibo o comprobante de pago.
 Extrae los siguientes datos con máxima precisión en formato JSON estructurado:
-- merchant: Nombre del negocio, tienda, comercio o persona que emitió la factura (ej: "Supermercado Éxito", "Uber", "Restaurante", "Farmacia"). Si no se distingue con claridad, coloca "Comercio no especificado".
-- amount: El monto total final a pagar en formato numérico (número positivo, sin símbolos de moneda ni comas de miles). Si no se detecta, usa 0.
-- date: La fecha de la transacción en formato ISO YYYY-MM-DD (ej: "2026-03-15"). Si no aparece el año, asume el año actual. Si no hay fecha legible, usa la fecha de hoy.
-- type: 'EXPENSE' si es un gasto o pago, o 'INCOME' si es una factura emitida para cobro o ingreso.
-- category_hint: Sugerencia de categoría entre: "Alimentación", "Supermercado", "Transporte", "Servicios", "Salud", "Entretenimiento", "Compras", "Educación", "Hogar", "Otros".
-- payment_method_hint: Método de pago detectado (ej: "Tarjeta de Crédito", "Tarjeta de Débito", "Efectivo", "Transferencia", "Nequi", "Daviplata", "Desconocido").
-- description: Breve descripción de los artículos comprados o el motivo del gasto (máximo 120 caracteres).
+
+Reglas de extracción y normalización:
+- merchant: Nombre del negocio o establecimiento comercial (ej: "Tiendas Ara", "Dollarcity", "Tiendas D1", "Éxito", "Jumbo", "Farmatodo", "Uber", "Restaurante"). Si aparece la razón social como "JERONIMO MARTINS COLOMBIA", normalízalo a "Tiendas Ara". Si aparece "SURAMERICA COMERCIAL", normalízalo a "Dollarcity".
+- amount: El monto TOTAL real pagado en formato numérico puro (ej: 5150, 19500).
+  * En facturas colombianas (ej: Tiendas Ara): Si hay "Ajuste al peso (-)", el valor final a pagar es el "Total" con el ajuste aplicado (ej: si dice Total: 5.150, el valor es 5150). NO tomes el monto de "Efectivo" entregado ni el "Cambio".
+  * En Dollarcity: Extrae el valor de "TOTAL COP" (ej: 19500.00 -> 19500). NO uses el monto entregado en efectivo ni el cambio devuelto.
+  * Atención a separadores: En Colombia el punto (.) se usa para miles (ej: 5.190 = 5190, 19.500 = 19500, 20.000 = 20000). Devuelve un número entero o decimal limpio sin separadores de miles.
+- date: La fecha de la transacción en formato ISO YYYY-MM-DD (ej: "2026-09-27"). Si no aparece el año, usa el año actual.
+- type: 'EXPENSE' si es una compra o gasto, o 'INCOME' si es una venta o ingreso.
+- category_hint: Categoría más adecuada entre: "Alimentación", "Supermercado", "Hogar", "Compras", "Transporte", "Servicios", "Salud", "Entretenimiento", "Educación", "Otros". (Para Ara/D1/Éxito usa "Supermercado"; para Dollarcity usa "Hogar" o "Compras").
+- payment_method_hint: Método de pago detectado ("Efectivo", "Tarjeta de Débito", "Tarjeta de Crédito", "Transferencia", "Nequi", "Daviplata", "Desconocido").
+- description: Breve descripción de los artículos comprados o el motivo del gasto (máximo 120 caracteres, ej: "Artículos de aseo y compras en Tiendas Ara").
 - tax_amount: Valor numérico del impuesto o IVA si está desglosado (número o null).
 
 Devuelve EXCLUSIVAMENTE un objeto JSON válido con los campos exactos:
@@ -68,7 +82,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con los campos exactos:
 
     let response;
     try {
-      response = await ai.models.generateContent({
+      response = await activeAiClient.models.generateContent({
         model: 'gemini-3.8-flash',
         contents: [
           {
@@ -90,7 +104,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con los campos exactos:
       });
     } catch (modelErr: any) {
       console.warn('Fallback a gemini-3.1-flash-lite debido a:', modelErr?.message);
-      response = await ai.models.generateContent({
+      response = await activeAiClient.models.generateContent({
         model: 'gemini-3.1-flash-lite',
         contents: [
           {
