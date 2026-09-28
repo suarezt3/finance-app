@@ -7,7 +7,10 @@
     "dev": "ng serve --host 0.0.0.0 --port 3000",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "cap:sync": "ng build && npx cap sync",
+    "cap:android": "npx cap open android",
+    "cap:ios": "npx cap open ios"
   },
   "private": true,
   "dependencies": {
@@ -16,11 +19,18 @@
     "@angular/core": "^22.1.4",
     "@angular/forms": "^22.1.4",
     "@angular/platform-browser": "^22.1.4",
+    "@angular/platform-server": "^22.1.4",
     "@angular/router": "^22.1.4",
     "@angular/service-worker": "^22.1.4",
+    "@angular/ssr": "^22.1.4",
+    "@capacitor/camera": "^8.2.4",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/haptics": "^8.0.2",
+    "@google/genai": "^2.24.0",
     "@supabase/supabase-js": "^2.110.7",
     "d3": "^7.9.0",
     "driver.js": "^1.8.0",
+    "express": "^5.2.1",
     "ng-zorro-antd": "^22.0.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
@@ -29,7 +39,10 @@
     "@angular/build": "^22.1.6",
     "@angular/cli": "^22.1.6",
     "@angular/compiler-cli": "^22.1.4",
+    "@capacitor/cli": "^8.5.2",
     "@types/d3": "^7.4.3",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.3",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2"
   }

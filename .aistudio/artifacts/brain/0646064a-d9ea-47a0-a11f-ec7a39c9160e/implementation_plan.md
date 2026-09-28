@@ -1,56 +1,88 @@
-# Plan de Implementación: Carga Inmediata y Resiliente de Datos en Primer Inicio de Sesión
+# Plan de Implementación Revisado: Integración Móvil Nativa (Capacitor), Biometría y Escaneo con Gemini AI
 
-## Diagnóstico del Problema
+## 1. Respuestas y Garantías Clave
 
-1. **Condición de Carrera en Autenticación Post-Login**:
-   - Al ejecutar `authService.signIn(...)` en el login, la aplicación redirige inmediatamente a `/dashboard` mediante `router.navigate(['/dashboard'])` sin esperar a que el estado interno del usuario (`_currentUser`) y las cabeceras de sesión de Supabase se sincronicen en el cliente.
-   
-2. **Ciclo de Vida del Modal Desacoplado**:
-   - `TransactionModalComponent` ejecuta `loadCatalogs()` **únicamente una vez** durante `ngOnInit()` (cuando el componente padre del dashboard se monta en segundo plano y el modal aún está oculto).
-   - Si en ese milisegundo la sesión o la consulta a `profiles` (`workspace_id`) aún está en resolución, la llamada falla silenciosamente en el bloque `catch` dejando `categories = []` y `paymentMethods = []`.
-   - Cuando el usuario hace clic en **"Nueva Transacción"**, el modal se abre pero nunca vuelve a intentar consultar los catálogos, mostrando "No hay datos" hasta que se recarga la página con F5 (cuando la sesión ya está persistida en `localStorage`).
+### ¿Se dañará la versión Web o los accesos directos ya instalados?
+> **No, en absoluto.** 
+> Capacitor no reemplaza la web; funciona como una capa envolvente opcional (*wrapper*).
+> - La versión web y la PWA instalada en tu computador y celular seguirán funcionando **exactamente como hasta ahora**, sin ninguna interrupción.
+> - Toda la lógica de hardware cuenta con **fallback web**: si estás en el navegador web, el escáner de facturas te permitirá tomar foto con la cámara del navegador o subir el archivo de la factura; si estás dentro de la app nativa instalada vía APK/IPA, utilizará la cámara nativa del sistema operativo.
 
-3. **Resolución Frágil de Workspace sin Reintentos**:
-   - En `CatalogService`, `getWorkspaceId()` realiza una consulta directa `.from('profiles').select('workspace_id').single()`. Si la base de datos o el token de sesión tarda 100-300ms en autenticarse ante RLS, la consulta arroja error y aborta la carga de categorías y billeteras.
-
-4. **Falta de Reintentos y Estados de Carga en Tarjetas y Selectores**:
-   - Las tarjetas de KPI en el resumen dependen de `loadRealTransactions()` y `loadCatalogs()`. Si fallan en el primer intento tras el login, no hay reintento automático ni estado de recarga visible.
-   - Los selectores `<nz-select>` dentro del modal no muestran indicador de carga (`nzLoading`), por lo que muestran inmediatamente el estado vacío "No hay datos".
+### ¿Necesitas instalar programas en tu computadora para probar?
+> - **Para probar inmediatamente la funcionalidad y la IA**: **NO necesitas instalar nada.** Podrás probar el botón de escaneo de facturas con Gemini directamente en el navegador y en tus accesos directos actuales.
+> - **Para generar el instalador nativo (.apk / .ipa)**:
+>   - **Android**: Solo cuando quieras generar el archivo APK instalable o publicarlo en Google Play, requerirás **Android Studio** (gratuito).
+>   - **iOS**: Solo cuando quieras compilar para iPhone, requerirás una computadora **Mac con Xcode** (gratuito en la App Store de macOS).
 
 ---
 
-## Plan de Solución
+## 2. Arquitectura de Compatibilidad Total (Web + Nativo)
 
-### 1. `AuthService`: Sincronización Determinista del Estado de Sesión
-- En `auth.service.ts`, actualizar de inmediato la señal `_currentUser` tras `signInWithPassword` y esperar la confirmación de la sesión antes de completar el método.
-- Proveer un método `waitForSession()` para asegurar que cualquier servicio que requiera autenticación espere de forma segura a que Supabase tenga el token activo.
-- Limpiar cachés de catálogos y workspace al cerrar sesión (`signOut`).
-
-### 2. `CatalogService`: Caché Reactiva y Reintentos Resilientes de Workspace
-- En `catalog.service.ts`:
-  - Implementar un mecanismo de reintento progresivo (exponential backoff / 3 intentos breves: 150ms, 400ms, 800ms) en `getWorkspaceId()`.
-  - Cachear en memoria el `workspaceId` una vez resuelto para evitar consultas repetitivas a la tabla `profiles` desde múltiples componentes simultáneos.
-  - Implementar caché de catálogos con método de recarga explícita (`refreshCatalogs()`).
-
-### 3. `TransactionModalComponent`: Recarga Automática al Abrir el Modal y Feedback Visual
-- En `transaction-modal.component.ts`:
-  - Añadir una señal `isLoadingCatalogs`.
-  - Configurar un `effect()` o hook en la entrada `isVisible`: cada vez que el modal se abra (`isVisible() === true`), si `categories().length === 0` o `paymentMethods().length === 0`, disparar automáticamente la carga de catálogos.
-  - En `transaction-modal.component.html`, vincular `[nzLoading]="isLoadingCatalogs()"` en los `<nz-select>` de categoría y método de pago para que el usuario visualice un spinner mientras los datos se sincronizan.
-
-### 4. `SummaryComponent` y `TransactionsComponent`: Carga Robusta de Tarjetas y Filtros
-- En `summary.component.ts` y `transactions.component.ts`:
-  - Añadir reintentos automáticos si la primera consulta tras el inicio de sesión falla por sincronización de token.
-  - Garantizar que las tarjetas de KPIs y el selector de billeteras se actualicen apenas los datos estén disponibles.
+```
+                       ┌───────────────────────────────┐
+                       │  Aplicación Angular (Única)   │
+                       └──────────────┬────────────────┘
+                                      │
+              ┌───────────────────────┴───────────────────────┐
+              ▼                                               ▼
+    Entorno Web / PWA                                Entorno Nativo Móvil
+  (Navegador / Acceso Directo)                       (Instalador Capacitor)
+  ────────────────────────────                       ─────────────────────
+  • Cámara: Input file / WebCam                      • Cámara: @capacitor/camera
+  • Auth: Login tradicional Supabase                 • Auth: Biometría / Huella
+  • Cero descargas adicionales                       • Compilación en Android Studio/Xcode
+              │                                               │
+              └───────────────────────┬───────────────────────┘
+                                      ▼
+                      Servicio IA Gemini en Backend
+                    (Análisis y extracción de facturas)
+```
 
 ---
 
-## Verificación
+## 3. Fases del Proyecto
 
-1. **Prueba de Inicio de Sesión en Limpio**:
-   - Iniciar sesión desde `/auth` y verificar que al redirigir al `/dashboard` las tarjetas de KPIs carguen de inmediato los montos e historial.
-2. **Prueba del Modal de Transacción**:
-   - Abrir el modal "Nueva Transacción" inmediatamente tras iniciar sesión sin recargar la página.
-   - Verificar que el selector de Categorías y Métodos de Pago muestren las opciones correctas (Gasto, Ingreso, Efectivo, Tarjeta, etc.) sin aparecer vacíos.
-3. **Compilación y Dev Server**:
-   - Ejecutar `compile_applet` para asegurar cero errores de tipos y `restart_dev_server`.
+### Fase 1: Arquitectura Base de Capacitor (Sin alterar la Web)
+- Instalación de librerías de Capacitor en modo no invasivo:
+  - `@capacitor/core` y `@capacitor/cli`
+  - `@capacitor/camera` y `@capacitor/haptics`
+- Creación de `capacitor.config.ts` apuntando a la compilación estándar de Angular (`dist/finance/browser`).
+- Adición de scripts auxiliares en `package.json` (`cap:sync`, `cap:android`, `cap:ios`) que solo se usan cuando tú decidas abrir Android Studio o Xcode.
+
+### Fase 2: Servicios Híbridos (Nativo + Web Fallback)
+- **`NativeCameraService`**:
+  - Detecta automáticamente si está en móvil nativo o en navegador web.
+  - En navegador: Abre el selector de archivos / cámara web estándar del dispositivo.
+  - En móvil nativo: Utiliza la API de cámara del sistema operativo con control de flash y resolución optimizada.
+- **`BiometricAuthService`**:
+  - En navegador: Notifica amigablemente que la biometría requiere la app nativa y mantiene el login seguro de Supabase.
+  - En móvil nativo: Permite registrar y desbloquear con huella / Face ID usando almacenamiento seguro.
+- **CSS Seguro (Safe Area)**:
+  - Variables de margen (`env(safe-area-inset-top)`, `env(safe-area-inset-bottom)`) para que no choque con la barra de navegación ni el notch de los celulares modernos, manteniendo la vista web impecable.
+
+### Fase 3: Escaneo Inteligente de Facturas con Gemini (Backend Seguro)
+- Endpoint seguro `/api/scan-receipt` en Node.js que:
+  1. Recibe la imagen de la factura o recibo.
+  2. Consulta a `gemini-2.5-flash` mediante el SDK oficial `@google/genai`.
+  3. Devuelve los campos estructurados en formato JSON:
+     - Monto total
+     - Fecha del comprobante
+     - Nombre del comercio / emisor
+     - Categoría recomendada (mapeada a las categorías del usuario)
+     - Método de pago sugerido (Efectivo, Tarjeta, etc.)
+- La clave de API de Gemini se mantiene en el servidor, 100% oculta y protegida.
+
+### Fase 4: Integración en la Interfaz de Transacciones
+- Botón **"📸 Escanear Factura con IA"** en `TransactionModalComponent`.
+- Flujo interactivo:
+  1. El usuario pulsa el botón.
+  2. Sube o captura la foto del recibo (funciona en web y en app nativa).
+  3. Un indicador visual muestra *"Gemini analizando comprobante..."*.
+  4. Los campos de monto, fecha, categoría y nota se rellenan automáticamente.
+  5. El usuario puede revisar y pulsar "Guardar Transacción".
+
+---
+
+## 4. Pruebas y Validación
+1. **Verificación en Navegador / PWA**: Comprobar que la web actual no sufre ningún cambio adverso, que el inicio de sesión sigue intacto y que el escaneo de facturas funciona cargando una imagen desde el computador o celular.
+2. **Preparación de Proyectos Nativos**: Generar las carpetas de sincronización para que, cuando dispongas de Android Studio o Xcode, puedas generar tus instaladores con un solo comando.

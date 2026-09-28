@@ -18,10 +18,14 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 // NUEVOS IMPORTS REQUERIDOS PARA LA NUEVA UI
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzGridModule } from 'ng-zorro-antd/grid';
+import { NzSpinModule } from 'ng-zorro-antd/spin';
+import { NzTagModule } from 'ng-zorro-antd/tag';
 
 import { CatalogService, Category, PaymentMethod } from '../../../core/services/catalog.service';
 import { TransactionService } from '../../../core/services/transaction.service';
 import { TransactionWithDetails } from '../../../core/models/transaction.model';
+import { NativeDeviceService } from '../../../core/services/native-device.service';
+import { ReceiptScannerService, ScannedReceiptData } from '../../../core/services/receipt-scanner.service';
 
 // NUEVO: Importamos la directiva que acabamos de crear
 import { DecimalInputDirective } from '../../directives/decimal-input.directive';
@@ -32,6 +36,8 @@ import { DecimalInputDirective } from '../../directives/decimal-input.directive'
   imports: [
     NzRadioModule,
     NzGridModule,
+    NzSpinModule,
+    NzTagModule,
     ReactiveFormsModule, DecimalPipe, NzIconModule,
     NzModalModule, NzFormModule, NzInputModule, NzInputNumberModule,
     NzSelectModule, NzDatePickerModule, NzButtonModule,
@@ -46,6 +52,8 @@ export class TransactionModalComponent implements OnInit {
   private readonly transactionService = inject(TransactionService);
   private readonly message = inject(NzMessageService);
   private readonly destroyRef = inject(DestroyRef);
+  readonly nativeDeviceService = inject(NativeDeviceService);
+  private readonly receiptScannerService = inject(ReceiptScannerService);
 
   readonly isVisible = input.required<boolean>();
   readonly transactionToEdit = input<TransactionWithDetails | null>(null);
@@ -56,6 +64,11 @@ export class TransactionModalComponent implements OnInit {
   readonly paymentMethods = signal<PaymentMethod[]>([]);
   readonly isSubmitting = signal<boolean>(false);
   readonly isLoadingCatalogs = signal<boolean>(false);
+
+  // Estados de escaneo de comprobantes con Gemini AI
+  readonly isScanningReceipt = signal<boolean>(false);
+  readonly scannedReceiptInfo = signal<ScannedReceiptData | null>(null);
+  readonly scannedReceiptThumbnail = signal<string | null>(null);
 
   readonly availableBalance = signal<number | null>(null);
   readonly isCheckingBalance = signal<boolean>(false);
@@ -227,11 +240,87 @@ export class TransactionModalComponent implements OnInit {
     });
   }
 
+  public async onScanReceipt(): Promise<void> {
+    if (this.isScanningReceipt()) return;
+
+    try {
+      const captured = await this.nativeDeviceService.captureReceiptImage();
+      if (!captured) return;
+
+      this.isScanningReceipt.set(true);
+      this.scannedReceiptThumbnail.set(captured.dataUrl);
+      await this.nativeDeviceService.triggerHaptic('light');
+
+      const data = await this.receiptScannerService.scanReceipt(captured.base64, captured.mimeType);
+      this.scannedReceiptInfo.set(data);
+
+      // Auto-rellenar valores en el formulario
+      const patchObj: Record<string, any> = {
+        type: data.type || 'EXPENSE',
+        amount: data.amount > 0 ? data.amount : this.transactionForm.value.amount,
+        description: data.description || (data.merchant ? `Compra en ${data.merchant}` : ''),
+      };
+
+      if (data.date) {
+        try {
+          const parts = data.date.split('-');
+          if (parts.length === 3) {
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+            patchObj['date'] = new Date(year, month, day);
+          }
+        } catch {
+          // fecha default actual
+        }
+      }
+
+      // Auto-seleccionar categoría sugerida
+      if (data.category_hint) {
+        const matchedCatId = this.receiptScannerService.findBestMatchingCategory(
+          data.category_hint,
+          this.categories()
+        );
+        if (matchedCatId) {
+          patchObj['category_id'] = matchedCatId;
+        }
+      }
+
+      // Auto-seleccionar método de pago si fue detectado
+      if (data.payment_method_hint && data.payment_method_hint !== 'Desconocido') {
+        const hintLower = data.payment_method_hint.toLowerCase();
+        const matchedMethod = this.paymentMethods().find(m => {
+          const nameLower = m.name.toLowerCase();
+          return nameLower.includes(hintLower) || hintLower.includes(nameLower);
+        });
+        if (matchedMethod) {
+          patchObj['payment_method_id'] = matchedMethod.id;
+        }
+      }
+
+      this.transactionForm.patchValue(patchObj);
+      await this.nativeDeviceService.triggerHaptic('success');
+      this.message.success(`Factura de "${data.merchant}" analizada con éxito por Gemini AI`);
+    } catch (err: any) {
+      console.error('Error al escanear comprobante:', err);
+      await this.nativeDeviceService.triggerHaptic('error');
+      this.message.error(err?.message || 'No se pudo analizar la factura.');
+    } finally {
+      this.isScanningReceipt.set(false);
+    }
+  }
+
+  public clearScannedReceipt(): void {
+    this.scannedReceiptInfo.set(null);
+    this.scannedReceiptThumbnail.set(null);
+  }
+
   public resetForm(): void {
     this.transactionForm.reset({
       type: 'EXPENSE', amount: 0, date: new Date(), description: '', category_id: null, payment_method_id: null, destination_method_id: null
     });
     this.availableBalance.set(null);
+    this.clearScannedReceipt();
   }
 
   onCancel(): void {

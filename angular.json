@@ -56,7 +56,15 @@
                 "output": "/assets/"
               }
             ],
-            "styles": ["./node_modules/ng-zorro-antd/ng-zorro-antd.min.css", "src/styles.scss"]
+            "styles": ["./node_modules/ng-zorro-antd/ng-zorro-antd.min.css", "src/styles.scss"],
+            "server": "src/main.server.ts",
+            "outputMode": "server",
+            "ssr": {
+              "entry": "src/server.ts"
+            },
+            "security": {
+              "allowedHosts": ["*"]
+            }
           },
           "configurations": {
             "production": {
@@ -79,6 +87,9 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true,
+              "externalDependencies": [
+                "@google/genai"
+              ],
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
@@ -93,7 +104,8 @@
           "builder": "@angular/build:dev-server",
           "options": {
             "port": 3000,
-            "host": "0.0.0.0"
+            "host": "0.0.0.0",
+            "allowedHosts": ["*"]
           },
           "configurations": {
             "production": {
