@@ -233,3 +233,13 @@
     </form>
   </ng-container>
 </nz-modal>
+
+<!-- VISOR INTERACTIVO DE ESCÁNER DE DOCUMENTO ESTILO WHATSAPP/CAMSCANNER -->
+<app-receipt-scanner-modal
+  [isVisible]="isDocScannerModalVisible()"
+  [rawImageDataUrl]="rawDocImage()"
+  (scanConfirmed)="onDocScanConfirmed($event)"
+  (cancelled)="onDocScanCancelled()"
+  (retakeRequested)="onDocScanRetake()"
+>
+</app-receipt-scanner-modal>

@@ -7,8 +7,10 @@ import { es_ES, provideNzI18n } from 'ng-zorro-antd/i18n';
 import { registerLocaleData } from '@angular/common';
 import es from '@angular/common/locales/es';
 import { provideNzDateFnsAdapter } from 'ng-zorro-antd/core/time';
+import { provideNzIcons } from 'ng-zorro-antd/icon';
 import { provideServiceWorker } from '@angular/service-worker';
 import { NzModalModule } from 'ng-zorro-antd/modal';
+import { APP_ICONS } from './core/icons.config';
 
 registerLocaleData(es);
 
@@ -18,6 +20,7 @@ export const appConfig: ApplicationConfig = {
     DatePipe,
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
+    provideNzIcons(APP_ICONS),
     provideNzI18n(es_ES),
     provideNzDateFnsAdapter(),
     provideServiceWorker('ngsw-worker.js', {

@@ -29,6 +29,7 @@ import { ReceiptScannerService, ScannedReceiptData } from '../../../core/service
 
 // NUEVO: Importamos la directiva que acabamos de crear
 import { DecimalInputDirective } from '../../directives/decimal-input.directive';
+import { ReceiptScannerModalComponent } from '../receipt-scanner-modal/receipt-scanner-modal.component';
 
 @Component({
   selector: 'app-transaction-modal',
@@ -41,7 +42,8 @@ import { DecimalInputDirective } from '../../directives/decimal-input.directive'
     ReactiveFormsModule, DecimalPipe, NzIconModule,
     NzModalModule, NzFormModule, NzInputModule, NzInputNumberModule,
     NzSelectModule, NzDatePickerModule, NzButtonModule,
-    DecimalInputDirective // NUEVO: Registramos la directiva en el componente
+    DecimalInputDirective,
+    ReceiptScannerModalComponent
   ],
   templateUrl: './transaction-modal.component.html',
   styleUrl: './transaction-modal.component.scss'
@@ -69,6 +71,10 @@ export class TransactionModalComponent implements OnInit {
   readonly isScanningReceipt = signal<boolean>(false);
   readonly scannedReceiptInfo = signal<ScannedReceiptData | null>(null);
   readonly scannedReceiptThumbnail = signal<string | null>(null);
+
+  // Visor y preprocesador de documento estilo WhatsApp/CamScanner
+  readonly isDocScannerModalVisible = signal<boolean>(false);
+  readonly rawDocImage = signal<string | null>(null);
 
   readonly availableBalance = signal<number | null>(null);
   readonly isCheckingBalance = signal<boolean>(false);
@@ -247,11 +253,23 @@ export class TransactionModalComponent implements OnInit {
       const captured = await this.nativeDeviceService.captureReceiptImage();
       if (!captured) return;
 
-      this.isScanningReceipt.set(true);
-      this.scannedReceiptThumbnail.set(captured.dataUrl);
+      this.rawDocImage.set(captured.dataUrl);
+      this.isDocScannerModalVisible.set(true);
       await this.nativeDeviceService.triggerHaptic('light');
+    } catch (err: any) {
+      console.error('Error al capturar imagen:', err);
+      this.message.error('No se pudo acceder a la cámara o archivo.');
+    }
+  }
 
-      const data = await this.receiptScannerService.scanReceipt(captured.base64, captured.mimeType);
+  public async onDocScanConfirmed(result: { base64: string; mimeType: string; dataUrl: string }): Promise<void> {
+    this.isDocScannerModalVisible.set(false);
+    this.isScanningReceipt.set(true);
+    this.scannedReceiptThumbnail.set(result.dataUrl);
+    await this.nativeDeviceService.triggerHaptic('light');
+
+    try {
+      const data = await this.receiptScannerService.scanReceipt(result.base64, result.mimeType);
       this.scannedReceiptInfo.set(data);
 
       // Auto-rellenar valores en el formulario
@@ -300,13 +318,29 @@ export class TransactionModalComponent implements OnInit {
 
       this.transactionForm.patchValue(patchObj);
       await this.nativeDeviceService.triggerHaptic('success');
-      this.message.success(`Factura de "${data.merchant}" analizada con éxito por Gemini AI`);
+      this.message.success(`Factura de "${data.merchant}" analizada con éxito`);
     } catch (err: any) {
       console.error('Error al escanear comprobante:', err);
       await this.nativeDeviceService.triggerHaptic('error');
       this.message.error(err?.message || 'No se pudo analizar la factura.');
     } finally {
       this.isScanningReceipt.set(false);
+    }
+  }
+
+  public onDocScanCancelled(): void {
+    this.isDocScannerModalVisible.set(false);
+    this.rawDocImage.set(null);
+  }
+
+  public async onDocScanRetake(): Promise<void> {
+    try {
+      const captured = await this.nativeDeviceService.captureReceiptImage();
+      if (captured) {
+        this.rawDocImage.set(captured.dataUrl);
+      }
+    } catch (err) {
+      console.error('Error al retomar imagen:', err);
     }
   }
 

@@ -48,6 +48,11 @@ export class ConfigComponent implements OnInit {
   });
 
   readonly customApiKey = signal<string>('');
+  readonly showAdvancedSettings = signal<boolean>(false);
+
+  toggleAdvancedSettings(): void {
+    this.showAdvancedSettings.update(v => !v);
+  }
 
   async ngOnInit(): Promise<void> {
     if (typeof window !== 'undefined') {

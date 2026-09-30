@@ -12,6 +12,8 @@ import { GoogleGenAI } from '@google/genai';
 const serverDistFolder = dirname(fileURLToPath(import.meta.url));
 const browserDistFolder = resolve(serverDistFolder, '../browser');
 
+import { readFileSync, existsSync } from 'node:fs';
+
 process.env['NG_ALLOWED_HOSTS'] = '*';
 
 const app = express();
@@ -22,15 +24,26 @@ const angularNodeAppEngine = new AngularNodeAppEngine({
 // Parse JSON request body with 15MB limit for receipt images
 app.use(express.json({ limit: '15mb' }));
 
-// Initialize Google Gen AI client with telemetry header
-const ai = new GoogleGenAI({
-  apiKey: process.env['GEMINI_API_KEY'] || '',
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
-    },
-  },
-});
+// Helper to get active API key
+function getEffectiveApiKey(customApiKey?: string): string {
+  if (customApiKey && customApiKey.trim().length > 10) {
+    return customApiKey.trim();
+  }
+  let key = process.env['GEMINI_API_KEY'] || '';
+  if (!key || key.startsWith('MY_GEMINI_') || key.length < 25) {
+    try {
+      if (existsSync('/tmp/.gemini_key')) {
+        const tmpKey = readFileSync('/tmp/.gemini_key', 'utf-8').trim();
+        if (tmpKey && tmpKey.length > 25) {
+          key = tmpKey;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return key;
+}
 
 // API endpoint to analyze receipt / invoice images
 app.post('/api/scan-receipt', async (req, res) => {
@@ -40,14 +53,14 @@ app.post('/api/scan-receipt', async (req, res) => {
       return res.status(400).json({ success: false, error: 'No se recibió ninguna imagen de comprobante.' });
     }
 
-    // Optional custom API key provided by user in settings
+    // Optional custom API key provided by user in settings or system key
     const customApiKey = req.headers['x-gemini-api-key'] as string;
-    const activeAiClient = (customApiKey && customApiKey.trim().length > 10)
-      ? new GoogleGenAI({
-          apiKey: customApiKey.trim(),
-          httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
-        })
-      : ai;
+    const apiKey = getEffectiveApiKey(customApiKey);
+
+    const activeAiClient = new GoogleGenAI({
+      apiKey,
+      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+    });
 
     // Strip prefix if standard data URL was provided
     const cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
@@ -81,49 +94,42 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con los campos exactos:
 }`;
 
     let response;
-    try {
-      response = await activeAiClient.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: prompt },
-              {
-                inlineData: {
-                  data: cleanBase64,
-                  mimeType: mimeType || 'image/jpeg',
+    const modelsToTry = ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-2.0-flash'];
+    let lastError: any = null;
+
+    for (const modelName of modelsToTry) {
+      try {
+        response = await activeAiClient.models.generateContent({
+          model: modelName,
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                { text: prompt },
+                {
+                  inlineData: {
+                    data: cleanBase64,
+                    mimeType: mimeType || 'image/jpeg',
+                  },
                 },
-              },
-            ],
+              ],
+            },
+          ],
+          config: {
+            responseMimeType: 'application/json',
           },
-        ],
-        config: {
-          responseMimeType: 'application/json',
-        },
-      });
-    } catch (modelErr: any) {
-      console.warn('Fallback a gemini-3.1-flash-lite debido a:', modelErr?.message);
-      response = await activeAiClient.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: prompt },
-              {
-                inlineData: {
-                  data: cleanBase64,
-                  mimeType: mimeType || 'image/jpeg',
-                },
-              },
-            ],
-          },
-        ],
-        config: {
-          responseMimeType: 'application/json',
-        },
-      });
+        });
+        if (response && response.text) {
+          break; // Exitoso
+        }
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`Modelo ${modelName} falló:`, err?.message || err);
+      }
+    }
+
+    if (!response || !response.text) {
+      throw lastError || new Error('No se pudo procesar la imagen con los modelos disponibles.');
     }
 
     const text = response.text?.trim() || '{}';
@@ -146,7 +152,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con los campos exactos:
   } catch (error: any) {
     console.error('Error al procesar comprobante con Gemini:', error);
     let userMsg = 'Error al procesar el comprobante con Gemini AI';
-    const rawError = error?.message || '';
+    const rawError = error?.message || String(error) || '';
 
     if (rawError.includes('resource_exhausted') || rawError.includes('quota') || rawError.includes('429')) {
       userMsg = 'Has alcanzado temporalmente el límite de cuota de Gemini AI. Espera unos segundos o ingresa los datos manualmente.';
@@ -154,9 +160,11 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con los campos exactos:
       userMsg = 'La clave de Gemini API no es válida o no tiene permisos suficientes.';
     } else if (rawError.includes('503') || rawError.includes('high demand') || rawError.includes('UNAVAILABLE')) {
       userMsg = 'El modelo de IA está experimentando alta demanda. Intenta nuevamente en unos segundos.';
+    } else if (rawError.includes('404') || rawError.includes('NOT_FOUND')) {
+      userMsg = 'Servicio de reconocimiento óptico temporalmente no disponible. Puedes ingresar los datos manualmente.';
     }
 
-    return res.status(500).json({
+    return res.json({
       success: false,
       error: userMsg,
     });
