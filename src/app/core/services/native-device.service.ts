@@ -25,10 +25,9 @@ export class NativeDeviceService {
   }
 
   /**
-   * Captura una imagen con la cámara del dispositivo o permite seleccionarla de la galería.
-   * Funciona de forma transparente tanto en dispositivos nativos (Android/iOS) como en navegadores Web / PWA.
+   * Captura una foto activando directamente la cámara del dispositivo móvil o webcam.
    */
-  async captureReceiptImage(): Promise<CapturedImage | null> {
+  async captureFromCamera(): Promise<CapturedImage | null> {
     if (typeof window === 'undefined') return null;
 
     if (this.isNative()) {
@@ -37,22 +36,14 @@ export class NativeDeviceService {
           quality: 85,
           allowEditing: false,
           resultType: CameraResultType.Base64,
-          source: CameraSource.Prompt, // Pregunta al usuario: Cámara o Fotos
-          promptLabelHeader: 'Escanear Comprobante',
-          promptLabelPhoto: 'Elegir de la Galería',
-          promptLabelPicture: 'Tomar Foto con Cámara',
-          promptLabelCancel: 'Cancelar'
+          source: CameraSource.Camera,
         });
 
-        if (!photo.base64String) {
-          return null;
-        }
+        if (!photo.base64String) return null;
 
         const format = photo.format || 'jpeg';
         const rawMimeType = `image/${format}`;
         const rawDataUrl = `data:${rawMimeType};base64,${photo.base64String}`;
-
-        // Comprimir y redimensionar la imagen para envío óptimo
         const compressed = await this.compressDataUrl(rawDataUrl);
 
         return {
@@ -61,25 +52,70 @@ export class NativeDeviceService {
           dataUrl: compressed.dataUrl
         };
       } catch (err: any) {
-        // El usuario canceló la captura o denegó permisos
         if (err?.message?.includes('User cancelled') || err?.message?.includes('cancelled')) {
           return null;
         }
         console.warn('Fallo en cámara nativa, intentando fallback web:', err);
-        return this.pickImageViaWebInput();
+        return this.pickImageViaWebInput(true);
       }
     } else {
-      // Entorno Web / PWA: Selector de archivos o captura de cámara web
-      return this.pickImageViaWebInput();
+      return this.pickImageViaWebInput(true);
     }
+  }
+
+  /**
+   * Abre la galería de fotos o explorador de archivos del celular o computador.
+   */
+  async pickFromGallery(): Promise<CapturedImage | null> {
+    if (typeof window === 'undefined') return null;
+
+    if (this.isNative()) {
+      try {
+        const photo = await Camera.getPhoto({
+          quality: 85,
+          allowEditing: false,
+          resultType: CameraResultType.Base64,
+          source: CameraSource.Photos,
+        });
+
+        if (!photo.base64String) return null;
+
+        const format = photo.format || 'jpeg';
+        const rawMimeType = `image/${format}`;
+        const rawDataUrl = `data:${rawMimeType};base64,${photo.base64String}`;
+        const compressed = await this.compressDataUrl(rawDataUrl);
+
+        return {
+          base64: compressed.cleanBase64,
+          mimeType: compressed.mimeType,
+          dataUrl: compressed.dataUrl
+        };
+      } catch (err: any) {
+        if (err?.message?.includes('User cancelled') || err?.message?.includes('cancelled')) {
+          return null;
+        }
+        console.warn('Fallo en galería nativa, intentando fallback web:', err);
+        return this.pickImageViaWebInput(false);
+      }
+    } else {
+      return this.pickImageViaWebInput(false);
+    }
+  }
+
+  /**
+   * Método de compatibilidad general
+   */
+  async captureReceiptImage(): Promise<CapturedImage | null> {
+    return this.captureFromCamera();
   }
 
   private isPicking = false;
 
   /**
    * Fallback limpio para entorno Web / Móvil / PWA con compresión automática
+   * @param useCamera Si es true, añade capture="environment" para abrir la cámara de inmediato en móviles
    */
-  private pickImageViaWebInput(): Promise<CapturedImage | null> {
+  private pickImageViaWebInput(useCamera = false): Promise<CapturedImage | null> {
     if (this.isPicking) {
       return Promise.resolve(null);
     }
@@ -89,6 +125,9 @@ export class NativeDeviceService {
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
+      if (useCamera) {
+        input.setAttribute('capture', 'environment');
+      }
       input.style.display = 'none';
 
       const cleanup = () => {

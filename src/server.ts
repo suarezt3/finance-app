@@ -94,7 +94,7 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con los campos exactos:
 }`;
 
     let response;
-    const modelsToTry = ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-2.5-flash'];
+    const modelsToTry = ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest'];
     let lastError: any = null;
 
     for (const modelName of modelsToTry) {

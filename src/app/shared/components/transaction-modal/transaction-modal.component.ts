@@ -29,7 +29,6 @@ import { ReceiptScannerService, ScannedReceiptData } from '../../../core/service
 
 // NUEVO: Importamos la directiva que acabamos de crear
 import { DecimalInputDirective } from '../../directives/decimal-input.directive';
-import { ReceiptScannerModalComponent } from '../receipt-scanner-modal/receipt-scanner-modal.component';
 
 @Component({
   selector: 'app-transaction-modal',
@@ -42,8 +41,7 @@ import { ReceiptScannerModalComponent } from '../receipt-scanner-modal/receipt-s
     ReactiveFormsModule, DecimalPipe, NzIconModule,
     NzModalModule, NzFormModule, NzInputModule, NzInputNumberModule,
     NzSelectModule, NzDatePickerModule, NzButtonModule,
-    DecimalInputDirective,
-    ReceiptScannerModalComponent
+    DecimalInputDirective
   ],
   templateUrl: './transaction-modal.component.html',
   styleUrl: './transaction-modal.component.scss'
@@ -67,15 +65,11 @@ export class TransactionModalComponent implements OnInit {
   readonly isSubmitting = signal<boolean>(false);
   readonly isLoadingCatalogs = signal<boolean>(false);
 
-  // Estados de escaneo de comprobantes con Gemini AI
+  // Estados de escaneo directo de comprobantes con Gemini AI
   readonly isCapturingImage = signal<boolean>(false);
   readonly isScanningReceipt = signal<boolean>(false);
   readonly scannedReceiptInfo = signal<ScannedReceiptData | null>(null);
   readonly scannedReceiptThumbnail = signal<string | null>(null);
-
-  // Visor y preprocesador de documento estilo WhatsApp/CamScanner
-  readonly isDocScannerModalVisible = signal<boolean>(false);
-  readonly rawDocImage = signal<string | null>(null);
 
   readonly availableBalance = signal<number | null>(null);
   readonly isCheckingBalance = signal<boolean>(false);
@@ -247,40 +241,50 @@ export class TransactionModalComponent implements OnInit {
     });
   }
 
-  public async onScanReceipt(): Promise<void> {
-    if (this.isCapturingImage() || this.isScanningReceipt() || this.isDocScannerModalVisible()) {
-      return;
-    }
-
+  public async onCapturePhoto(): Promise<void> {
+    if (this.isCapturingImage() || this.isScanningReceipt()) return;
     this.isCapturingImage.set(true);
-    try {
-      const captured = await this.nativeDeviceService.captureReceiptImage();
-      if (!captured) return;
 
-      this.rawDocImage.set(captured.dataUrl);
-      this.isDocScannerModalVisible.set(true);
-      await this.nativeDeviceService.triggerHaptic('light');
+    try {
+      const captured = await this.nativeDeviceService.captureFromCamera();
+      if (captured) {
+        await this.processImageDirectly(captured);
+      }
     } catch (err: any) {
-      console.error('Error al capturar imagen:', err);
-      this.message.error('No se pudo acceder a la cámara o archivo.');
+      console.error('Error al capturar foto con cámara:', err);
+      this.message.error('No se pudo acceder a la cámara.');
     } finally {
       this.isCapturingImage.set(false);
     }
   }
 
-  public async onDocScanConfirmed(result: { base64: string; mimeType: string; dataUrl: string }): Promise<void> {
-    if (this.isScanningReceipt()) return;
+  public async onPickFile(): Promise<void> {
+    if (this.isCapturingImage() || this.isScanningReceipt()) return;
+    this.isCapturingImage.set(true);
 
-    this.isDocScannerModalVisible.set(false);
+    try {
+      const captured = await this.nativeDeviceService.pickFromGallery();
+      if (captured) {
+        await this.processImageDirectly(captured);
+      }
+    } catch (err: any) {
+      console.error('Error al seleccionar archivo de comprobante:', err);
+      this.message.error('No se pudo cargar el archivo.');
+    } finally {
+      this.isCapturingImage.set(false);
+    }
+  }
+
+  private async processImageDirectly(captured: { base64: string; mimeType: string; dataUrl: string }): Promise<void> {
     this.isScanningReceipt.set(true);
-    this.scannedReceiptThumbnail.set(result.dataUrl);
+    this.scannedReceiptThumbnail.set(captured.dataUrl);
     await this.nativeDeviceService.triggerHaptic('light');
 
     try {
-      const data = await this.receiptScannerService.scanReceipt(result.base64, result.mimeType);
+      const data = await this.receiptScannerService.scanReceipt(captured.base64, captured.mimeType);
       this.scannedReceiptInfo.set(data);
 
-      // Auto-rellenar valores en el formulario
+      // Auto-rellenar valores en el formulario reactivo
       const patchObj: Record<string, any> = {
         type: data.type || 'EXPENSE',
         amount: data.amount > 0 ? data.amount : this.transactionForm.value.amount,
@@ -297,7 +301,7 @@ export class TransactionModalComponent implements OnInit {
             patchObj['date'] = new Date(year, month, day);
           }
         } catch {
-          // fecha default actual
+          // fecha actual por defecto
         }
       }
 
@@ -333,22 +337,6 @@ export class TransactionModalComponent implements OnInit {
       this.message.error(err?.message || 'No se pudo analizar la factura.');
     } finally {
       this.isScanningReceipt.set(false);
-    }
-  }
-
-  public onDocScanCancelled(): void {
-    this.isDocScannerModalVisible.set(false);
-    this.rawDocImage.set(null);
-  }
-
-  public async onDocScanRetake(): Promise<void> {
-    try {
-      const captured = await this.nativeDeviceService.captureReceiptImage();
-      if (captured) {
-        this.rawDocImage.set(captured.dataUrl);
-      }
-    } catch (err) {
-      console.error('Error al retomar imagen:', err);
     }
   }
 

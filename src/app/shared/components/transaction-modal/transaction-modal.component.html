@@ -13,26 +13,48 @@
   <ng-container *nzModalContent>
     <form nz-form [formGroup]="transactionForm" nzLayout="vertical" class="transaction-modal-form">
 
-      <!-- 0. ESCANEAR FACTURA CON GEMINI AI (Acceso Directo Inteligente) -->
+      <!-- 0. ESCANEAR FACTURA CON GEMINI AI (Acceso Directo: Cámara o Archivo) -->
       @if (!transactionToEdit()) {
         <div class="ai-receipt-banner">
           @if (!isScanningReceipt() && !scannedReceiptInfo()) {
-            <button
-              type="button"
-              class="ai-scan-btn"
-              (click)="onScanReceipt()"
-            >
-              <div class="ai-btn-left">
-                <span class="ai-sparkle-icon" nz-icon nzType="camera" nzTheme="outline"></span>
-                <div class="ai-btn-texts">
-                  <span class="ai-btn-title">Escanear Factura o Recibo</span>
-                  <span class="ai-btn-subtitle">Foto con cámara o archivo para auto-completar</span>
+            <div class="ai-scan-container">
+              <div class="ai-scan-header">
+                <div class="ai-scan-title-group">
+                  <span class="ai-scan-main-title">Escanear Comprobante o Factura</span>
+                  <span class="ai-scan-subtitle">Completa el formulario en 1 segundo</span>
                 </div>
+                <span class="ai-btn-badge">
+                  <span nz-icon nzType="thunderbolt" nzTheme="fill"></span> Gemini AI
+                </span>
               </div>
-              <span class="ai-btn-badge">
-                <span nz-icon nzType="thunderbolt" nzTheme="fill"></span> Gemini AI
-              </span>
-            </button>
+              <div class="ai-scan-actions">
+                <button
+                  type="button"
+                  class="ai-action-btn btn-camera"
+                  [disabled]="isCapturingImage()"
+                  (click)="onCapturePhoto()"
+                >
+                  <span nz-icon nzType="camera" nzTheme="outline" class="btn-icon"></span>
+                  <div class="btn-label-group">
+                    <span class="btn-label-primary">Tomar Foto</span>
+                    <span class="btn-label-sub">Abrir cámara directa</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  class="ai-action-btn btn-file"
+                  [disabled]="isCapturingImage()"
+                  (click)="onPickFile()"
+                >
+                  <span nz-icon nzType="file-image" nzTheme="outline" class="btn-icon"></span>
+                  <div class="btn-label-group">
+                    <span class="btn-label-primary">Subir Archivo</span>
+                    <span class="btn-label-sub">Galería o fotos</span>
+                  </div>
+                </button>
+              </div>
+            </div>
           } @else if (isScanningReceipt()) {
             <div class="ai-scanning-card">
               <nz-spin nzSimple></nz-spin>
@@ -45,10 +67,14 @@
             <div class="ai-result-card">
               <div class="ai-result-header">
                 <div class="ai-result-meta">
-                  <span nz-icon nzType="check-circle" nzTheme="fill" class="ai-success-icon"></span>
-                  <div>
+                  @if (scannedReceiptThumbnail()) {
+                    <img [src]="scannedReceiptThumbnail()" class="ai-result-thumb" alt="Factura escaneada" />
+                  } @else {
+                    <span nz-icon nzType="check-circle" nzTheme="fill" class="ai-success-icon"></span>
+                  }
+                  <div class="ai-result-titles">
                     <strong>{{ info.merchant }}</strong>
-                    <span class="ai-detected-tag">Detectado con Gemini</span>
+                    <span class="ai-detected-tag">Auto-completado con Gemini AI</span>
                   </div>
                 </div>
                 <button type="button" class="ai-clear-btn" (click)="clearScannedReceipt()" title="Descartar">
@@ -233,13 +259,3 @@
     </form>
   </ng-container>
 </nz-modal>
-
-<!-- VISOR INTERACTIVO DE ESCÁNER DE DOCUMENTO ESTILO WHATSAPP/CAMSCANNER -->
-<app-receipt-scanner-modal
-  [isVisible]="isDocScannerModalVisible()"
-  [rawImageDataUrl]="rawDocImage()"
-  (scanConfirmed)="onDocScanConfirmed($event)"
-  (cancelled)="onDocScanCancelled()"
-  (retakeRequested)="onDocScanRetake()"
->
-</app-receipt-scanner-modal>
