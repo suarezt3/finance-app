@@ -68,6 +68,7 @@ export class TransactionModalComponent implements OnInit {
   readonly isLoadingCatalogs = signal<boolean>(false);
 
   // Estados de escaneo de comprobantes con Gemini AI
+  readonly isCapturingImage = signal<boolean>(false);
   readonly isScanningReceipt = signal<boolean>(false);
   readonly scannedReceiptInfo = signal<ScannedReceiptData | null>(null);
   readonly scannedReceiptThumbnail = signal<string | null>(null);
@@ -247,8 +248,11 @@ export class TransactionModalComponent implements OnInit {
   }
 
   public async onScanReceipt(): Promise<void> {
-    if (this.isScanningReceipt()) return;
+    if (this.isCapturingImage() || this.isScanningReceipt() || this.isDocScannerModalVisible()) {
+      return;
+    }
 
+    this.isCapturingImage.set(true);
     try {
       const captured = await this.nativeDeviceService.captureReceiptImage();
       if (!captured) return;
@@ -259,10 +263,14 @@ export class TransactionModalComponent implements OnInit {
     } catch (err: any) {
       console.error('Error al capturar imagen:', err);
       this.message.error('No se pudo acceder a la cámara o archivo.');
+    } finally {
+      this.isCapturingImage.set(false);
     }
   }
 
   public async onDocScanConfirmed(result: { base64: string; mimeType: string; dataUrl: string }): Promise<void> {
+    if (this.isScanningReceipt()) return;
+
     this.isDocScannerModalVisible.set(false);
     this.isScanningReceipt.set(true);
     this.scannedReceiptThumbnail.set(result.dataUrl);

@@ -74,28 +74,42 @@ export class NativeDeviceService {
     }
   }
 
+  private isPicking = false;
+
   /**
    * Fallback limpio para entorno Web / Móvil / PWA con compresión automática
    */
   private pickImageViaWebInput(): Promise<CapturedImage | null> {
+    if (this.isPicking) {
+      return Promise.resolve(null);
+    }
+    this.isPicking = true;
+
     return new Promise((resolve) => {
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
-      // Sugerir cámara en dispositivos móviles con navegador
-      input.setAttribute('capture', 'environment');
       input.style.display = 'none';
+
+      const cleanup = () => {
+        this.isPicking = false;
+        if (input.parentNode) {
+          input.parentNode.removeChild(input);
+        }
+      };
 
       input.onchange = async () => {
         const file = input.files?.[0];
         if (!file) {
+          cleanup();
           resolve(null);
           return;
         }
 
         try {
-          // Comprimir la imagen del celular antes de procesarla
-          const compressed = await this.compressImageFile(file, 1600, 0.82);
+          // Comprimir la imagen del celular antes de procesarla (1200px max, calidad 0.78)
+          const compressed = await this.compressImageFile(file, 1200, 0.78);
+          cleanup();
           resolve({
             base64: compressed.cleanBase64,
             mimeType: compressed.mimeType,
@@ -107,22 +121,22 @@ export class NativeDeviceService {
             // Fallback directo si canvas falla
             const base64 = await this.fileToBase64(file);
             const cleanBase64 = base64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+            cleanup();
             resolve({
               base64: cleanBase64,
               mimeType: file.type || 'image/jpeg',
               dataUrl: base64
             });
           } catch {
+            cleanup();
             resolve(null);
           }
-        } finally {
-          document.body.removeChild(input);
         }
       };
 
       input.oncancel = () => {
+        cleanup();
         resolve(null);
-        document.body.removeChild(input);
       };
 
       document.body.appendChild(input);
@@ -132,9 +146,9 @@ export class NativeDeviceService {
 
   /**
    * Redimensiona y comprime un archivo de imagen en el navegador del teléfono a un tamaño ideal
-   * manteniendo alta nitidez para OCR pero reduciendo el peso de ~15MB a ~300KB.
+   * manteniendo alta nitidez para OCR pero reduciendo el peso de ~15MB a ~180KB.
    */
-  async compressImageFile(file: File, maxDimension = 1600, quality = 0.82): Promise<{ dataUrl: string; cleanBase64: string; mimeType: string }> {
+  async compressImageFile(file: File, maxDimension = 1200, quality = 0.78): Promise<{ dataUrl: string; cleanBase64: string; mimeType: string }> {
     const rawDataUrl = await this.fileToBase64(file);
     return this.compressDataUrl(rawDataUrl, maxDimension, quality);
   }
@@ -142,7 +156,7 @@ export class NativeDeviceService {
   /**
    * Redimensiona y comprime una Data URL en memoria con HTML5 Canvas
    */
-  async compressDataUrl(dataUrl: string, maxDimension = 1600, quality = 0.82): Promise<{ dataUrl: string; cleanBase64: string; mimeType: string }> {
+  async compressDataUrl(dataUrl: string, maxDimension = 1200, quality = 0.78): Promise<{ dataUrl: string; cleanBase64: string; mimeType: string }> {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {

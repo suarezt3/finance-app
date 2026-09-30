@@ -25,41 +25,41 @@ export type DocumentFilterType = 'enhanced' | 'bw' | 'normal';
       [nzFooter]="null"
       [nzClosable]="false"
       [nzCentered]="true"
-      [nzWidth]="'95vw'"
-      [nzStyle]="{ maxWidth: '640px', padding: '0' }"
+      [nzWidth]="'92vw'"
+      [nzStyle]="{ maxWidth: '440px', padding: '0' }"
       (nzOnCancel)="onCancel()"
       [nzBodyStyle]="{ padding: '0', background: '#0b1120', borderRadius: '1.25rem', overflow: 'hidden' }"
     >
-      <div *nzModalContent class="doc-scanner-container flex flex-col h-[82vh] max-h-[750px] bg-slate-950 text-slate-100 select-none">
+      <div *nzModalContent class="doc-scanner-container flex flex-col h-[60vh] max-h-[490px] bg-slate-950 text-slate-100 select-none">
 
         <!-- BARRA SUPERIOR: HERRAMIENTAS (ESTILO WHATSAPP/CAMSCANNER) -->
-        <header class="flex items-center justify-between px-4 py-3 bg-slate-900/90 border-b border-slate-800/80 backdrop-blur z-10">
+        <header class="flex items-center justify-between px-3.5 py-2.5 bg-slate-900/90 border-b border-slate-800/80 backdrop-blur z-10">
           <button
             type="button"
             (click)="onCancel()"
-            class="text-slate-300 hover:text-white flex items-center gap-1.5 text-xs font-medium px-2 py-1.5 rounded-lg hover:bg-slate-800 transition"
+            class="text-slate-300 hover:text-white flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-lg hover:bg-slate-800 transition"
           >
-            <span nz-icon nzType="arrow-left" nzTheme="outline" class="text-sm"></span>
+            <span nz-icon nzType="arrow-left" nzTheme="outline" class="text-xs"></span>
             <span>Volver</span>
           </button>
 
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
               <span nz-icon nzType="scan" nzTheme="outline" class="text-indigo-400"></span>
-              Escáner de Documento
+              Escáner
             </span>
           </div>
 
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5">
             <!-- Rotar 90 grados -->
             <button
               type="button"
               (click)="rotate90()"
               nz-tooltip
-              nzTooltipTitle="Rotar documento 90°"
-              class="text-slate-300 hover:text-white p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition"
+              nzTooltipTitle="Rotar 90°"
+              class="text-slate-300 hover:text-white p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 transition"
             >
-              <span nz-icon nzType="redo" nzTheme="outline" class="text-base"></span>
+              <span nz-icon nzType="redo" nzTheme="outline" class="text-sm"></span>
             </button>
 
             <!-- Recortar bordes (Márgenes automáticos) -->
@@ -67,37 +67,37 @@ export type DocumentFilterType = 'enhanced' | 'bw' | 'normal';
               type="button"
               (click)="cycleCropMargin()"
               nz-tooltip
-              [nzTooltipTitle]="'Recorte de bordes: ' + cropMarginLabel()"
-              class="text-slate-300 hover:text-white px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 transition flex items-center gap-1 text-xs"
+              [nzTooltipTitle]="'Recorte: ' + cropMarginLabel()"
+              class="text-slate-300 hover:text-white px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 transition flex items-center gap-1 text-xs"
             >
-              <span nz-icon nzType="border" nzTheme="outline"></span>
+              <span nz-icon nzType="border" nzTheme="outline" class="text-xs"></span>
               <span>{{ cropMarginLabel() }}</span>
             </button>
           </div>
         </header>
 
         <!-- VISOR CENTRAL: LIENZO CON GUÍAS DE ENCUADRE TIPO DOCUMENTO -->
-        <main class="relative flex-1 flex items-center justify-center p-4 bg-slate-950 overflow-hidden">
+        <main class="relative flex-1 flex items-center justify-center p-3 bg-slate-950 overflow-hidden">
           <canvas #canvasElement class="hidden"></canvas>
 
           @if (isProcessing()) {
-            <div class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 z-20 gap-3">
+            <div class="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/80 z-20 gap-2">
               <nz-spin nzSimple></nz-spin>
-              <span class="text-xs text-indigo-300 font-medium">Aplicando realce de documento...</span>
+              <span class="text-xs text-indigo-300 font-medium">Aplicando realce...</span>
             </div>
           }
 
-          <div class="relative max-w-full max-h-full flex items-center justify-center shadow-2xl rounded-lg overflow-hidden border border-slate-700/60 bg-black">
+          <div class="relative max-w-full max-h-full flex items-center justify-center shadow-xl rounded-lg overflow-hidden border border-slate-700/60 bg-black">
             <!-- Guías visuales de esquinas de escaneo de documento -->
-            <div class="absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 border-indigo-400 pointer-events-none z-10"></div>
-            <div class="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-indigo-400 pointer-events-none z-10"></div>
-            <div class="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-indigo-400 pointer-events-none z-10"></div>
-            <div class="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-indigo-400 pointer-events-none z-10"></div>
+            <div class="absolute top-1.5 left-1.5 w-5 h-5 border-t-2 border-l-2 border-indigo-400 pointer-events-none z-10"></div>
+            <div class="absolute top-1.5 right-1.5 w-5 h-5 border-t-2 border-r-2 border-indigo-400 pointer-events-none z-10"></div>
+            <div class="absolute bottom-1.5 left-1.5 w-5 h-5 border-b-2 border-l-2 border-indigo-400 pointer-events-none z-10"></div>
+            <div class="absolute bottom-1.5 right-1.5 w-5 h-5 border-b-2 border-r-2 border-indigo-400 pointer-events-none z-10"></div>
 
             <img
               [src]="previewDataUrl()"
-              alt="Vista previa del documento escaneado"
-              class="max-h-[50vh] max-w-[85vw] object-contain block select-none"
+              alt="Vista previa del comprobante"
+              class="max-h-[30vh] max-w-[75vw] object-contain block select-none"
             />
           </div>
         </main>
@@ -229,18 +229,24 @@ export class ReceiptScannerModalComponent {
     this.renderCanvas();
   }
 
+  readonly isSubmitting = signal<boolean>(false);
+
   onCancel(): void {
+    this.isSubmitting.set(false);
     this.cancelled.emit();
   }
 
   onRetake(): void {
+    this.isSubmitting.set(false);
     this.retakeRequested.emit();
   }
 
   confirmScan(): void {
+    if (this.isSubmitting()) return;
     const dataUrl = this.previewDataUrl();
     if (!dataUrl) return;
 
+    this.isSubmitting.set(true);
     const cleanBase64 = dataUrl.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
     this.scanConfirmed.emit({
       base64: cleanBase64,
@@ -250,6 +256,7 @@ export class ReceiptScannerModalComponent {
   }
 
   private loadImageAndRender(dataUrl: string): void {
+    this.isSubmitting.set(false);
     this.isProcessing.set(true);
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -282,8 +289,8 @@ export class ReceiptScannerModalComponent {
     const rot = this.rotation();
     const isSideways = rot === 90 || rot === 270;
 
-    // Dimensiones máximas optimizadas para OCR rápido
-    const maxDim = 1600;
+    // Dimensiones máximas optimizadas para OCR rápido (1200px máx)
+    const maxDim = 1200;
     let srcW = img.width;
     let srcH = img.height;
 
@@ -381,7 +388,7 @@ export class ReceiptScannerModalComponent {
       }
     }
 
-    const compressed = canvas.toDataURL('image/jpeg', 0.85);
+    const compressed = canvas.toDataURL('image/jpeg', 0.78);
     this.previewDataUrl.set(compressed);
   }
 }
