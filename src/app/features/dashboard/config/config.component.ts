@@ -1,5 +1,6 @@
 // src/app/features/dashboard/config/config.component.ts
 import { Component, inject, signal, OnInit } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
 import { NzTableModule } from 'ng-zorro-antd/table';
@@ -14,12 +15,14 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { CatalogService, Category, PaymentMethod } from '../../../core/services/catalog.service';
 import { BiometricAuthService } from '../../../core/services/biometric-auth.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { PwaUpdateService } from '../../../core/services/pwa-update.service';
 
 @Component({
   selector: 'app-config',
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    DatePipe,
     NzTabsModule, NzTableModule, NzButtonModule, NzIconModule,
     NzTagModule, NzModalModule, NzFormModule, NzInputModule, NzSelectModule
   ],
@@ -33,12 +36,14 @@ export class ConfigComponent implements OnInit {
   private readonly modalService = inject(NzModalService);
   readonly biometricAuth = inject(BiometricAuthService);
   private readonly authService = inject(AuthService);
+  readonly pwaUpdate = inject(PwaUpdateService);
 
   readonly categories = signal<Category[]>([]);
   readonly paymentMethods = signal<PaymentMethod[]>([]);
   readonly isLoading = signal<boolean>(true);
   readonly isRegisteringBiometrics = signal<boolean>(false);
   readonly isTestingBiometrics = signal<boolean>(false);
+  readonly isCheckingUpdates = signal<boolean>(false);
 
   readonly isCategoryModalVisible = signal<boolean>(false);
   readonly isMethodModalVisible = signal<boolean>(false);
@@ -272,5 +277,25 @@ export class ConfigComponent implements OnInit {
         this.message.info('Huella dactilar desvinculada exitosamente.');
       }
     });
+  }
+
+  // ==========================================
+  // COMPROBACIÓN DE ACTUALIZACIONES (PWA)
+  // ==========================================
+
+  async onCheckForUpdates(): Promise<void> {
+    this.isCheckingUpdates.set(true);
+    try {
+      const result = await this.pwaUpdate.checkForUpdateManual();
+      if (result.hasUpdate) {
+        this.message.success(result.message);
+      } else {
+        this.message.info(result.message);
+      }
+    } catch {
+      this.message.error('No se pudo comprobar la versión en este momento.');
+    } finally {
+      this.isCheckingUpdates.set(false);
+    }
   }
 }

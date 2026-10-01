@@ -450,3 +450,99 @@
     }
   }
 }
+
+.system-version-card {
+  padding: 20px 24px;
+  border-radius: 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+
+  .version-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+
+    .version-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .version-icon {
+        font-size: 1.5rem;
+        color: #2563eb;
+        background: #eff6ff;
+        padding: 10px;
+        border-radius: 12px;
+      }
+
+      .version-details {
+        h4 {
+          margin: 0 0 4px 0;
+          font-size: 1rem;
+          font-weight: 700;
+          color: var(--color-navy);
+        }
+
+        p {
+          margin: 0;
+          font-size: 0.8125rem;
+          color: var(--color-slate-muted);
+        }
+      }
+    }
+
+    .btn-check-updates {
+      border-radius: 8px;
+      font-weight: 600;
+      height: 38px;
+    }
+  }
+
+  .version-meta-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding-top: 14px;
+    border-top: 1px solid var(--color-border);
+    flex-wrap: wrap;
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.775rem;
+
+      .meta-label {
+        color: var(--color-slate-muted);
+      }
+
+      .meta-value {
+        font-weight: 600;
+        color: var(--color-navy);
+
+        &.online {
+          color: #059669;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+
+          .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+          }
+        }
+
+        &.active {
+          color: #4f46e5;
+        }
+      }
+    }
+  }
+}
+

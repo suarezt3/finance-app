@@ -237,6 +237,49 @@
             </span>
           </div>
         </div>
+
+        <!-- Tarjeta de Versión y Actualizaciones del Sistema -->
+        <div class="system-version-card">
+          <div class="version-header">
+            <div class="version-info">
+              <span nz-icon nzType="cloud-sync" nzTheme="outline" class="version-icon"></span>
+              <div class="version-details">
+                <h4>Versión del Sistema & Actualizaciones</h4>
+                <p>FinanceApp se actualiza de forma automática con cada mejora y despliegue.</p>
+              </div>
+            </div>
+            <button
+              nz-button
+              nzType="primary"
+              [nzLoading]="isCheckingUpdates()"
+              (click)="onCheckForUpdates()"
+              class="btn-check-updates"
+            >
+              <span nz-icon nzType="reload" nzTheme="outline"></span>
+              <span>Buscar Actualizaciones Ahora</span>
+            </button>
+          </div>
+
+          <div class="version-meta-bar">
+            <div class="meta-item">
+              <span class="meta-label">Canal de entrega:</span>
+              <span class="meta-value online">
+                <span class="dot"></span> En línea & sincronizado
+              </span>
+            </div>
+            @if (pwaUpdate.lastChecked(); as checkedAt) {
+              <div class="meta-item">
+                <span class="meta-label">Última comprobación:</span>
+                <span class="meta-value">{{ checkedAt | date:'shortTime' }}</span>
+              </div>
+            }
+            <div class="meta-item">
+              <span class="meta-label">Detección automática:</span>
+              <span class="meta-value active">Activa (al abrir y en segundo plano)</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </nz-tab>
   </nz-tabs>
