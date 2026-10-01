@@ -47,7 +47,13 @@ export class ConfigComponent implements OnInit {
 
   readonly isCategoryModalVisible = signal<boolean>(false);
   readonly isMethodModalVisible = signal<boolean>(false);
+  readonly isBiometricModalVisible = signal<boolean>(false);
+  readonly passwordVisible = signal<boolean>(false);
   readonly isSubmitting = signal<boolean>(false);
+
+  readonly biometricPasswordForm: FormGroup = this.fb.nonNullable.group({
+    password: ['', [Validators.required, Validators.minLength(6)]]
+  });
 
   readonly categoryForm: FormGroup = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(3)]],
@@ -224,7 +230,22 @@ export class ConfigComponent implements OnInit {
   // SEGURIDAD Y ACCESO BIOMÉTRICO (HUELLA)
   // ==========================================
 
-  async onRegisterBiometrics(): Promise<void> {
+  onRegisterBiometrics(): void {
+    this.biometricPasswordForm.reset();
+    this.passwordVisible.set(false);
+    this.isBiometricModalVisible.set(true);
+  }
+
+  onCancelBiometricModal(): void {
+    this.isBiometricModalVisible.set(false);
+  }
+
+  async onConfirmBiometricsWithPassword(): Promise<void> {
+    if (this.biometricPasswordForm.invalid) {
+      Object.values(this.biometricPasswordForm.controls).forEach(c => c.markAsDirty());
+      return;
+    }
+
     const user = this.authService.currentUser();
     const email = user?.email;
     if (!email) {
@@ -232,10 +253,12 @@ export class ConfigComponent implements OnInit {
       return;
     }
 
+    const { password } = this.biometricPasswordForm.getRawValue();
     this.isRegisteringBiometrics.set(true);
     try {
-      const result = await this.biometricAuth.registerBiometrics(email);
+      const result = await this.biometricAuth.registerBiometrics(email, password);
       if (result.success) {
+        this.isBiometricModalVisible.set(false);
         this.message.success(result.message);
       } else {
         this.message.warning(result.message, { nzDuration: 6000 });

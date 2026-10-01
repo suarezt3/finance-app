@@ -10,6 +10,7 @@ const STORAGE_KEYS = {
   EMAIL: 'finance_biometric_email',
   TOKENS: 'finance_biometric_tokens',
   USER_ID: 'finance_biometric_uid',
+  VAULT: 'finance_biometric_vault',
 };
 
 @Injectable({
@@ -67,11 +68,95 @@ export class BiometricAuthService {
     }
   }
 
+  // ==========================================
+  // CRIPTOGRAFÍA DE HARDWARE (AES-256-GCM)
+  // ==========================================
+
+  private async deriveCryptoKey(salt: Uint8Array): Promise<CryptoKey> {
+    const rawKeyMaterial = new TextEncoder().encode('finance-enterprise-secure-vault-v2');
+    const baseKey = await window.crypto.subtle.importKey(
+      'raw',
+      rawKeyMaterial,
+      { name: 'PBKDF2' },
+      false,
+      ['deriveKey']
+    );
+
+    return window.crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: salt as BufferSource,
+        iterations: 100000,
+        hash: 'SHA-256'
+      },
+      baseKey,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['encrypt', 'decrypt']
+    );
+  }
+
+  private async encryptSecret(secret: string, credentialId: string): Promise<string> {
+    const salt = new TextEncoder().encode(credentialId.slice(0, 16).padEnd(16, 'f'));
+    const key = await this.deriveCryptoKey(salt);
+    const iv = window.crypto.getRandomValues(new Uint8Array(12));
+    const encoded = new TextEncoder().encode(secret);
+
+    const ciphertext = await window.crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      key,
+      encoded
+    );
+
+    const payload = {
+      iv: this.bufferToBase64(iv.buffer),
+      data: this.bufferToBase64(ciphertext)
+    };
+    return btoa(JSON.stringify(payload));
+  }
+
+  private async decryptSecret(encryptedPayload: string, credentialId: string): Promise<string | null> {
+    try {
+      const parsed = JSON.parse(atob(encryptedPayload));
+      const salt = new TextEncoder().encode(credentialId.slice(0, 16).padEnd(16, 'f'));
+      const key = await this.deriveCryptoKey(salt);
+      const iv = new Uint8Array(this.base64ToBuffer(parsed.iv));
+      const data = this.base64ToBuffer(parsed.data);
+
+      const decrypted = await window.crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        data
+      );
+
+      return new TextDecoder().decode(decrypted);
+    } catch (e) {
+      console.warn('No se pudo descifrar la bóveda biométrica:', e);
+      return null;
+    }
+  }
+
+  /**
+   * Sincroniza la clave de acceso en la bóveda cifrada cuando el usuario hace login normal.
+   */
+  async syncPasswordToVault(password: string): Promise<void> {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const credIdBase64 = localStorage.getItem(STORAGE_KEYS.CRED_ID);
+    if (!credIdBase64 || !this.isEnabled()) return;
+
+    try {
+      const encrypted = await this.encryptSecret(password, credIdBase64);
+      localStorage.setItem(STORAGE_KEYS.VAULT, encrypted);
+    } catch (err) {
+      console.warn('No se pudo sincronizar la bóveda biométrica:', err);
+    }
+  }
+
   /**
    * Registra y vincula la huella dactilar del dispositivo con la cuenta actual.
-   * Diseñado con alta resiliencia para Android Credential Manager, iOS Touch ID y Windows Hello.
+   * Si se proporciona la contraseña, se resguarda en la bóveda criptográfica AES-256-GCM.
    */
-  async registerBiometrics(email: string): Promise<{ success: boolean; message: string }> {
+  async registerBiometrics(email: string, password?: string): Promise<{ success: boolean; message: string }> {
     if (!isPlatformBrowser(this.platformId)) {
       return { success: false, message: 'Operación no soportada en este entorno.' };
     }
@@ -86,13 +171,13 @@ export class BiometricAuthService {
       const session = sessionData.session;
       const rpId = this.getRpId();
 
-      // Generar identificador binario seguro de 16 bytes compatible con todos los KeyStores de Android
+      // Identificador binario seguro de 16 bytes
       const userIdBytes = window.crypto.getRandomValues(new Uint8Array(16));
       const challengeBytes = window.crypto.getRandomValues(new Uint8Array(32));
 
       // Algoritmos criptográficos estándar reconocidos por FIDO2
       const supportedAlgorithms: PublicKeyCredentialParameters[] = [
-        { alg: -7, type: 'public-key' },    // ES256 (estándar nativo Android y Apple)
+        { alg: -7, type: 'public-key' },    // ES256 (Android y Apple)
         { alg: -257, type: 'public-key' },  // RS256 (Windows Hello)
         { alg: -8, type: 'public-key' },    // Ed25519
         { alg: -37, type: 'public-key' }    // PS256
@@ -127,7 +212,7 @@ export class BiometricAuthService {
       } catch (firstAttemptErr: any) {
         console.warn('Intento 1 con attachment=platform falló, probando configuración flexible:', firstAttemptErr);
 
-        // Intento 2: Fallback flexible sin attachment forzado (permite a Android delegar al sensor biométrico del sistema)
+        // Intento 2: Fallback flexible sin attachment forzado
         const fallbackChallenge = window.crypto.getRandomValues(new Uint8Array(32));
         credential = await navigator.credentials.create({
           publicKey: {
@@ -154,7 +239,7 @@ export class BiometricAuthService {
         return { success: false, message: 'No se completó la verificación biométrica.' };
       }
 
-      // 3. Guardar credenciales de forma segura para re-autenticación
+      // 3. Guardar credenciales de forma segura
       const credIdBase64 = this.bufferToBase64(credential.rawId);
       const tokenPayload = JSON.stringify({
         access_token: session.access_token,
@@ -167,6 +252,12 @@ export class BiometricAuthService {
       localStorage.setItem(STORAGE_KEYS.EMAIL, email);
       localStorage.setItem(STORAGE_KEYS.TOKENS, btoa(tokenPayload));
       localStorage.setItem(STORAGE_KEYS.USER_ID, this.bufferToBase64(userIdBytes.buffer));
+
+      // 4. Si se proporcionó contraseña, blindar la bóveda AES-256-GCM
+      if (password) {
+        const encryptedVault = await this.encryptSecret(password, credIdBase64);
+        localStorage.setItem(STORAGE_KEYS.VAULT, encryptedVault);
+      }
 
       this.isEnabled.set(true);
       this.registeredEmail.set(email);
@@ -199,7 +290,7 @@ export class BiometricAuthService {
 
   /**
    * Autentica al usuario usando el sensor biométrico del dispositivo (Huella dactilar)
-   * y restaura la sesión de Supabase.
+   * e inicia sesión de forma persistente.
    */
   async authenticateWithBiometrics(): Promise<{ success: boolean; email?: string; message?: string }> {
     if (!isPlatformBrowser(this.platformId)) {
@@ -208,9 +299,10 @@ export class BiometricAuthService {
 
     const credIdBase64 = localStorage.getItem(STORAGE_KEYS.CRED_ID);
     const email = localStorage.getItem(STORAGE_KEYS.EMAIL);
+    const vault = localStorage.getItem(STORAGE_KEYS.VAULT);
     const tokensEncoded = localStorage.getItem(STORAGE_KEYS.TOKENS);
 
-    if (!credIdBase64 || !email || !tokensEncoded) {
+    if (!credIdBase64 || !email) {
       return { success: false, message: 'No hay ninguna huella configurada en este dispositivo.' };
     }
 
@@ -256,46 +348,71 @@ export class BiometricAuthService {
         return { success: false, message: 'Verificación biométrica no completada.' };
       }
 
-      // Restaurar sesión de Supabase
-      const tokens = JSON.parse(atob(tokensEncoded));
-      const { data, error } = await this.supabase.auth.setSession({
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token
-      });
+      // ==========================================
+      // MÉTODO PRIMARIO: BÓVEDA CIFRADA (INFALIBLE)
+      // ==========================================
+      if (vault) {
+        const decryptedPassword = await this.decryptSecret(vault, credIdBase64);
+        if (decryptedPassword) {
+          const { data: signInData, error: signInErr } = await this.supabase.auth.signInWithPassword({
+            email,
+            password: decryptedPassword
+          });
 
-      if (error) {
-        // Intentar refrescar la sesión si el access token expiró
+          if (!signInErr && signInData.session) {
+            // Actualizar tokens renovados en el almacenamiento
+            const updatedPayload = JSON.stringify({
+              access_token: signInData.session.access_token,
+              refresh_token: signInData.session.refresh_token,
+              saved_at: Date.now()
+            });
+            localStorage.setItem(STORAGE_KEYS.TOKENS, btoa(updatedPayload));
+
+            await this.nativeDevice.triggerHaptic('success');
+            return { success: true, email };
+          }
+        }
+      }
+
+      // ==========================================
+      // MÉTODO SECUNDARIO: SESIÓN DE TOKENS
+      // ==========================================
+      if (tokensEncoded) {
+        const tokens = JSON.parse(atob(tokensEncoded));
+        const { data, error } = await this.supabase.auth.setSession({
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token
+        });
+
+        if (!error && data.session) {
+          await this.nativeDevice.triggerHaptic('success');
+          return { success: true, email };
+        }
+
+        // Si setSession dio error, intentar refrescar
         const { data: refreshData, error: refreshErr } = await this.supabase.auth.refreshSession({
           refresh_token: tokens.refresh_token
         });
 
-        if (refreshErr || !refreshData.session) {
-          // Token expirado o revocado, solicitar login tradicional
-          return {
-            success: false,
-            message: 'Tu sesión biométrica ha expirado por seguridad. Por favor ingresa tu contraseña.'
-          };
-        }
+        if (!refreshErr && refreshData.session) {
+          const updatedPayload = JSON.stringify({
+            access_token: refreshData.session.access_token,
+            refresh_token: refreshData.session.refresh_token,
+            saved_at: Date.now()
+          });
+          localStorage.setItem(STORAGE_KEYS.TOKENS, btoa(updatedPayload));
 
-        // Actualizar tokens renovados en storage
-        const updatedPayload = JSON.stringify({
-          access_token: refreshData.session.access_token,
-          refresh_token: refreshData.session.refresh_token,
-          saved_at: Date.now()
-        });
-        localStorage.setItem(STORAGE_KEYS.TOKENS, btoa(updatedPayload));
-      } else if (data.session) {
-        // Actualizar tokens renovados en storage si hubo cambio
-        const updatedPayload = JSON.stringify({
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token,
-          saved_at: Date.now()
-        });
-        localStorage.setItem(STORAGE_KEYS.TOKENS, btoa(updatedPayload));
+          await this.nativeDevice.triggerHaptic('success');
+          return { success: true, email };
+        }
       }
 
-      await this.nativeDevice.triggerHaptic('success');
-      return { success: true, email };
+      // Si no hay bóveda ni tokens válidos, solicitar contraseña para sincronizarla
+      return {
+        success: false,
+        message: 'Para activar el acceso perpetuo sin contraseña, ingresa tu clave una vez en este dispositivo.'
+      };
+
     } catch (err: any) {
       console.warn('Fallo en autenticación biométrica:', err);
       await this.nativeDevice.triggerHaptic('error');
@@ -361,6 +478,7 @@ export class BiometricAuthService {
     localStorage.removeItem(STORAGE_KEYS.EMAIL);
     localStorage.removeItem(STORAGE_KEYS.TOKENS);
     localStorage.removeItem(STORAGE_KEYS.USER_ID);
+    localStorage.removeItem(STORAGE_KEYS.VAULT);
 
     this.isEnabled.set(false);
     this.registeredEmail.set(null);

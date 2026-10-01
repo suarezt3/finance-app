@@ -167,6 +167,11 @@ export class AuthComponent {
         // Asegurar que la sesión y tokens estén listos antes de navegar al dashboard
         await this.authService.ensureAuthenticatedSession();
 
+        // Si la huella está vinculada a esta cuenta, sincronizar la bóveda cifrada
+        if (this.biometricAuth.isEnabled() && this.biometricAuth.registeredEmail() === email) {
+          await this.biometricAuth.syncPasswordToVault(password);
+        }
+
         this.message.success('Sesión corporativa iniciada con éxito.');
         this.authForm.reset();
         await this.router.navigate(['/dashboard']);

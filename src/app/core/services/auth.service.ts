@@ -104,7 +104,7 @@ export class AuthService {
   }
 
   async signOut(): Promise<{ error: Error | null }> {
-    return this.supabase.auth.signOut();
+    return this.supabase.auth.signOut({ scope: 'local' });
   }
 
   async updateProfileName(fullName: string): Promise<UserResponse> {

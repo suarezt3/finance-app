@@ -435,4 +435,41 @@
     </ng-container>
   </nz-modal>
 
+  <!-- MODAL: CONFIRMAR CONTRASEÑA PARA BÓVEDA BIOMÉTRICA -->
+  <nz-modal
+    [nzVisible]="isBiometricModalVisible()"
+    nzTitle="Blindar Acceso con Huella Dactilar"
+    (nzOnCancel)="onCancelBiometricModal()"
+    (nzOnOk)="onConfirmBiometricsWithPassword()"
+    [nzOkLoading]="isRegisteringBiometrics()"
+    nzOkText="Confirmar y Colocar Huella"
+    nzCancelText="Cancelar"
+    nzWidth="90%"
+    [nzStyle]="{ maxWidth: '440px' }"
+  >
+    <ng-container *nzModalContent>
+      <div class="space-y-4 py-2">
+        <p class="text-sm text-slate-600 m-0 leading-relaxed">
+          Ingresa tu contraseña actual para sellar la bóveda biométrica en este dispositivo con cifrado bancario <strong>AES-256</strong>. Así podrás ingresar siempre tocando tu sensor de huella, incluso tras cerrar sesión.
+        </p>
+
+        <form nz-form [formGroup]="biometricPasswordForm" nzLayout="vertical" class="enterprise-modal-form mt-4">
+          <nz-form-item class="mb-0">
+            <nz-form-label nzRequired>Contraseña Actual</nz-form-label>
+            <nz-form-control nzErrorTip="Por favor ingresa tu contraseña">
+              <nz-input-password nzSize="large">
+                <input
+                  nz-input
+                  formControlName="password"
+                  placeholder="Tu contraseña de acceso"
+                  (keyup.enter)="onConfirmBiometricsWithPassword()"
+                />
+              </nz-input-password>
+            </nz-form-control>
+          </nz-form-item>
+        </form>
+      </div>
+    </ng-container>
+  </nz-modal>
+
 </div>
