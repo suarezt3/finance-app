@@ -238,7 +238,7 @@ export class ConfigComponent implements OnInit {
       if (result.success) {
         this.message.success(result.message);
       } else {
-        this.message.warning(result.message);
+        this.message.warning(result.message, { nzDuration: 6000 });
       }
     } catch (err: any) {
       console.error('Error registrando biometría:', err);
@@ -255,7 +255,7 @@ export class ConfigComponent implements OnInit {
       if (result.success) {
         this.message.success(result.message);
       } else {
-        this.message.warning(result.message);
+        this.message.warning(result.message, { nzDuration: 5000 });
       }
     } catch (err: any) {
       console.error('Error en prueba biométrica:', err);

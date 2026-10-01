@@ -9,6 +9,7 @@ const STORAGE_KEYS = {
   CRED_ID: 'finance_biometric_cred_id',
   EMAIL: 'finance_biometric_email',
   TOKENS: 'finance_biometric_tokens',
+  USER_ID: 'finance_biometric_uid',
 };
 
 @Injectable({
@@ -28,6 +29,11 @@ export class BiometricAuthService {
     if (isPlatformBrowser(this.platformId)) {
       this.initBiometrics();
     }
+  }
+
+  private getRpId(): string {
+    if (typeof window === 'undefined') return 'localhost';
+    return window.location.hostname;
   }
 
   private async initBiometrics(): Promise<void> {
@@ -63,6 +69,7 @@ export class BiometricAuthService {
 
   /**
    * Registra y vincula la huella dactilar del dispositivo con la cuenta actual.
+   * Diseñado con alta resiliencia para Android Credential Manager, iOS Touch ID y Windows Hello.
    */
   async registerBiometrics(email: string): Promise<{ success: boolean; message: string }> {
     if (!isPlatformBrowser(this.platformId)) {
@@ -77,33 +84,71 @@ export class BiometricAuthService {
       }
 
       const session = sessionData.session;
-      const challenge = window.crypto.getRandomValues(new Uint8Array(32));
-      const userId = new TextEncoder().encode(email);
+      const rpId = this.getRpId();
 
-      // 2. Invocar diálogo nativo del sistema operativo (Huella / Touch ID / Face ID)
-      const credential = await navigator.credentials.create({
-        publicKey: {
-          challenge,
-          rp: {
-            name: 'FinanceApp Enterprise'
-          },
-          user: {
-            id: userId,
-            name: email,
-            displayName: email.split('@')[0]
-          },
-          pubKeyCredParams: [
-            { alg: -7, type: 'public-key' },   // ES256 (estándar Android y iOS)
-            { alg: -257, type: 'public-key' }  // RS256 (Windows Hello / Mac)
-          ],
-          authenticatorSelection: {
-            authenticatorAttachment: 'platform',
-            userVerification: 'required',
-            residentKey: 'preferred'
-          },
-          timeout: 60000
-        }
-      }) as PublicKeyCredential | null;
+      // Generar identificador binario seguro de 16 bytes compatible con todos los KeyStores de Android
+      const userIdBytes = window.crypto.getRandomValues(new Uint8Array(16));
+      const challengeBytes = window.crypto.getRandomValues(new Uint8Array(32));
+
+      // Algoritmos criptográficos estándar reconocidos por FIDO2
+      const supportedAlgorithms: PublicKeyCredentialParameters[] = [
+        { alg: -7, type: 'public-key' },    // ES256 (estándar nativo Android y Apple)
+        { alg: -257, type: 'public-key' },  // RS256 (Windows Hello)
+        { alg: -8, type: 'public-key' },    // Ed25519
+        { alg: -37, type: 'public-key' }    // PS256
+      ];
+
+      let credential: PublicKeyCredential | null = null;
+
+      // Intento 1: Configuración estándar con rp.id explícito y userVerification: 'preferred'
+      try {
+        credential = await navigator.credentials.create({
+          publicKey: {
+            challenge: challengeBytes,
+            rp: {
+              id: rpId,
+              name: 'FinanceApp Enterprise'
+            },
+            user: {
+              id: userIdBytes,
+              name: email,
+              displayName: email.split('@')[0] || 'Usuario Finance'
+            },
+            pubKeyCredParams: supportedAlgorithms,
+            authenticatorSelection: {
+              authenticatorAttachment: 'platform',
+              userVerification: 'preferred',
+              residentKey: 'preferred'
+            },
+            attestation: 'none',
+            timeout: 60000
+          }
+        }) as PublicKeyCredential | null;
+      } catch (firstAttemptErr: any) {
+        console.warn('Intento 1 con attachment=platform falló, probando configuración flexible:', firstAttemptErr);
+
+        // Intento 2: Fallback flexible sin attachment forzado (permite a Android delegar al sensor biométrico del sistema)
+        const fallbackChallenge = window.crypto.getRandomValues(new Uint8Array(32));
+        credential = await navigator.credentials.create({
+          publicKey: {
+            challenge: fallbackChallenge,
+            rp: {
+              name: 'FinanceApp Enterprise'
+            },
+            user: {
+              id: userIdBytes,
+              name: email,
+              displayName: email.split('@')[0] || 'Usuario Finance'
+            },
+            pubKeyCredParams: supportedAlgorithms,
+            authenticatorSelection: {
+              userVerification: 'preferred'
+            },
+            attestation: 'none',
+            timeout: 60000
+          }
+        }) as PublicKeyCredential | null;
+      }
 
       if (!credential) {
         return { success: false, message: 'No se completó la verificación biométrica.' };
@@ -121,6 +166,7 @@ export class BiometricAuthService {
       localStorage.setItem(STORAGE_KEYS.CRED_ID, credIdBase64);
       localStorage.setItem(STORAGE_KEYS.EMAIL, email);
       localStorage.setItem(STORAGE_KEYS.TOKENS, btoa(tokenPayload));
+      localStorage.setItem(STORAGE_KEYS.USER_ID, this.bufferToBase64(userIdBytes.buffer));
 
       this.isEnabled.set(true);
       this.registeredEmail.set(email);
@@ -132,8 +178,21 @@ export class BiometricAuthService {
       await this.nativeDevice.triggerHaptic('error');
 
       if (err.name === 'NotAllowedError') {
-        return { success: false, message: 'Registro biométrico cancelado o tiempo expirado.' };
+        return { success: false, message: 'Registro biométrico cancelado o tiempo de espera expirado.' };
       }
+
+      if (err.name === 'SecurityError') {
+        return { success: false, message: 'Error de seguridad de dominio. Asegúrate de acceder mediante HTTPS.' };
+      }
+
+      const errMessage = (err.message || '').toLowerCase();
+      if (errMessage.includes('credential manager') || err.name === 'UnknownError') {
+        return {
+          success: false,
+          message: 'El gestor de credenciales de Android requiere tener configurada una huella o bloqueo de pantalla en los ajustes de tu celular.'
+        };
+      }
+
       return { success: false, message: err.message || 'Error al registrar huella dactilar.' };
     }
   }
@@ -159,19 +218,39 @@ export class BiometricAuthService {
     try {
       const challenge = window.crypto.getRandomValues(new Uint8Array(32));
       const credIdBuffer = this.base64ToBuffer(credIdBase64);
+      const rpId = this.getRpId();
 
-      // Invocar diálogo nativo del celular o laptop para escanear huella
-      const assertion = await navigator.credentials.get({
-        publicKey: {
-          challenge,
-          allowCredentials: [{
-            id: credIdBuffer,
-            type: 'public-key'
-          }],
-          userVerification: 'required',
-          timeout: 60000
-        }
-      });
+      let assertion: Credential | null = null;
+
+      try {
+        // Intento 1: Con rpId explícito y userVerification: 'preferred'
+        assertion = await navigator.credentials.get({
+          publicKey: {
+            challenge,
+            rpId,
+            allowCredentials: [{
+              id: credIdBuffer,
+              type: 'public-key'
+            }],
+            userVerification: 'preferred',
+            timeout: 60000
+          }
+        });
+      } catch (firstAuthErr: any) {
+        console.warn('Intento 1 de lectura biométrica falló, intentando modo flexible:', firstAuthErr);
+        // Intento 2: Modo flexible
+        assertion = await navigator.credentials.get({
+          publicKey: {
+            challenge: window.crypto.getRandomValues(new Uint8Array(32)),
+            allowCredentials: [{
+              id: credIdBuffer,
+              type: 'public-key'
+            }],
+            userVerification: 'preferred',
+            timeout: 60000
+          }
+        });
+      }
 
       if (!assertion) {
         return { success: false, message: 'Verificación biométrica no completada.' };
@@ -241,6 +320,7 @@ export class BiometricAuthService {
     try {
       const challenge = window.crypto.getRandomValues(new Uint8Array(32));
       const credIdBase64 = localStorage.getItem(STORAGE_KEYS.CRED_ID);
+      const rpId = this.getRpId();
 
       const allowCredentials = credIdBase64 ? [{
         id: this.base64ToBuffer(credIdBase64),
@@ -250,8 +330,9 @@ export class BiometricAuthService {
       const assertion = await navigator.credentials.get({
         publicKey: {
           challenge,
+          rpId,
           allowCredentials,
-          userVerification: 'required',
+          userVerification: 'preferred',
           timeout: 45000
         }
       });
@@ -279,6 +360,7 @@ export class BiometricAuthService {
     localStorage.removeItem(STORAGE_KEYS.CRED_ID);
     localStorage.removeItem(STORAGE_KEYS.EMAIL);
     localStorage.removeItem(STORAGE_KEYS.TOKENS);
+    localStorage.removeItem(STORAGE_KEYS.USER_ID);
 
     this.isEnabled.set(false);
     this.registeredEmail.set(null);
