@@ -3,6 +3,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { BiometricAuthService } from '../../core/services/biometric-auth.service';
 
 // Importaciones de NG-Zorro
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -27,6 +28,7 @@ export class AuthComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly message = inject(NzMessageService);
+  readonly biometricAuth = inject(BiometricAuthService);
 
   // Estados de la vista
   readonly isLoginMode = signal<boolean>(true);
@@ -200,6 +202,27 @@ export class AuthComponent {
       } else {
         this.message.error('Error al conectar con el proveedor de identidad institucional.');
       }
+    } finally {
+      this.isLoading.set(false);
+    }
+  }
+
+  async onBiometricLogin(): Promise<void> {
+    if (this.isLoading() || this.biometricAuth.isAuthenticating()) return;
+
+    this.isLoading.set(true);
+    try {
+      const result = await this.biometricAuth.authenticateWithBiometrics();
+      if (result.success) {
+        this.message.success('Huella dactilar verificada con éxito.');
+        await this.authService.ensureAuthenticatedSession();
+        await this.router.navigate(['/dashboard']);
+      } else if (result.message) {
+        this.message.warning(result.message);
+      }
+    } catch (err: any) {
+      console.error('Error en autenticación biométrica:', err);
+      this.message.error('No se pudo verificar la huella dactilar.');
     } finally {
       this.isLoading.set(false);
     }

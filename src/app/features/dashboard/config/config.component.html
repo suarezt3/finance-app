@@ -104,6 +104,141 @@
         </nz-table>
       </div>
     </nz-tab>
+
+    <!-- ============================================== -->
+    <!-- PESTAÑA 3: SEGURIDAD Y HUELLA DACTILAR         -->
+    <!-- ============================================== -->
+    <nz-tab nzTitle="Seguridad & Biometría">
+      <div class="tab-toolbar">
+        <span class="tab-description">Protege tu cuenta y habilita el ingreso táctil con sensor de huella en tu celular o PC.</span>
+      </div>
+
+      <div class="biometric-settings-container">
+        <!-- Tarjeta de Estado del Sensor de Hardware -->
+        <div class="biometric-hardware-card" [class.supported]="biometricAuth.isSupported()" [class.unsupported]="!biometricAuth.isSupported()">
+          <div class="hardware-icon-box">
+            <svg class="hardware-fingerprint-svg" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.51-.26 4"/>
+              <path d="M14 13.12c0 2.38 0 6.38-1 8.88"/>
+              <path d="M17.29 21.02c.12-.6.43-2.3.5-3.02"/>
+              <path d="M2 12a10 10 0 0 1 18-6"/>
+              <path d="M2 16h.01"/>
+              <path d="M21.8 16c.2-2 .131-5.354 0-6"/>
+              <path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/>
+              <path d="M8.65 22c.21-.66.45-1.32.57-2"/>
+              <path d="M9 6.8a6 6 0 0 1 9 5.2v2"/>
+            </svg>
+          </div>
+          <div class="hardware-info-content">
+            <div class="hardware-title-row">
+              <h3>Sensor Biométrico del Dispositivo</h3>
+              @if (biometricAuth.isSupported()) {
+                <nz-tag nzColor="success">
+                  <span nz-icon nzType="check-circle" nzTheme="fill"></span> Compatible
+                </nz-tag>
+              } @else {
+                <nz-tag nzColor="warning">
+                  <span nz-icon nzType="exclamation-circle" nzTheme="fill"></span> No detectado en este navegador
+                </nz-tag>
+              }
+            </div>
+            <p class="hardware-desc">
+              @if (biometricAuth.isSupported()) {
+                Tu dispositivo cuenta con hardware biométrico (Lector de huella dactilar, Touch ID o Windows Hello) activo y listo para autenticación segura.
+              } @else {
+                No se detectó un lector biométrico activo en esta sesión. Asegúrate de acceder desde un smartphone compatible o equipo con lector de huella dactilar.
+              }
+            </p>
+          </div>
+        </div>
+
+        <!-- Tarjeta de Vinculación de Huella -->
+        <div class="biometric-activation-card">
+          <div class="activation-header">
+            <div class="activation-titles">
+              <h4>Acceso con Huella Dactilar</h4>
+              <p>Permite iniciar sesión tocando el sensor del teléfono sin necesidad de escribir tu contraseña.</p>
+            </div>
+            <div class="activation-status-badge">
+              @if (biometricAuth.isEnabled()) {
+                <span class="status-pill active">
+                  <span class="status-dot"></span> VINCULADA
+                </span>
+              } @else {
+                <span class="status-pill inactive">
+                  <span class="status-dot"></span> DESACTIVADA
+                </span>
+              }
+            </div>
+          </div>
+
+          @if (biometricAuth.isEnabled()) {
+            <div class="biometric-linked-box">
+              <div class="linked-info">
+                <span nz-icon nzType="user" nzTheme="outline" class="linked-icon"></span>
+                <div class="linked-texts">
+                  <span class="linked-label">Cuenta vinculada en este equipo:</span>
+                  <strong class="linked-email">{{ biometricAuth.registeredEmail() }}</strong>
+                </div>
+              </div>
+              <div class="linked-actions">
+                <button
+                  nz-button
+                  nzType="default"
+                  [nzLoading]="isTestingBiometrics()"
+                  (click)="onTestBiometrics()"
+                  class="btn-test-biometrics"
+                >
+                  <span nz-icon nzType="safety-certificate" nzTheme="outline"></span>
+                  <span>Probar Sensor</span>
+                </button>
+                <button
+                  nz-button
+                  nzType="text"
+                  nzDanger
+                  (click)="onDisableBiometrics()"
+                  class="btn-disable-biometrics"
+                >
+                  <span nz-icon nzType="disconnect" nzTheme="outline"></span>
+                  <span>Desvincular</span>
+                </button>
+              </div>
+            </div>
+          } @else {
+            <div class="biometric-unlinked-box">
+              <p class="unlinked-desc">
+                Toca el botón a continuación para registrar la huella dactilar de este dispositivo y asociarla a tu sesión actual.
+              </p>
+              <button
+                nz-button
+                nzType="primary"
+                nzSize="large"
+                [nzLoading]="isRegisteringBiometrics()"
+                [disabled]="!biometricAuth.isSupported()"
+                (click)="onRegisterBiometrics()"
+                class="btn-register-biometrics"
+              >
+                <span nz-icon nzType="scan" nzTheme="outline"></span>
+                <span>Vincular Huella Dactilar Ahora</span>
+              </button>
+              @if (!biometricAuth.isSupported()) {
+                <span class="unsupported-hint">
+                  Debes ingresar desde un celular o navegador compatible con WebAuthn para registrar tu huella.
+                </span>
+              }
+            </div>
+          }
+
+          <!-- Nota de Privacidad Bancaria -->
+          <div class="biometric-privacy-note">
+            <span nz-icon nzType="lock" nzTheme="fill" class="note-icon"></span>
+            <span>
+              <strong>Máxima Privacidad:</strong> Tu huella dactilar nunca sale de tu dispositivo ni se almacena en nuestros servidores. La autenticación se realiza localmente mediante el enclave seguro del hardware (Android Keystore / Apple Secure Enclave).
+            </span>
+          </div>
+        </div>
+      </div>
+    </nz-tab>
   </nz-tabs>
 
   <!-- SECCIÓN DISCRETA: OPCIONES AVANZADAS DE SISTEMA -->

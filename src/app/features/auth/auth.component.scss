@@ -835,7 +835,7 @@
     }
   }
 
-  // Compliance Stamp
+// Compliance Stamp
   .compliance-stamp {
     display: flex;
     align-items: center;
@@ -855,6 +855,113 @@
 
     .stamp-text {
       line-height: 1.35;
+    }
+  }
+
+  // ACCESO BIOMÉTRICO CON HUELLA
+  .biometric-login-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    margin-bottom: 1rem;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.06) 0%, rgba(99, 102, 241, 0.08) 100%);
+    border: 1px solid rgba(99, 102, 241, 0.25);
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.06);
+
+    .biometric-card-content {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      .biometric-icon-wrapper {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: #e0e7ff;
+        color: #4338ca;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .biometric-card-text {
+        display: flex;
+        flex-direction: column;
+
+        .biometric-card-title {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: #1e293b;
+        }
+
+        .biometric-card-subtitle {
+          font-size: 0.72rem;
+          color: #64748b;
+          max-width: 170px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+    }
+
+    .btn-biometric-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #ffffff;
+      background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+      transition: all 0.2s ease;
+      white-space: nowrap;
+
+      &:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(79, 70, 229, 0.35);
+      }
+
+      &:active:not(:disabled) {
+        transform: scale(0.97);
+      }
+
+      &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .spin-icon {
+        font-size: 0.875rem;
+      }
+    }
+  }
+
+  .biometric-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 1.25rem;
+    color: #94a3b8;
+    font-size: 0.75rem;
+
+    &::before,
+    &::after {
+      content: '';
+      flex: 1;
+      border-bottom: 1px dashed #e2e8f0;
+    }
+
+    span {
+      padding: 0 0.75rem;
     }
   }
 }

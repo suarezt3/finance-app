@@ -12,6 +12,8 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { CatalogService, Category, PaymentMethod } from '../../../core/services/catalog.service';
+import { BiometricAuthService } from '../../../core/services/biometric-auth.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-config',
@@ -29,10 +31,14 @@ export class ConfigComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly message = inject(NzMessageService);
   private readonly modalService = inject(NzModalService);
+  readonly biometricAuth = inject(BiometricAuthService);
+  private readonly authService = inject(AuthService);
 
   readonly categories = signal<Category[]>([]);
   readonly paymentMethods = signal<PaymentMethod[]>([]);
   readonly isLoading = signal<boolean>(true);
+  readonly isRegisteringBiometrics = signal<boolean>(false);
+  readonly isTestingBiometrics = signal<boolean>(false);
 
   readonly isCategoryModalVisible = signal<boolean>(false);
   readonly isMethodModalVisible = signal<boolean>(false);
@@ -206,6 +212,65 @@ export class ConfigComponent implements OnInit {
         }
       },
       nzCancelText: 'Cancelar'
+    });
+  }
+
+  // ==========================================
+  // SEGURIDAD Y ACCESO BIOMÉTRICO (HUELLA)
+  // ==========================================
+
+  async onRegisterBiometrics(): Promise<void> {
+    const user = this.authService.currentUser();
+    const email = user?.email;
+    if (!email) {
+      this.message.error('No se pudo identificar la cuenta activa.');
+      return;
+    }
+
+    this.isRegisteringBiometrics.set(true);
+    try {
+      const result = await this.biometricAuth.registerBiometrics(email);
+      if (result.success) {
+        this.message.success(result.message);
+      } else {
+        this.message.warning(result.message);
+      }
+    } catch (err: any) {
+      console.error('Error registrando biometría:', err);
+      this.message.error('No se pudo completar el registro de la huella.');
+    } finally {
+      this.isRegisteringBiometrics.set(false);
+    }
+  }
+
+  async onTestBiometrics(): Promise<void> {
+    this.isTestingBiometrics.set(true);
+    try {
+      const result = await this.biometricAuth.testBiometrics();
+      if (result.success) {
+        this.message.success(result.message);
+      } else {
+        this.message.warning(result.message);
+      }
+    } catch (err: any) {
+      console.error('Error en prueba biométrica:', err);
+      this.message.error('Error al probar el sensor biométrico.');
+    } finally {
+      this.isTestingBiometrics.set(false);
+    }
+  }
+
+  onDisableBiometrics(): void {
+    this.modalService.confirm({
+      nzTitle: '¿Desvincular huella dactilar de este equipo?',
+      nzContent: 'Ya no podrás ingresar a FinanceApp tocando el sensor biométrico en este navegador hasta que vuelvas a vincularlo.',
+      nzOkText: 'Desvincular',
+      nzOkDanger: true,
+      nzCancelText: 'Cancelar',
+      nzOnOk: () => {
+        this.biometricAuth.disableBiometrics();
+        this.message.info('Huella dactilar desvinculada exitosamente.');
+      }
     });
   }
 }
