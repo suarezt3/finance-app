@@ -495,11 +495,114 @@
   gap: 18px;
   width: 100%;
 
+  .savings-explanation-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: rgba(37, 99, 235, 0.05);
+    border: 1px solid rgba(37, 99, 235, 0.18);
+
+    .explanation-icon-wrap {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: #2563eb;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .explanation-content {
+      flex: 1;
+
+      h4 {
+        margin: 0 0 6px 0;
+        font-size: 0.925rem;
+        font-weight: 800;
+        color: var(--color-navy);
+      }
+
+      p {
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--color-slate-text);
+        line-height: 1.45;
+
+        strong {
+          color: var(--color-navy);
+        }
+      }
+    }
+  }
+
   .savings-summary-card {
     padding: 20px 22px;
     border-radius: 14px;
     background: linear-gradient(135deg, rgba(37, 99, 235, 0.06) 0%, rgba(59, 130, 246, 0.1) 100%);
     border: 1px solid rgba(37, 99, 235, 0.2);
+
+    .savings-breakdown-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding: 12px 14px;
+      background: var(--color-surface);
+      border-radius: 12px;
+      border: 1px solid var(--color-border);
+      margin-bottom: 16px;
+
+      @media (max-width: 480px) {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .breakdown-col {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+
+        .breakdown-label {
+          font-size: 0.7rem;
+          font-weight: 600;
+          color: var(--color-slate-muted);
+        }
+
+        .breakdown-val {
+          font-size: 0.925rem;
+          font-weight: 800;
+          font-variant-numeric: tabular-nums;
+
+          &.income {
+            color: #059669;
+          }
+
+          &.expense {
+            color: #dc2626;
+          }
+
+          &.saved {
+            color: #2563eb;
+          }
+        }
+
+        &.highlight {
+          border-left: 2px solid rgba(37, 99, 235, 0.3);
+          padding-left: 8px;
+
+          @media (max-width: 480px) {
+            border-left: none;
+            border-top: 1px solid var(--color-border);
+            padding-left: 0;
+            padding-top: 6px;
+          }
+        }
+      }
+    }
 
     .savings-card-header {
       display: flex;
@@ -605,6 +708,23 @@
     border-radius: 14px;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
+
+    ::ng-deep {
+      .ant-input-number {
+        width: 100% !important;
+        border-radius: 10px !important;
+        height: 42px !important;
+        display: flex !important;
+        align-items: center !important;
+
+        .ant-input-number-input {
+          height: 40px !important;
+          font-weight: 700 !important;
+          font-size: 0.95rem !important;
+          font-variant-numeric: tabular-nums !important;
+        }
+      }
+    }
 
     .card-section-title {
       display: flex;

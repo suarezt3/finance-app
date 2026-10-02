@@ -1,5 +1,5 @@
 // src/app/core/services/user-preferences.service.ts
-import { Injectable, inject, signal, computed, PLATFORM_ID } from '@angular/core';
+import { Injectable, inject, signal, computed, effect, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { AuthService } from './auth.service';
 
@@ -97,35 +97,64 @@ export class UserPreferencesService {
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
-      this.loadSavedPreferences();
+      this.loadSavedLocalPreferences();
+
+      // EFECTO REACTIVO: Cuando la sesión de Supabase carga o cambia en cualquier dispositivo, sincronizar inmediatamente
+      effect(() => {
+        const user = this.authService.currentUser();
+        if (user && user.user_metadata) {
+          this.syncFromCloudMetadata(user.user_metadata);
+        }
+      });
     }
   }
 
-  private loadSavedPreferences(): void {
+  private loadSavedLocalPreferences(): void {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         this._preferences.set({ ...DEFAULT_PREFERENCES, ...parsed });
       }
-
-      // Sincronizar también con metadata de usuario si existe
-      const user = this.authService.currentUser();
-      const meta = user?.user_metadata;
-      if (meta) {
-        this._preferences.update(curr => ({
-          ...curr,
-          preferredCurrency: meta['preferred_currency'] || curr.preferredCurrency,
-          cutoffDay: meta['cutoff_day'] ? Number(meta['cutoff_day']) : curr.cutoffDay,
-          avatarId: meta['avatar_id'] || curr.avatarId,
-          savingsGoal: meta['savings_goal'] ? Number(meta['savings_goal']) : curr.savingsGoal,
-          expenseAlertThreshold: meta['expense_alert_threshold'] ? Number(meta['expense_alert_threshold']) : curr.expenseAlertThreshold,
-          budgetAlertPercentage: meta['budget_alert_percentage'] ? Number(meta['budget_alert_percentage']) : curr.budgetAlertPercentage,
-        }));
-      }
     } catch (err) {
-      console.warn('Error cargando preferencias de usuario:', err);
+      console.warn('Error cargando preferencias de localStorage:', err);
     }
+  }
+
+  public syncFromCloudMetadata(meta: Record<string, any>): void {
+    if (!meta) return;
+
+    const cloudAvatar = meta['avatar_id'] || meta['avatar_url'];
+    const cloudCurrency = meta['preferred_currency'];
+    const cloudCutoff = meta['cutoff_day'] ? Number(meta['cutoff_day']) : undefined;
+    const cloudGoal = meta['savings_goal'] !== undefined ? Number(meta['savings_goal']) : undefined;
+    const cloudGoalName = meta['savings_goal_name'];
+    const cloudThreshold = meta['expense_alert_threshold'] !== undefined ? Number(meta['expense_alert_threshold']) : undefined;
+    const cloudBudget = meta['budget_alert_percentage'] !== undefined ? Number(meta['budget_alert_percentage']) : undefined;
+    const cloudAlerts = meta['alerts_enabled'] !== undefined ? Boolean(meta['alerts_enabled']) : undefined;
+
+    this._preferences.update(curr => {
+      const next: UserFinancialPreferences = {
+        ...curr,
+        avatarId: cloudAvatar || curr.avatarId,
+        preferredCurrency: cloudCurrency || curr.preferredCurrency,
+        cutoffDay: cloudCutoff !== undefined && !isNaN(cloudCutoff) ? cloudCutoff : curr.cutoffDay,
+        savingsGoal: cloudGoal !== undefined && !isNaN(cloudGoal) ? cloudGoal : curr.savingsGoal,
+        savingsGoalName: cloudGoalName || curr.savingsGoalName,
+        expenseAlertThreshold: cloudThreshold !== undefined && !isNaN(cloudThreshold) ? cloudThreshold : curr.expenseAlertThreshold,
+        budgetAlertPercentage: cloudBudget !== undefined && !isNaN(cloudBudget) ? cloudBudget : curr.budgetAlertPercentage,
+        alertsEnabled: cloudAlerts !== undefined ? cloudAlerts : curr.alertsEnabled,
+      };
+
+      if (isPlatformBrowser(this.platformId)) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+        } catch (e) {
+          // ignore
+        }
+      }
+      return next;
+    });
   }
 
   updatePreferences(updates: Partial<UserFinancialPreferences>): void {
@@ -141,14 +170,20 @@ export class UserPreferencesService {
       return next;
     });
 
-    // Guardar asíncronamente en user_metadata de Supabase si hay sesión activa
+    // Guardar asíncronamente en user_metadata de Supabase para que persista en todos los equipos
     const user = this.authService.currentUser();
     if (user && isPlatformBrowser(this.platformId)) {
       this.authService.updateProfile({
+        avatarId: updates.avatarId,
+        avatarUrl: updates.avatarId,
         preferredCurrency: updates.preferredCurrency,
         cutoffDay: updates.cutoffDay,
-        avatarUrl: updates.avatarId,
-      }).catch(err => console.warn('Sync de preferencias en Supabase:', err));
+        savingsGoal: updates.savingsGoal,
+        savingsGoalName: updates.savingsGoalName,
+        expenseAlertThreshold: updates.expenseAlertThreshold,
+        budgetAlertPercentage: updates.budgetAlertPercentage,
+        alertsEnabled: updates.alertsEnabled
+      }).catch(err => console.warn('Sync de preferencias en Supabase Cloud:', err));
     }
   }
 

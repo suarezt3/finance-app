@@ -113,17 +113,30 @@ export class AuthService {
 
   async updateProfile(profileData: {
     fullName?: string;
+    avatarId?: string;
     avatarUrl?: string;
     preferredCurrency?: string;
     cutoffDay?: number;
+    savingsGoal?: number;
+    savingsGoalName?: string;
+    expenseAlertThreshold?: number;
+    budgetAlertPercentage?: number;
+    alertsEnabled?: boolean;
   }): Promise<UserResponse> {
     const currentMeta = this._currentUser()?.user_metadata || {};
+    const avatarKey = profileData.avatarId || profileData.avatarUrl;
+
     const updatedMeta = {
       ...currentMeta,
       ...(profileData.fullName !== undefined ? { full_name: profileData.fullName } : {}),
-      ...(profileData.avatarUrl !== undefined ? { avatar_url: profileData.avatarUrl } : {}),
+      ...(avatarKey !== undefined ? { avatar_id: avatarKey, avatar_url: avatarKey } : {}),
       ...(profileData.preferredCurrency !== undefined ? { preferred_currency: profileData.preferredCurrency } : {}),
-      ...(profileData.cutoffDay !== undefined ? { cutoff_day: profileData.cutoffDay } : {})
+      ...(profileData.cutoffDay !== undefined ? { cutoff_day: profileData.cutoffDay } : {}),
+      ...(profileData.savingsGoal !== undefined ? { savings_goal: profileData.savingsGoal } : {}),
+      ...(profileData.savingsGoalName !== undefined ? { savings_goal_name: profileData.savingsGoalName } : {}),
+      ...(profileData.expenseAlertThreshold !== undefined ? { expense_alert_threshold: profileData.expenseAlertThreshold } : {}),
+      ...(profileData.budgetAlertPercentage !== undefined ? { budget_alert_percentage: profileData.budgetAlertPercentage } : {}),
+      ...(profileData.alertsEnabled !== undefined ? { alerts_enabled: profileData.alertsEnabled } : {})
     };
 
     const response = await this.supabase.auth.updateUser({

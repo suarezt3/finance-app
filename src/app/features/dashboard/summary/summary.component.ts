@@ -16,6 +16,8 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 
+import { RouterLink } from '@angular/router';
+
 import { FinancialSummary } from './summary.model';
 import { TransactionWithDetails } from '../../../core/models/transaction.model';
 import { TransactionService } from '../../../core/services/transaction.service';
@@ -45,7 +47,7 @@ export interface TransactionView extends TransactionWithDetails {
   selector: 'app-summary',
   standalone: true,
   imports: [
-    DecimalPipe, DatePipe, FormsModule,
+    DecimalPipe, DatePipe, FormsModule, RouterLink,
     NzGridModule, NzCardModule, NzStatisticModule,
     NzButtonModule, NzIconModule, NzRadioModule, NzDatePickerModule,
     NzSelectModule, NzTableModule, NzTagModule,
@@ -63,6 +65,18 @@ export class SummaryComponent implements OnInit {
 
   readonly currencySymbol = this.userPreferences.currencySymbol;
   readonly preferredCurrency = this.userPreferences.preferredCurrency;
+
+  readonly budgetAlert = computed<{ ratio: number; threshold: number } | null>(() => {
+    if (!this.userPreferences.alertsEnabled()) return null;
+    const s = this.summary();
+    if (s.totalIncome <= 0 || s.totalExpenses <= 0) return null;
+    const ratio = Math.round((s.totalExpenses / s.totalIncome) * 100);
+    const threshold = this.userPreferences.budgetAlertPercentage();
+    if (ratio >= threshold) {
+      return { ratio, threshold };
+    }
+    return null;
+  });
   private readonly breakpointObserver = inject(BreakpointObserver);
 
   // Estado puro

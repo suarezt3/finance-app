@@ -268,7 +268,23 @@
     <div class="tab-view-content">
       <div class="goals-container">
         
-        <!-- TARJETA DE PROGRESO DE META ACTUAL -->
+        <!-- EXPLICACIÓN CLARA DEL FUNCIONAMIENTO DEL AHORRO -->
+        <div class="savings-explanation-banner">
+          <div class="explanation-icon-wrap">
+            <span nz-icon nzType="info-circle" nzTheme="fill"></span>
+          </div>
+          <div class="explanation-content">
+            <h4>¿Cómo funciona tu Meta de Ahorro en FinanceApp?</h4>
+            <p>
+              <strong>1. Ahorro por Flujo Neto Automático:</strong> Tu ahorro del mes se calcula restando tus gastos de tus ingresos reales (<strong>Ingresos − Gastos</strong>). Todo dinero que no gastes se acumula directamente hacia tu meta.
+            </p>
+            <p class="mt-1">
+              <strong>2. Billeteras de Ahorro:</strong> También puedes crear una billetera llamada <em>"Hucha de Ahorros"</em> o <em>"Fondo de Emergencia"</em> y transferir dinero hacia ella. Las transferencias apartan el dinero sin computarse como un gasto falso.
+            </p>
+          </div>
+        </div>
+
+        <!-- TARJETA DE PROGRESO DE META ACTUAL CON DESGLOSE -->
         <div class="savings-summary-card">
           <div class="savings-card-header">
             <div class="savings-icon-box">
@@ -276,7 +292,7 @@
             </div>
             <div class="savings-title-box">
               <h3>{{ savingsGoalName() }}</h3>
-              <span class="savings-subtext">Progreso estimado de ahorro del mes</span>
+              <span class="savings-subtext">Progreso mensual en tiempo real</span>
             </div>
             <div class="savings-amount-badge">
               <span class="symbol">{{ currencySymbol() }}</span>
@@ -284,12 +300,28 @@
             </div>
           </div>
 
+          <!-- MINI DESGLOSE FINANCIERO DEL MES -->
+          <div class="savings-breakdown-row">
+            <div class="breakdown-col">
+              <span class="breakdown-label">Ingresos del Mes</span>
+              <span class="breakdown-val income">+{{ currencySymbol() }}{{ currentMonthIncome() | number:'1.0-0' }}</span>
+            </div>
+            <div class="breakdown-col">
+              <span class="breakdown-label">Gastos del Mes</span>
+              <span class="breakdown-val expense">-{{ currencySymbol() }}{{ currentMonthExpense() | number:'1.0-0' }}</span>
+            </div>
+            <div class="breakdown-col highlight">
+              <span class="breakdown-label">Ahorro Disponible</span>
+              <span class="breakdown-val saved">{{ currencySymbol() }}{{ currentMonthSavings() | number:'1.0-0' }}</span>
+            </div>
+          </div>
+
           <div class="savings-progress-section">
             <div class="progress-labels-row">
               <span class="label-saved">
-                Ahorrado este mes: <strong>{{ currencySymbol() }} {{ currentMonthSavings() | number:'1.0-0' }}</strong>
+                Progreso: <strong>{{ savingsProgressPercentage() }}%</strong>
               </span>
-              <span class="label-pct">{{ savingsProgressPercentage() }}%</span>
+              <span class="label-pct">Meta: {{ currencySymbol() }}{{ savingsGoal() | number:'1.0-0' }}</span>
             </div>
 
             <nz-progress
@@ -307,7 +339,7 @@
                 </span>
               } @else {
                 <span class="status-pending">
-                  Te faltan <strong>{{ currencySymbol() }} {{ remainingSavings() | number:'1.0-0' }}</strong> para alcanzar tu objetivo.
+                  Te faltan <strong>{{ currencySymbol() }} {{ remainingSavings() | number:'1.0-0' }}</strong> para completar tu objetivo.
                 </span>
               }
             </div>
@@ -335,16 +367,24 @@
                 </nz-form-control>
               </nz-form-item>
 
-              <!-- Monto de la Meta -->
+              <!-- Monto de la Meta con Formateo de Puntos de Miles -->
               <nz-form-item>
                 <nz-form-label nzRequired nzFor="savingsGoal">Monto de Ahorro Mensual Deseado</nz-form-label>
                 <nz-form-control>
-                  <nz-input-wrapper class="full-width">
-                    <span class="currency-prefix">{{ currencySymbol() }}</span>
-                    <input nz-input type="number" formControlName="savingsGoal" id="savingsGoal" placeholder="500000" nzSize="large" />
-                  </nz-input-wrapper>
+                  <nz-input-number
+                    formControlName="savingsGoal"
+                    id="savingsGoal"
+                    [nzMin]="0"
+                    [nzStep]="50000"
+                    [nzFormatter]="formatterCurrency"
+                    [nzParser]="parserCurrency"
+                    appDecimalInput
+                    nzSize="large"
+                    class="full-width formatted-currency-input"
+                    placeholder="Ej. 500.000"
+                  ></nz-input-number>
                 </nz-form-control>
-                <span class="helper-text">Monto estimado que deseas retener o ahorrar cada mes.</span>
+                <span class="helper-text">Escribe el monto deseado. Se aplican puntos de miles automáticamente.</span>
               </nz-form-item>
             </div>
 
@@ -352,36 +392,50 @@
 
             <div class="alert-settings-header">
               <div class="alert-info-text">
-                <h5>Alertas de Gastos Elevados</h5>
-                <p>Recibe advertencias visuales cuando registres compras inusualmente altas o tu presupuesto esté al límite.</p>
+                <h5>Alertas de Gastos Elevados y Presupuesto</h5>
+                <p>Recibe advertencias inmediatas al registrar compras altas o cuando tus gastos excedan tu límite mensual.</p>
               </div>
               <nz-switch formControlName="alertsEnabled"></nz-switch>
             </div>
 
             @if (goalsForm.get('alertsEnabled')?.value) {
               <div class="form-grid-two mt-3">
-                <!-- Umbral de Gasto Individual -->
+                <!-- Umbral de Gasto Individual con Formateo de Puntos de Miles -->
                 <nz-form-item>
                   <nz-form-label nzRequired nzFor="expenseAlertThreshold">Alerta por Gasto Individual Mayor A</nz-form-label>
                   <nz-form-control>
-                    <nz-input-wrapper class="full-width">
-                      <span class="currency-prefix">{{ currencySymbol() }}</span>
-                      <input nz-input type="number" formControlName="expenseAlertThreshold" id="expenseAlertThreshold" placeholder="200000" nzSize="large" />
-                    </nz-input-wrapper>
+                    <nz-input-number
+                      formControlName="expenseAlertThreshold"
+                      id="expenseAlertThreshold"
+                      [nzMin]="0"
+                      [nzStep]="20000"
+                      [nzFormatter]="formatterCurrency"
+                      [nzParser]="parserCurrency"
+                      appDecimalInput
+                      nzSize="large"
+                      class="full-width formatted-currency-input"
+                      placeholder="Ej. 200.000"
+                    ></nz-input-number>
                   </nz-form-control>
-                  <span class="helper-text">Se mostrará un aviso cuando un solo gasto supere este valor.</span>
+                  <span class="helper-text">Se mostrará una advertencia si registras un gasto que supere esta cifra.</span>
                 </nz-form-item>
 
                 <!-- % de Presupuesto Mensual -->
                 <nz-form-item>
                   <nz-form-label nzRequired nzFor="budgetAlertPercentage">Alerta de Límite de Presupuesto (%)</nz-form-label>
                   <nz-form-control>
-                    <nz-input-wrapper class="full-width">
-                      <span class="currency-prefix">%</span>
-                      <input nz-input type="number" formControlName="budgetAlertPercentage" id="budgetAlertPercentage" placeholder="80" min="10" max="100" nzSize="large" />
-                    </nz-input-wrapper>
+                    <nz-input-number
+                      formControlName="budgetAlertPercentage"
+                      id="budgetAlertPercentage"
+                      [nzMin]="10"
+                      [nzMax]="100"
+                      [nzStep]="5"
+                      nzSize="large"
+                      class="full-width"
+                      placeholder="Ej. 80"
+                    ></nz-input-number>
                   </nz-form-control>
-                  <span class="helper-text">Avisar cuando los gastos superen este porcentaje de los ingresos del mes.</span>
+                  <span class="helper-text">Muestra un banner en el resumen cuando los gastos superen este % de tus ingresos.</span>
                 </nz-form-item>
               </div>
             }
@@ -564,119 +618,119 @@
 </div>
 
 <!-- ============================================== -->
-  <!-- MODAL: CREAR / EDITAR CATEGORÍA                -->
-  <!-- ============================================== -->
-  <nz-modal
-    [nzVisible]="isCategoryModalVisible()"
-    [nzTitle]="editingCategory() ? 'Editar Categoría' : 'Nueva Categoría'"
-    (nzOnCancel)="closeCategoryModal()"
-    [nzFooter]="null"
-    nzWidth="460px"
-  >
-    <ng-container *nzModalContent>
-      <form nz-form [formGroup]="categoryForm" (ngSubmit)="onSaveCategory()" nzLayout="vertical" class="enterprise-modal-form">
-        <nz-form-item>
-          <nz-form-label nzRequired nzFor="catName">Nombre de la Categoría</nz-form-label>
-          <nz-form-control nzErrorTip="El nombre es requerido (mín. 3 caracteres).">
-            <input nz-input formControlName="name" id="catName" placeholder="Ej. Alimentación, Transporte, Salario" nzSize="large" />
-          </nz-form-control>
-        </nz-form-item>
+<!-- MODAL: CREAR / EDITAR CATEGORÍA                -->
+<!-- ============================================== -->
+<nz-modal
+  [nzVisible]="isCategoryModalVisible()"
+  [nzTitle]="editingCategory() ? 'Editar Categoría' : 'Nueva Categoría'"
+  (nzOnCancel)="closeCategoryModal()"
+  [nzFooter]="null"
+  nzWidth="460px"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="categoryForm" (ngSubmit)="onSaveCategory()" nzLayout="vertical" class="enterprise-modal-form">
+      <nz-form-item>
+        <nz-form-label nzRequired nzFor="catName">Nombre de la Categoría</nz-form-label>
+        <nz-form-control nzErrorTip="El nombre es requerido (mín. 3 caracteres).">
+          <input nz-input formControlName="name" id="catName" placeholder="Ej. Alimentación, Transporte, Salario" nzSize="large" />
+        </nz-form-control>
+      </nz-form-item>
 
-        <nz-form-item>
-          <nz-form-label nzRequired nzFor="catType">Tipo de Movimiento</nz-form-label>
-          <nz-form-control>
-            <nz-select formControlName="type" id="catType" nzSize="large">
-              <nz-option nzValue="EXPENSE" nzLabel="🔻 Gasto (Salida de dinero)"></nz-option>
-              <nz-option nzValue="INCOME" nzLabel="🔺 Ingreso (Entrada de dinero)"></nz-option>
-            </nz-select>
-          </nz-form-control>
-        </nz-form-item>
+      <nz-form-item>
+        <nz-form-label nzRequired nzFor="catType">Tipo de Movimiento</nz-form-label>
+        <nz-form-control>
+          <nz-select formControlName="type" id="catType" nzSize="large">
+            <nz-option nzValue="EXPENSE" nzLabel="🔻 Gasto (Salida de dinero)"></nz-option>
+            <nz-option nzValue="INCOME" nzLabel="🔺 Ingreso (Entrada de dinero)"></nz-option>
+          </nz-select>
+        </nz-form-control>
+      </nz-form-item>
 
-        <div class="modal-form-actions">
-          <button nz-button type="button" (click)="closeCategoryModal()" class="btn-modal-cancel">Cancelar</button>
-          <button nz-button nzType="primary" type="submit" [nzLoading]="isSubmitting()" class="btn-modal-save">
-            {{ editingCategory() ? 'Guardar Cambios' : 'Crear Categoría' }}
-          </button>
-        </div>
-      </form>
-    </ng-container>
-  </nz-modal>
-
-  <!-- ============================================== -->
-  <!-- MODAL: CREAR / EDITAR BILLETERA O CUENTA       -->
-  <!-- ============================================== -->
-  <nz-modal
-    [nzVisible]="isMethodModalVisible()"
-    [nzTitle]="editingMethod() ? 'Editar Billetera o Cuenta' : 'Nueva Billetera o Cuenta'"
-    (nzOnCancel)="closeMethodModal()"
-    [nzFooter]="null"
-    nzWidth="460px"
-  >
-    <ng-container *nzModalContent>
-      <form nz-form [formGroup]="methodForm" (ngSubmit)="onSaveMethod()" nzLayout="vertical" class="enterprise-modal-form">
-        <nz-form-item>
-          <nz-form-label nzRequired nzFor="methodName">Nombre de la Cuenta o Billetera</nz-form-label>
-          <nz-form-control nzErrorTip="El nombre es requerido (mín. 3 caracteres).">
-            <input nz-input formControlName="name" id="methodName" placeholder="Ej. Nequi, Efectivo, Daviplata, Tarjeta Débito" nzSize="large" />
-          </nz-form-control>
-        </nz-form-item>
-
-        <div class="modal-form-actions">
-          <button nz-button type="button" (click)="closeMethodModal()" class="btn-modal-cancel">Cancelar</button>
-          <button nz-button nzType="primary" type="submit" [nzLoading]="isSubmitting()" class="btn-modal-save">
-            {{ editingMethod() ? 'Guardar Cambios' : 'Guardar Cuenta' }}
-          </button>
-        </div>
-      </form>
-    </ng-container>
-  </nz-modal>
-
-  <!-- ============================================== -->
-  <!-- MODAL: CLAVE PARA BÓVEDA BIOMÉTRICA            -->
-  <!-- ============================================== -->
-  <nz-modal
-    [nzVisible]="isBiometricModalVisible()"
-    nzTitle="Seguridad de la Bóveda Biométrica"
-    (nzOnCancel)="isBiometricModalVisible.set(false)"
-    [nzFooter]="null"
-    nzWidth="460px"
-    [nzClosable]="false"
-    [nzMaskClosable]="false"
-  >
-    <ng-container *nzModalContent>
-      <div class="vault-modal-content">
-        <div class="vault-icon-header">
-          <span nz-icon nzType="key" nzTheme="outline"></span>
-        </div>
-        <h4>Cifra tu Clave en Este Dispositivo</h4>
-        <p>
-          Ingresa tu contraseña actual para cifrarla en la bóveda de hardware de tu equipo. Esto permite iniciar sesión de forma instantánea al tocar el sensor.
-        </p>
-
-        <form nz-form [formGroup]="biometricPasswordForm" (ngSubmit)="onSaveBiometricPassword()" nzLayout="vertical" class="enterprise-modal-form mt-4">
-          <nz-form-item>
-            <nz-form-label nzRequired nzFor="biometricPassword">Contraseña Actual</nz-form-label>
-            <nz-form-control nzErrorTip="Ingresa tu contraseña (mínimo 6 caracteres).">
-              <nz-input-password nzSize="large">
-                <input
-                  [type]="passwordVisible() ? 'text' : 'password'"
-                  nz-input
-                  formControlName="password"
-                  id="biometricPassword"
-                  placeholder="Tu contraseña de acceso"
-                  nzSize="large"
-                />
-              </nz-input-password>
-            </nz-form-control>
-          </nz-form-item>
-
-          <div class="modal-form-actions">
-            <button nz-button type="button" (click)="isBiometricModalVisible.set(false)" class="btn-modal-cancel">Omitir</button>
-            <button nz-button nzType="primary" type="submit" [nzLoading]="isSubmitting()" class="btn-modal-save">
-              Activar Acceso con Huella
-            </button>
-          </div>
-        </form>
+      <div class="modal-form-actions">
+        <button nz-button type="button" (click)="closeCategoryModal()" class="btn-modal-cancel">Cancelar</button>
+        <button nz-button nzType="primary" type="submit" [nzLoading]="isSubmitting()" class="btn-modal-save">
+          {{ editingCategory() ? 'Guardar Cambios' : 'Crear Categoría' }}
+        </button>
       </div>
-    </ng-container>
-  </nz-modal>
+    </form>
+  </ng-container>
+</nz-modal>
+
+<!-- ============================================== -->
+<!-- MODAL: CREAR / EDITAR BILLETERA O CUENTA       -->
+<!-- ============================================== -->
+<nz-modal
+  [nzVisible]="isMethodModalVisible()"
+  [nzTitle]="editingMethod() ? 'Editar Billetera o Cuenta' : 'Nueva Billetera o Cuenta'"
+  (nzOnCancel)="closeMethodModal()"
+  [nzFooter]="null"
+  nzWidth="460px"
+>
+  <ng-container *nzModalContent>
+    <form nz-form [formGroup]="methodForm" (ngSubmit)="onSaveMethod()" nzLayout="vertical" class="enterprise-modal-form">
+      <nz-form-item>
+        <nz-form-label nzRequired nzFor="methodName">Nombre de la Cuenta o Billetera</nz-form-label>
+        <nz-form-control nzErrorTip="El nombre es requerido (mín. 3 caracteres).">
+          <input nz-input formControlName="name" id="methodName" placeholder="Ej. Nequi, Efectivo, Daviplata, Tarjeta Débito" nzSize="large" />
+        </nz-form-control>
+      </nz-form-item>
+
+      <div class="modal-form-actions">
+        <button nz-button type="button" (click)="closeMethodModal()" class="btn-modal-cancel">Cancelar</button>
+        <button nz-button nzType="primary" type="submit" [nzLoading]="isSubmitting()" class="btn-modal-save">
+          {{ editingMethod() ? 'Guardar Cambios' : 'Guardar Cuenta' }}
+        </button>
+      </div>
+    </form>
+  </ng-container>
+</nz-modal>
+
+<!-- ============================================== -->
+<!-- MODAL: CLAVE PARA BÓVEDA BIOMÉTRICA            -->
+<!-- ============================================== -->
+<nz-modal
+  [nzVisible]="isBiometricModalVisible()"
+  nzTitle="Seguridad de la Bóveda Biométrica"
+  (nzOnCancel)="isBiometricModalVisible.set(false)"
+  [nzFooter]="null"
+  nzWidth="460px"
+  [nzClosable]="false"
+  [nzMaskClosable]="false"
+>
+  <ng-container *nzModalContent>
+    <div class="vault-modal-content">
+      <div class="vault-icon-header">
+        <span nz-icon nzType="key" nzTheme="outline"></span>
+      </div>
+      <h4>Cifra tu Clave en Este Dispositivo</h4>
+      <p>
+        Ingresa tu contraseña actual para cifrarla en la bóveda de hardware de tu equipo. Esto permite iniciar sesión de forma instantánea al tocar el sensor.
+      </p>
+
+      <form nz-form [formGroup]="biometricPasswordForm" (ngSubmit)="onSaveBiometricPassword()" nzLayout="vertical" class="enterprise-modal-form mt-4">
+        <nz-form-item>
+          <nz-form-label nzRequired nzFor="biometricPassword">Contraseña Actual</nz-form-label>
+          <nz-form-control nzErrorTip="Ingresa tu contraseña (mínimo 6 caracteres).">
+            <nz-input-password nzSize="large">
+              <input
+                [type]="passwordVisible() ? 'text' : 'password'"
+                nz-input
+                formControlName="password"
+                id="biometricPassword"
+                placeholder="Tu contraseña de acceso"
+                nzSize="large"
+              />
+            </nz-input-password>
+          </nz-form-control>
+        </nz-form-item>
+
+        <div class="modal-form-actions">
+          <button nz-button type="button" (click)="isBiometricModalVisible.set(false)" class="btn-modal-cancel">Omitir</button>
+          <button nz-button nzType="primary" type="submit" [nzLoading]="isSubmitting()" class="btn-modal-save">
+            Activar Acceso con Huella
+          </button>
+        </div>
+      </form>
+    </div>
+  </ng-container>
+</nz-modal>

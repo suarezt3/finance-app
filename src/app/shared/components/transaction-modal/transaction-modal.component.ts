@@ -26,6 +26,7 @@ import { TransactionService } from '../../../core/services/transaction.service';
 import { TransactionWithDetails } from '../../../core/models/transaction.model';
 import { NativeDeviceService } from '../../../core/services/native-device.service';
 import { ReceiptScannerService, ScannedReceiptData } from '../../../core/services/receipt-scanner.service';
+import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 
 // NUEVO: Importamos la directiva que acabamos de crear
 import { DecimalInputDirective } from '../../directives/decimal-input.directive';
@@ -53,6 +54,7 @@ export class TransactionModalComponent implements OnInit {
   private readonly message = inject(NzMessageService);
   private readonly destroyRef = inject(DestroyRef);
   readonly nativeDeviceService = inject(NativeDeviceService);
+  readonly userPreferences = inject(UserPreferencesService);
   private readonly receiptScannerService = inject(ReceiptScannerService);
 
   readonly isVisible = input.required<boolean>();
@@ -391,6 +393,21 @@ export class TransactionModalComponent implements OnInit {
           } else {
             await this.transactionService.createTransaction(formattedData);
             this.message.success('Transacción registrada exitosamente');
+          }
+
+          // ALERTA DE GASTO ELEVADO: Si es gasto y supera el umbral configurado
+          if (rawValues.type === 'EXPENSE' && this.userPreferences.alertsEnabled()) {
+            const threshold = this.userPreferences.expenseAlertThreshold();
+            const amountNum = Number(rawValues.amount);
+            if (threshold > 0 && amountNum >= threshold) {
+              const sym = this.userPreferences.currencySymbol();
+              setTimeout(() => {
+                this.message.warning(
+                  `⚠️ Alerta de Gasto Elevado: Esta compra de ${sym}${amountNum.toLocaleString('es-CO')} superó tu umbral de alerta de ${sym}${threshold.toLocaleString('es-CO')}.`,
+                  { nzDuration: 7000 }
+                );
+              }, 400);
+            }
           }
         }
 

@@ -170,6 +170,7 @@ export class ProfileModalComponent implements OnInit {
       // Actualizar metadata en Supabase
       const { error } = await this.authService.updateProfile({
         fullName,
+        avatarId,
         avatarUrl: avatarId,
         preferredCurrency,
         cutoffDay: Number(cutoffDay)

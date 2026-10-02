@@ -1,7 +1,22 @@
 <!-- src/app/features/dashboard/summary/summary.component.html -->
 <div class="summary-container">
 
-  <!-- CABECERA Y CONTROLES ENTERPRISE -->
+  <!-- BANNER DE ADVERTENCIA DE PRESUPUESTO (SI SE EXCEDE EL % CONFIGURADO) -->
+  @if (budgetAlert(); as alert) {
+    <div class="budget-alert-banner">
+      <div class="alert-icon-box">
+        <span nz-icon nzType="warning" nzTheme="fill"></span>
+      </div>
+      <div class="alert-text-box">
+        <h4>¡Alerta de Límite de Presupuesto!</h4>
+        <p>
+          Tus gastos actuales representan el <strong>{{ alert.ratio }}%</strong> de tus ingresos en este período, superando tu umbral de alerta configurado de <strong>{{ alert.threshold }}%</strong>.
+        </p>
+      </div>
+    </div>
+  }
+
+  <!-- CABECERA Y CONTROLES -->
   <header class="summary-header">
     <div class="summary-title">
       <div class="title-with-badge">
@@ -178,65 +193,103 @@
     </nz-col>
   </nz-row>
 
-  <!-- ÚLTIMOS MOVIMIENTOS AUDITADOS -->
+  <!-- ============================================== -->
+  <!-- ÚLTIMOS 5 MOVIMIENTOS EN TARJETAS INTERACTIVAS -->
+  <!-- ============================================== -->
   <div class="recent-transactions-section">
-    <nz-card class="dashboard-table-card" [nzTitle]="recentHeader" [nzBordered]="false">
-      <ng-template #recentHeader>
-        <div class="chart-header-group">
-          <span class="chart-title">Últimos Movimientos</span>
-          <span class="chart-sub">Auditoría reciente</span>
+    <div class="recent-section-header">
+      <div class="recent-title-group">
+        <span class="recent-main-title">Últimos 5 Movimientos</span>
+        <span class="recent-subtitle">Actividad reciente registrada en tus cuentas</span>
+      </div>
+      <a routerLink="/dashboard/transactions" class="btn-view-all-link">
+        <span>Ver todas las transacciones</span>
+        <span nz-icon nzType="arrow-right" class="arrow-icon"></span>
+      </a>
+    </div>
+
+    @if (latestTransactions().length === 0) {
+      <div class="empty-transactions-card">
+        <div class="empty-icon-wrap">
+          <span nz-icon nzType="inbox" nzTheme="outline"></span>
         </div>
-      </ng-template>
+        <h4>No hay movimientos recientes</h4>
+        <p>Registra tu primera transacción usando el botón "+ Nueva Transacción".</p>
+        <button nz-button nzType="primary" (click)="openModal()">
+          <span nz-icon nzType="plus"></span> Registrar Movimiento
+        </button>
+      </div>
+    } @else {
+      <div class="recent-cards-list">
+        @for (tx of latestTransactions(); track tx.id) {
+          <div
+            class="movement-card"
+            [class.is-income]="tx.type === 'INCOME' && !tx.isTransfer"
+            [class.is-expense]="tx.type === 'EXPENSE' && !tx.isTransfer"
+            [class.is-transfer]="tx.isTransfer"
+          >
+            <!-- Lado Izquierdo: Icono temático + Datos -->
+            <div class="movement-card-lead">
+              <div
+                class="movement-icon-circle"
+                [class.income]="tx.type === 'INCOME' && !tx.isTransfer"
+                [class.expense]="tx.type === 'EXPENSE' && !tx.isTransfer"
+                [class.transfer]="tx.isTransfer"
+              >
+                @if (tx.isTransfer) {
+                  <span nz-icon nzType="swap" nzTheme="outline"></span>
+                } @else if (tx.type === 'INCOME') {
+                  <span nz-icon nzType="arrow-down" nzTheme="outline"></span>
+                } @else {
+                  <span nz-icon nzType="arrow-up" nzTheme="outline"></span>
+                }
+              </div>
 
-      <nz-table
-        #recentTable
-        [nzData]="latestTransactions()"
-        nzSize="middle"
-        [nzShowPagination]="false"
-        [nzScroll]="{ x: '610px' }"
-        class="enterprise-data-table">
-        <thead>
-          <tr>
-            <th nzWidth="110px">Fecha</th>
-            <th nzWidth="200px">Descripción</th>
-            <th nzWidth="170px">Categoría / Billetera</th>
-            <th nzAlign="right" nzWidth="130px">Monto</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (tx of recentTable.data; track tx.id) {
-            <tr>
-              <td class="date-cell tabular-nums">{{ tx.date | date:'dd/MM/yyyy' }}</td>
-              <td class="desc-cell">{{ tx.description || 'Sin descripción' }}</td>
+              <div class="movement-info-block">
+                <span class="movement-title">
+                  {{ tx.description || (tx.isTransfer ? 'Transferencia entre cuentas' : (tx.categories?.name || 'Movimiento')) }}
+                </span>
+                
+                <div class="movement-meta-row">
+                  <span class="movement-category-badge" [class.income]="tx.type === 'INCOME' && !tx.isTransfer" [class.expense]="tx.type === 'EXPENSE' && !tx.isTransfer" [class.transfer]="tx.isTransfer">
+                    {{ tx.isTransfer ? 'Transferencia' : (tx.categories?.name || 'General') }}
+                  </span>
 
-              <td>
-                <div class="category-wallet-cell">
-                  @if (tx.isTransfer) {
-                    <span class="nature-pill transfer">Transferencia</span>
-                  } @else if (tx.type === 'INCOME') {
-                    <span class="nature-pill income">Ingreso</span>
-                  } @else {
-                    <span class="nature-pill expense">{{ tx.displayCategory }}</span>
-                  }
+                  <span class="meta-separator">·</span>
 
-                  <span class="wallet-track">
+                  <span class="movement-account-badge">
+                    <span nz-icon nzType="wallet" class="wallet-icon"></span>
                     @if (tx.isMergedTransfer) {
-                      {{ tx.sourceMethodName }} <span nz-icon nzType="arrow-right" class="transfer-arrow"></span> {{ tx.destinationMethodName }}
+                      {{ tx.sourceMethodName }} → {{ tx.destinationMethodName }}
                     } @else {
-                      {{ tx.payment_methods?.name || '---' }}
+                      {{ tx.payment_methods?.name || 'Billetera' }}
                     }
                   </span>
-                </div>
-              </td>
 
-              <td nzAlign="right" class="amount-cell tabular-nums" [class.income]="tx.type === 'INCOME' && !tx.isTransfer" [class.expense]="tx.type === 'EXPENSE' && !tx.isTransfer">
-                {{ tx.isTransfer ? '' : (tx.type === 'INCOME' ? '+' : '-') }} ${{ tx.amount | number:'1.0-2':'es' }}
-              </td>
-            </tr>
-          }
-        </tbody>
-      </nz-table>
-    </nz-card>
+                  <span class="meta-separator">·</span>
+
+                  <span class="movement-date tabular-nums">
+                    {{ tx.date | date:'d MMM, y' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Lado Derecho: Importe monetario grande con color semántico -->
+            <div class="movement-amount-block">
+              <span
+                class="movement-amount-val tabular-nums"
+                [class.income]="tx.type === 'INCOME' && !tx.isTransfer"
+                [class.expense]="tx.type === 'EXPENSE' && !tx.isTransfer"
+                [class.transfer]="tx.isTransfer"
+              >
+                {{ tx.isTransfer ? '' : (tx.type === 'INCOME' ? '+' : '-') }}{{ currencySymbol() }}{{ tx.amount | number:'1.0-2':'es' }}
+              </span>
+            </div>
+          </div>
+        }
+      </div>
+    }
   </div>
 
   <app-transaction-modal [isVisible]="isModalVisible()" (closeModal)="closeModal()" (transactionSaved)="onTransactionSaved()">

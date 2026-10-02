@@ -1,5 +1,5 @@
 // src/app/features/dashboard/config/config.component.ts
-import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, inject, signal, computed, OnInit, effect } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
@@ -9,6 +9,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzProgressModule } from 'ng-zorro-antd/progress';
@@ -20,6 +21,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { PwaUpdateService } from '../../../core/services/pwa-update.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { TransactionService } from '../../../core/services/transaction.service';
+import { DecimalInputDirective } from '../../../shared/directives/decimal-input.directive';
 
 @Component({
   selector: 'app-config',
@@ -35,9 +37,11 @@ import { TransactionService } from '../../../core/services/transaction.service';
     NzModalModule,
     NzFormModule,
     NzInputModule,
+    NzInputNumberModule,
     NzSelectModule,
     NzSwitchModule,
-    NzProgressModule
+    NzProgressModule,
+    DecimalInputDirective
   ],
   templateUrl: './config.component.html',
   styleUrl: './config.component.scss'
@@ -61,7 +65,9 @@ export class ConfigComponent implements OnInit {
   readonly isCheckingUpdates = signal<boolean>(false);
   readonly isSavingPreferences = signal<boolean>(false);
 
-  // Total acumulado de ahorro actual estimado desde transacciones
+  // Estadísticas del mes actual para explicación y cálculo del ahorro
+  readonly currentMonthIncome = signal<number>(0);
+  readonly currentMonthExpense = signal<number>(0);
   readonly currentMonthSavings = signal<number>(0);
 
   // Navegación adaptable
@@ -128,6 +134,20 @@ export class ConfigComponent implements OnInit {
     alertsEnabled: [true]
   });
 
+  // Formateadores con puntos de miles para campos numéricos
+  readonly formatterCurrency = (value: number | string): string => {
+    if (value == null || value === '') return '';
+    const parts = value.toString().split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return parts.join(',');
+  };
+
+  readonly parserCurrency = (value: string): number => {
+    const cleanString = value.replace(/\./g, '').replace(',', '.');
+    const parsedNumber = parseFloat(cleanString);
+    return isNaN(parsedNumber) ? 0 : parsedNumber;
+  };
+
   // Cálculos reactivos de metas
   readonly savingsGoal = this.userPreferences.savingsGoal;
   readonly savingsGoalName = this.userPreferences.savingsGoalName;
@@ -148,23 +168,25 @@ export class ConfigComponent implements OnInit {
     return Math.max(0, goal - current);
   });
 
+  constructor() {
+    // Sincronizar reactivamente formulario cuando las preferencias de la nube se carguen
+    effect(() => {
+      const p = this.userPreferences.preferences();
+      this.goalsForm.patchValue({
+        savingsGoal: p.savingsGoal,
+        savingsGoalName: p.savingsGoalName,
+        expenseAlertThreshold: p.expenseAlertThreshold,
+        budgetAlertPercentage: p.budgetAlertPercentage,
+        alertsEnabled: p.alertsEnabled
+      }, { emitEvent: false });
+    });
+  }
+
   async ngOnInit(): Promise<void> {
-    this.initGoalsForm();
     await Promise.all([
       this.loadCatalogs(),
       this.loadTransactionsBalance()
     ]);
-  }
-
-  private initGoalsForm(): void {
-    const p = this.userPreferences.preferences();
-    this.goalsForm.patchValue({
-      savingsGoal: p.savingsGoal,
-      savingsGoalName: p.savingsGoalName,
-      expenseAlertThreshold: p.expenseAlertThreshold,
-      budgetAlertPercentage: p.budgetAlertPercentage,
-      alertsEnabled: p.alertsEnabled
-    });
   }
 
   async loadCatalogs(): Promise<void> {
@@ -202,6 +224,8 @@ export class ConfigComponent implements OnInit {
         }
       });
 
+      this.currentMonthIncome.set(income);
+      this.currentMonthExpense.set(expense);
       const savings = Math.max(0, income - expense);
       this.currentMonthSavings.set(savings);
     } catch (err) {
@@ -392,7 +416,7 @@ export class ConfigComponent implements OnInit {
         alertsEnabled: val.alertsEnabled
       });
 
-      this.message.success('Metas de ahorro y alertas guardadas correctamente.');
+      this.message.success('Metas de ahorro y alertas guardadas y sincronizadas en la nube.');
     } catch (err) {
       this.message.error('Error al guardar las metas de ahorro.');
     } finally {
