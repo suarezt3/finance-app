@@ -65,7 +65,7 @@
         </div>
 
         <div class="kpi-value-row">
-          <span class="currency-symbol">$</span>
+          <span class="currency-symbol">{{ currencySymbol() }}</span>
           <span class="kpi-amount tabular-nums" [class.negative]="summary().totalBalance < 0">
             {{ summary().totalBalance | number:'1.0-2':'es' }}
           </span>
@@ -88,7 +88,7 @@
         </div>
 
         <div class="kpi-value-row">
-          <span class="currency-symbol income-color">$</span>
+          <span class="currency-symbol income-color">{{ currencySymbol() }}</span>
           <span class="kpi-amount income-color tabular-nums">
             {{ summary().totalIncome | number:'1.0-2':'es' }}
           </span>
@@ -118,7 +118,7 @@
         </div>
 
         <div class="kpi-value-row">
-          <span class="currency-symbol expense-color">$</span>
+          <span class="currency-symbol expense-color">{{ currencySymbol() }}</span>
           <span class="kpi-amount expense-color tabular-nums">
             {{ summary().totalExpenses | number:'1.0-2':'es' }}
           </span>

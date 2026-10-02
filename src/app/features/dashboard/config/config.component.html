@@ -5,115 +5,413 @@
   <header class="config-header">
     <div class="header-title">
       <div class="title-with-badge">
-        <h2>Configuración del Espacio de Trabajo</h2>
-        <span class="catalog-badge">CATÁLOGOS</span>
+        <h2>Personalización y Preferencias</h2>
+        <span class="catalog-badge">AJUSTES</span>
       </div>
-      <p>Administra las categorías de clasificación y los métodos de pago autorizados.</p>
+      <p>Administra tus categorías, billeteras, metas de ahorro y seguridad biométrica.</p>
     </div>
   </header>
 
-  <nz-tabs class="enterprise-config-tabs">
-    <!-- ============================================== -->
-    <!-- PESTAÑA 1: CATEGORÍAS                          -->
-    <!-- ============================================== -->
-    <nz-tab nzTitle="Categorías de Transacción">
-      <div class="tab-toolbar">
-        <span class="tab-description">Define las categorías contables para ingresos y egresos.</span>
-        <button nz-button nzType="primary" (click)="openCategoryModal()" class="btn-create-item">
+  <!-- NAVEGACIÓN SEGMENTADA RESPONSIVE (SIN CORTES EN MÓVIL) -->
+  <div class="config-tabs-nav" role="tablist">
+    <button
+      type="button"
+      class="tab-nav-btn"
+      [class.active]="activeTab() === 'categories'"
+      (click)="activeTab.set('categories')"
+    >
+      <span nz-icon nzType="appstore" nzTheme="outline"></span>
+      <span class="tab-label">Categorías</span>
+      <span class="count-pill">{{ categories().length }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-nav-btn"
+      [class.active]="activeTab() === 'methods'"
+      (click)="activeTab.set('methods')"
+    >
+      <span nz-icon nzType="wallet" nzTheme="outline"></span>
+      <span class="tab-label">Billeteras</span>
+      <span class="count-pill">{{ paymentMethods().length }}</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-nav-btn"
+      [class.active]="activeTab() === 'goals'"
+      (click)="activeTab.set('goals')"
+    >
+      <span nz-icon nzType="fund" nzTheme="outline"></span>
+      <span class="tab-label">Metas & Alertas</span>
+      <span class="count-pill beta-pill">BETA</span>
+    </button>
+
+    <button
+      type="button"
+      class="tab-nav-btn"
+      [class.active]="activeTab() === 'security'"
+      (click)="activeTab.set('security')"
+    >
+      <span nz-icon nzType="safety-certificate" nzTheme="outline"></span>
+      <span class="tab-label">Seguridad</span>
+    </button>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- SECCIÓN 1: CATEGORÍAS                          -->
+  <!-- ============================================== -->
+  @if (activeTab() === 'categories') {
+    <div class="tab-view-content">
+      <!-- Toolbar con Filtros y Buscador -->
+      <div class="content-toolbar">
+        <div class="toolbar-search-filter">
+          <!-- Buscador -->
+          <div class="search-input-wrapper">
+            <span nz-icon nzType="search" class="search-icon"></span>
+            <input
+              type="text"
+              placeholder="Buscar categoría..."
+              [value]="categorySearch()"
+              (input)="categorySearch.set($any($event.target).value)"
+              class="custom-search-input"
+            />
+            @if (categorySearch()) {
+              <button type="button" class="btn-clear-search" (click)="categorySearch.set('')">
+                <span nz-icon nzType="close-circle" nzTheme="fill"></span>
+              </button>
+            }
+          </div>
+
+          <!-- Filtros de Tipo en Chips -->
+          <div class="filter-chips">
+            <button
+              type="button"
+              class="chip-btn"
+              [class.active]="categoryFilter() === 'ALL'"
+              (click)="categoryFilter.set('ALL')"
+            >
+              Todas ({{ categories().length }})
+            </button>
+            <button
+              type="button"
+              class="chip-btn expense"
+              [class.active]="categoryFilter() === 'EXPENSE'"
+              (click)="categoryFilter.set('EXPENSE')"
+            >
+              🔻 Gastos ({{ expenseCount() }})
+            </button>
+            <button
+              type="button"
+              class="chip-btn income"
+              [class.active]="categoryFilter() === 'INCOME'"
+              (click)="categoryFilter.set('INCOME')"
+            >
+              🔺 Ingresos ({{ incomeCount() }})
+            </button>
+          </div>
+        </div>
+
+        <button nz-button nzType="primary" (click)="openCategoryModal()" class="btn-create-highlight">
           <span nz-icon nzType="plus"></span>
-          <span class="btn-text">Nueva Categoría</span>
+          <span>Nueva Categoría</span>
         </button>
       </div>
 
-      <div class="table-container">
-        <nz-table
-          #categoryTable
-          [nzData]="categories()"
-          [nzLoading]="isLoading()"
-          nzSize="middle"
-          class="enterprise-config-table">
-          <thead>
-            <tr>
-              <th>Nombre de Categoría</th>
-              <th nzWidth="140px" nzAlign="center">Naturaleza</th>
-              <th nzWidth="100px" nzAlign="center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (cat of categoryTable.data; track cat.id) {
-              <tr>
-                <td class="item-name">{{ cat.name }}</td>
-                <td nzAlign="center">
-                  @if (cat.type === 'INCOME') {
-                    <span class="nature-badge income">Ingreso</span>
-                  } @else {
-                    <span class="nature-badge expense">Gasto</span>
-                  }
-                </td>
-                <td nzAlign="center">
-                  <button nz-button nzType="text" nzDanger nz-tooltip nzTooltipTitle="Eliminar" (click)="onDeleteCategory(cat.id)" class="btn-action-delete">
-                    <span nz-icon nzType="delete" nzTheme="outline"></span>
-                    <span class="action-text">Eliminar</span>
-                  </button>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </nz-table>
-      </div>
-    </nz-tab>
+      <!-- LISTA DE TARJETAS INTERACTIVAS (RESPONSIVE) -->
+      @if (isLoading()) {
+        <div class="loading-state">
+          <span nz-icon nzType="loading" class="spin-icon"></span>
+          <span>Cargando categorías...</span>
+        </div>
+      } @else if (filteredCategories().length === 0) {
+        <div class="empty-state-card">
+          <div class="empty-icon-wrap">
+            <span nz-icon nzType="inbox" nzTheme="outline"></span>
+          </div>
+          <h4>No se encontraron categorías</h4>
+          <p>Prueba con otro término de búsqueda o crea una nueva categoría.</p>
+          <button nz-button nzType="default" (click)="openCategoryModal()">
+            <span nz-icon nzType="plus"></span> Crear Categoría
+          </button>
+        </div>
+      } @else {
+        <div class="cards-grid">
+          @for (cat of filteredCategories(); track cat.id) {
+            <div class="interactive-card" [class.is-income]="cat.type === 'INCOME'" [class.is-expense]="cat.type === 'EXPENSE'">
+              <div class="card-lead">
+                <div class="cat-badge-circle" [class.income]="cat.type === 'INCOME'" [class.expense]="cat.type === 'EXPENSE'">
+                  <span nz-icon [nzType]="cat.type === 'INCOME' ? 'arrow-down' : 'arrow-up'"></span>
+                </div>
+                <div class="cat-details">
+                  <span class="cat-title">{{ cat.name }}</span>
+                  <span class="type-tag" [class.income]="cat.type === 'INCOME'" [class.expense]="cat.type === 'EXPENSE'">
+                    {{ cat.type === 'INCOME' ? 'Ingreso' : 'Gasto' }}
+                  </span>
+                </div>
+              </div>
 
-    <!-- ============================================== -->
-    <!-- PESTAÑA 2: MÉTODOS DE PAGO                     -->
-    <!-- ============================================== -->
-    <nz-tab nzTitle="Métodos y Billeteras">
-      <div class="tab-toolbar">
-        <span class="tab-description">Administra tus cuentas bancarias, billeteras digitales y tarjetas.</span>
-        <button nz-button nzType="primary" (click)="openMethodModal()" class="btn-create-item">
+              <!-- Acciones Rápidas: Editar y Eliminar -->
+              <div class="card-trail-actions">
+                <button
+                  type="button"
+                  class="btn-icon-action edit"
+                  (click)="openCategoryModal(cat)"
+                  title="Editar categoría"
+                >
+                  <span nz-icon nzType="edit" nzTheme="outline"></span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon-action delete"
+                  (click)="onDeleteCategory(cat.id)"
+                  title="Eliminar categoría"
+                >
+                  <span nz-icon nzType="delete" nzTheme="outline"></span>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ============================================== -->
+  <!-- SECCIÓN 2: MÉTODOS Y BILLETERAS                -->
+  <!-- ============================================== -->
+  @if (activeTab() === 'methods') {
+    <div class="tab-view-content">
+      <div class="content-toolbar">
+        <div class="search-input-wrapper">
+          <span nz-icon nzType="search" class="search-icon"></span>
+          <input
+            type="text"
+            placeholder="Buscar cuenta o billetera..."
+            [value]="methodSearch()"
+            (input)="methodSearch.set($any($event.target).value)"
+            class="custom-search-input"
+          />
+          @if (methodSearch()) {
+            <button type="button" class="btn-clear-search" (click)="methodSearch.set('')">
+              <span nz-icon nzType="close-circle" nzTheme="fill"></span>
+            </button>
+          }
+        </div>
+
+        <button nz-button nzType="primary" (click)="openMethodModal()" class="btn-create-highlight">
           <span nz-icon nzType="plus"></span>
-          <span class="btn-text">Nuevo Método</span>
+          <span>Nueva Billetera / Cuenta</span>
         </button>
       </div>
 
-      <div class="table-container">
-        <nz-table
-          #methodsTable
-          [nzData]="paymentMethods()"
-          [nzLoading]="isLoading()"
-          nzSize="middle"
-          class="enterprise-config-table">
-          <thead>
-            <tr>
-              <th>Nombre de Cuenta o Billetera</th>
-              <th nzWidth="100px" nzAlign="center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (method of methodsTable.data; track method.id) {
-              <tr>
-                <td class="item-name">{{ method.name }}</td>
-                <td nzAlign="center">
-                  <button nz-button nzType="text" nzDanger nz-tooltip nzTooltipTitle="Eliminar" (click)="onDeleteMethod(method.id)" class="btn-action-delete">
-                    <span nz-icon nzType="delete" nzTheme="outline"></span>
-                    <span class="action-text">Eliminar</span>
-                  </button>
-                </td>
-              </tr>
+      @if (isLoading()) {
+        <div class="loading-state">
+          <span nz-icon nzType="loading" class="spin-icon"></span>
+          <span>Cargando cuentas y billeteras...</span>
+        </div>
+      } @else if (filteredMethods().length === 0) {
+        <div class="empty-state-card">
+          <div class="empty-icon-wrap">
+            <span nz-icon nzType="wallet" nzTheme="outline"></span>
+          </div>
+          <h4>No hay cuentas o billeteras registradas</h4>
+          <p>Agrega tus cuentas bancarias, efectivo o billeteras (ej. Nequi, Daviplata, Tarjeta).</p>
+          <button nz-button nzType="default" (click)="openMethodModal()">
+            <span nz-icon nzType="plus"></span> Crear Cuenta / Billetera
+          </button>
+        </div>
+      } @else {
+        <div class="cards-grid">
+          @for (method of filteredMethods(); track method.id) {
+            <div class="interactive-card wallet">
+              <div class="card-lead">
+                <div class="cat-badge-circle wallet-circle">
+                  <span nz-icon nzType="wallet" nzTheme="outline"></span>
+                </div>
+                <div class="cat-details">
+                  <span class="cat-title">{{ method.name }}</span>
+                  <span class="type-tag wallet">Billetera / Cuenta</span>
+                </div>
+              </div>
+
+              <!-- Acciones Rápidas: Editar y Eliminar -->
+              <div class="card-trail-actions">
+                <button
+                  type="button"
+                  class="btn-icon-action edit"
+                  (click)="openMethodModal(method)"
+                  title="Editar cuenta"
+                >
+                  <span nz-icon nzType="edit" nzTheme="outline"></span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-icon-action delete"
+                  (click)="onDeleteMethod(method.id)"
+                  title="Eliminar cuenta"
+                >
+                  <span nz-icon nzType="delete" nzTheme="outline"></span>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ============================================== -->
+  <!-- SECCIÓN 3: METAS DE AHORRO Y ALERTAS (BETA)    -->
+  <!-- ============================================== -->
+  @if (activeTab() === 'goals') {
+    <div class="tab-view-content">
+      <div class="goals-container">
+        
+        <!-- TARJETA DE PROGRESO DE META ACTUAL -->
+        <div class="savings-summary-card">
+          <div class="savings-card-header">
+            <div class="savings-icon-box">
+              <span nz-icon nzType="rocket" nzTheme="outline"></span>
+            </div>
+            <div class="savings-title-box">
+              <h3>{{ savingsGoalName() }}</h3>
+              <span class="savings-subtext">Progreso estimado de ahorro del mes</span>
+            </div>
+            <div class="savings-amount-badge">
+              <span class="symbol">{{ currencySymbol() }}</span>
+              <span class="amount">{{ savingsGoal() | number:'1.0-0' }}</span>
+            </div>
+          </div>
+
+          <div class="savings-progress-section">
+            <div class="progress-labels-row">
+              <span class="label-saved">
+                Ahorrado este mes: <strong>{{ currencySymbol() }} {{ currentMonthSavings() | number:'1.0-0' }}</strong>
+              </span>
+              <span class="label-pct">{{ savingsProgressPercentage() }}%</span>
+            </div>
+
+            <nz-progress
+              [nzPercent]="savingsProgressPercentage()"
+              [nzStrokeColor]="savingsProgressPercentage() >= 100 ? '#10b981' : '#3b82f6'"
+              [nzStatus]="savingsProgressPercentage() >= 100 ? 'success' : 'active'"
+              [nzShowInfo]="false"
+              class="savings-progress-bar"
+            ></nz-progress>
+
+            <div class="progress-footer-note">
+              @if (savingsProgressPercentage() >= 100) {
+                <span class="status-achieved">
+                  <span nz-icon nzType="check-circle" nzTheme="fill"></span> ¡Felicidades! Has alcanzado tu meta de ahorro mensual.
+                </span>
+              } @else {
+                <span class="status-pending">
+                  Te faltan <strong>{{ currencySymbol() }} {{ remainingSavings() | number:'1.0-0' }}</strong> para alcanzar tu objetivo.
+                </span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- FORMULARIO DE CONFIGURACIÓN DE METAS Y ALERTAS -->
+        <div class="goals-form-card">
+          <div class="card-section-title">
+            <span nz-icon nzType="setting" nzTheme="outline"></span>
+            <h4>Configurar Objetivos y Reglas de Notificación</h4>
+          </div>
+
+          <form nz-form [formGroup]="goalsForm" (ngSubmit)="onSaveGoals()" nzLayout="vertical" class="goals-settings-form">
+            
+            <div class="form-grid-two">
+              <!-- Nombre de la Meta -->
+              <nz-form-item>
+                <nz-form-label nzRequired nzFor="savingsGoalName">Nombre de tu Meta de Ahorro</nz-form-label>
+                <nz-form-control>
+                  <nz-input-wrapper class="full-width">
+                    <span nz-icon nzType="tag" nzInputPrefix class="prefix-icon"></span>
+                    <input nz-input formControlName="savingsGoalName" id="savingsGoalName" placeholder="Ej. Ahorro para Vacaciones" nzSize="large" />
+                  </nz-input-wrapper>
+                </nz-form-control>
+              </nz-form-item>
+
+              <!-- Monto de la Meta -->
+              <nz-form-item>
+                <nz-form-label nzRequired nzFor="savingsGoal">Monto de Ahorro Mensual Deseado</nz-form-label>
+                <nz-form-control>
+                  <nz-input-wrapper class="full-width">
+                    <span class="currency-prefix">{{ currencySymbol() }}</span>
+                    <input nz-input type="number" formControlName="savingsGoal" id="savingsGoal" placeholder="500000" nzSize="large" />
+                  </nz-input-wrapper>
+                </nz-form-control>
+                <span class="helper-text">Monto estimado que deseas retener o ahorrar cada mes.</span>
+              </nz-form-item>
+            </div>
+
+            <div class="divider-line"></div>
+
+            <div class="alert-settings-header">
+              <div class="alert-info-text">
+                <h5>Alertas de Gastos Elevados</h5>
+                <p>Recibe advertencias visuales cuando registres compras inusualmente altas o tu presupuesto esté al límite.</p>
+              </div>
+              <nz-switch formControlName="alertsEnabled"></nz-switch>
+            </div>
+
+            @if (goalsForm.get('alertsEnabled')?.value) {
+              <div class="form-grid-two mt-3">
+                <!-- Umbral de Gasto Individual -->
+                <nz-form-item>
+                  <nz-form-label nzRequired nzFor="expenseAlertThreshold">Alerta por Gasto Individual Mayor A</nz-form-label>
+                  <nz-form-control>
+                    <nz-input-wrapper class="full-width">
+                      <span class="currency-prefix">{{ currencySymbol() }}</span>
+                      <input nz-input type="number" formControlName="expenseAlertThreshold" id="expenseAlertThreshold" placeholder="200000" nzSize="large" />
+                    </nz-input-wrapper>
+                  </nz-form-control>
+                  <span class="helper-text">Se mostrará un aviso cuando un solo gasto supere este valor.</span>
+                </nz-form-item>
+
+                <!-- % de Presupuesto Mensual -->
+                <nz-form-item>
+                  <nz-form-label nzRequired nzFor="budgetAlertPercentage">Alerta de Límite de Presupuesto (%)</nz-form-label>
+                  <nz-form-control>
+                    <nz-input-wrapper class="full-width">
+                      <span class="currency-prefix">%</span>
+                      <input nz-input type="number" formControlName="budgetAlertPercentage" id="budgetAlertPercentage" placeholder="80" min="10" max="100" nzSize="large" />
+                    </nz-input-wrapper>
+                  </nz-form-control>
+                  <span class="helper-text">Avisar cuando los gastos superen este porcentaje de los ingresos del mes.</span>
+                </nz-form-item>
+              </div>
             }
-          </tbody>
-        </nz-table>
-      </div>
-    </nz-tab>
 
-    <!-- ============================================== -->
-    <!-- PESTAÑA 3: SEGURIDAD Y HUELLA DACTILAR         -->
-    <!-- ============================================== -->
-    <nz-tab nzTitle="Seguridad & Biometría">
-      <div class="tab-toolbar">
-        <span class="tab-description">Protege tu cuenta y habilita el ingreso táctil con sensor de huella en tu celular o PC.</span>
-      </div>
+            <div class="goals-submit-row">
+              <button
+                nz-button
+                nzType="primary"
+                type="submit"
+                [nzLoading]="isSavingPreferences()"
+                class="btn-save-goals"
+              >
+                <span nz-icon nzType="save"></span>
+                <span>Guardar Metas y Alertas</span>
+              </button>
+            </div>
+          </form>
+        </div>
 
+      </div>
+    </div>
+  }
+
+  <!-- ============================================== -->
+  <!-- SECCIÓN 4: SEGURIDAD Y HUELLA DACTILAR         -->
+  <!-- ============================================== -->
+  @if (activeTab() === 'security') {
+    <div class="tab-view-content">
       <div class="biometric-settings-container">
+        
         <!-- Tarjeta de Estado del Sensor de Hardware -->
         <div class="biometric-hardware-card" [class.supported]="biometricAuth.isSupported()" [class.unsupported]="!biometricAuth.isSupported()">
           <div class="hardware-icon-box">
@@ -137,339 +435,248 @@
                   <span nz-icon nzType="check-circle" nzTheme="fill"></span> Compatible
                 </nz-tag>
               } @else {
-                <nz-tag nzColor="warning">
-                  <span nz-icon nzType="exclamation-circle" nzTheme="fill"></span> No detectado en este navegador
+                <nz-tag nzColor="default">
+                  <span nz-icon nzType="warning" nzTheme="fill"></span> No detectado
                 </nz-tag>
               }
             </div>
-            <p class="hardware-desc">
+            <p class="hardware-description">
               @if (biometricAuth.isSupported()) {
-                Tu dispositivo cuenta con hardware biométrico (Lector de huella dactilar, Touch ID o Windows Hello) activo y listo para autenticación segura.
+                Tu dispositivo cuenta con hardware de biometría nativo (Lector de huella dactilar, Touch ID o Face ID) para inicio de sesión ultra rápido.
               } @else {
-                No se detectó un lector biométrico activo en esta sesión. Asegúrate de acceder desde un smartphone compatible o equipo con lector de huella dactilar.
+                Este navegador o equipo no expone un sensor biométrico compatible con WebAuthn / Credential Manager.
               }
             </p>
           </div>
         </div>
 
         <!-- Tarjeta de Vinculación de Huella -->
-        <div class="biometric-activation-card">
-          <div class="activation-header">
-            <div class="activation-titles">
-              <h4>Acceso con Huella Dactilar</h4>
-              <p>Permite iniciar sesión tocando el sensor del teléfono sin necesidad de escribir tu contraseña.</p>
+        <div class="biometric-status-card">
+          <div class="status-card-header">
+            <div class="status-indicator-badge" [class.active]="biometricAuth.isEnabled()">
+              <span class="status-dot"></span>
+              <span>{{ biometricAuth.isEnabled() ? 'Huella Vinculada Activa' : 'Sin Huella Vinculada' }}</span>
             </div>
-            <div class="activation-status-badge">
-              @if (biometricAuth.isEnabled()) {
-                <span class="status-pill active">
-                  <span class="status-dot"></span> VINCULADA
-                </span>
-              } @else {
-                <span class="status-pill inactive">
-                  <span class="status-dot"></span> DESACTIVADA
-                </span>
-              }
-            </div>
+            @if (biometricAuth.isEnabled()) {
+              <span class="registered-email-chip">
+                <span nz-icon nzType="user"></span> {{ biometricAuth.registeredEmail() }}
+              </span>
+            }
           </div>
 
-          @if (biometricAuth.isEnabled()) {
-            <div class="biometric-linked-box">
-              <div class="linked-info">
-                <span nz-icon nzType="user" nzTheme="outline" class="linked-icon"></span>
-                <div class="linked-texts">
-                  <span class="linked-label">Cuenta vinculada en este equipo:</span>
-                  <strong class="linked-email">{{ biometricAuth.registeredEmail() }}</strong>
+          <div class="status-card-body">
+            @if (biometricAuth.isEnabled()) {
+              <div class="active-biometric-details">
+                <p>
+                  Tu huella dactilar está vinculada de forma segura a este dispositivo. Puedes iniciar sesión tocando tu sensor sin ingresar contraseñas manualmente.
+                </p>
+                <div class="biometric-actions-row">
+                  <button
+                    nz-button
+                    nzType="default"
+                    [nzLoading]="isTestingBiometrics()"
+                    (click)="onTestBiometrics()"
+                    class="btn-test-biometric"
+                  >
+                    <span nz-icon nzType="scan" nzTheme="outline"></span>
+                    <span>Probar Sensor Ahora</span>
+                  </button>
+
+                  <button
+                    nz-button
+                    nzType="default"
+                    nzDanger
+                    (click)="onUnlinkBiometrics()"
+                    class="btn-unlink-biometric"
+                  >
+                    <span nz-icon nzType="disconnect" nzTheme="outline"></span>
+                    <span>Desvincular Huella</span>
+                  </button>
                 </div>
               </div>
-              <div class="linked-actions">
+            } @else {
+              <div class="inactive-biometric-details">
+                <p>
+                  Vincula tu huella dactilar para acceder a FinanceApp con un solo toque desde tu celular o computadora. Tus datos biométricos nunca salen de tu dispositivo.
+                </p>
                 <button
                   nz-button
-                  nzType="default"
-                  [nzLoading]="isTestingBiometrics()"
-                  (click)="onTestBiometrics()"
-                  class="btn-test-biometrics"
+                  nzType="primary"
+                  [disabled]="!biometricAuth.isSupported()"
+                  [nzLoading]="isRegisteringBiometrics()"
+                  (click)="onRegisterBiometrics()"
+                  class="btn-link-biometric"
                 >
                   <span nz-icon nzType="safety-certificate" nzTheme="outline"></span>
-                  <span>Probar Sensor</span>
-                </button>
-                <button
-                  nz-button
-                  nzType="text"
-                  nzDanger
-                  (click)="onDisableBiometrics()"
-                  class="btn-disable-biometrics"
-                >
-                  <span nz-icon nzType="disconnect" nzTheme="outline"></span>
-                  <span>Desvincular</span>
+                  <span>Vincular Huella Dactilar</span>
                 </button>
               </div>
-            </div>
-          } @else {
-            <div class="biometric-unlinked-box">
-              <p class="unlinked-desc">
-                Toca el botón a continuación para registrar la huella dactilar de este dispositivo y asociarla a tu sesión actual.
-              </p>
-              <button
-                nz-button
-                nzType="primary"
-                nzSize="large"
-                [nzLoading]="isRegisteringBiometrics()"
-                [disabled]="!biometricAuth.isSupported()"
-                (click)="onRegisterBiometrics()"
-                class="btn-register-biometrics"
-              >
-                <span nz-icon nzType="scan" nzTheme="outline"></span>
-                <span>Vincular Huella Dactilar Ahora</span>
-              </button>
-              @if (!biometricAuth.isSupported()) {
-                <span class="unsupported-hint">
-                  Debes ingresar desde un celular o navegador compatible con WebAuthn para registrar tu huella.
-                </span>
-              }
-            </div>
-          }
+            }
+          </div>
 
           <!-- Nota de Privacidad Bancaria -->
           <div class="biometric-privacy-note">
             <span nz-icon nzType="lock" nzTheme="fill" class="note-icon"></span>
             <span>
-              <strong>Máxima Privacidad:</strong> Tu huella dactilar nunca sale de tu dispositivo ni se almacena en nuestros servidores. La autenticación se realiza localmente mediante el enclave seguro del hardware (Android Keystore / Apple Secure Enclave).
+              <strong>Máxima Privacidad:</strong> La autenticación se ejecuta a través de las APIs estándar de Android Credential Manager y WebAuthn con cifrado AES-GCM local de 256 bits.
             </span>
           </div>
         </div>
 
-        <!-- Tarjeta de Versión y Actualizaciones del Sistema -->
+        <!-- VERSIÓN DEL SISTEMA Y ACTUALIZACIONES PWA -->
         <div class="system-version-card">
-          <div class="version-header">
-            <div class="version-info">
-              <span nz-icon nzType="cloud-sync" nzTheme="outline" class="version-icon"></span>
-              <div class="version-details">
-                <h4>Versión del Sistema & Actualizaciones</h4>
-                <p>FinanceApp se actualiza de forma automática con cada mejora y despliegue.</p>
-              </div>
+          <div class="version-card-header">
+            <div class="version-icon-box">
+              <span nz-icon nzType="cloud-sync" nzTheme="outline"></span>
+            </div>
+            <div class="version-title-box">
+              <h4>Versión de la Aplicación</h4>
+              <span class="version-badge">v2.4.0 · PWA Activa</span>
             </div>
             <button
               nz-button
               nzType="primary"
-              [nzLoading]="isCheckingUpdates()"
+              [nzLoading]="isCheckingUpdates() || pwaUpdate.isChecking()"
               (click)="onCheckForUpdates()"
               class="btn-check-updates"
             >
-              <span nz-icon nzType="reload" nzTheme="outline"></span>
-              <span>Buscar Actualizaciones Ahora</span>
+              <span nz-icon [nzType]="(isCheckingUpdates() || pwaUpdate.isChecking()) ? 'loading' : 'sync'"></span>
+              <span>Buscar Actualizaciones</span>
             </button>
           </div>
 
-          <div class="version-meta-bar">
-            <div class="meta-item">
-              <span class="meta-label">Canal de entrega:</span>
-              <span class="meta-value online">
-                <span class="dot"></span> En línea & sincronizado
+          <div class="version-card-body">
+            <p>
+              FinanceApp se actualiza de forma automática en segundo plano. Si existe una nueva versión disponible, el sistema te notificará de inmediato.
+            </p>
+            @if (pwaUpdate.lastChecked()) {
+              <span class="last-check-text">
+                Última comprobación: {{ pwaUpdate.lastChecked() | date:'dd/MM/yyyy, h:mm a' }}
               </span>
-            </div>
-            @if (pwaUpdate.lastChecked(); as checkedAt) {
-              <div class="meta-item">
-                <span class="meta-label">Última comprobación:</span>
-                <span class="meta-value">{{ checkedAt | date:'shortTime' }}</span>
-              </div>
             }
-            <div class="meta-item">
-              <span class="meta-label">Detección automática:</span>
-              <span class="meta-value active">Activa (al abrir y en segundo plano)</span>
-            </div>
           </div>
         </div>
 
       </div>
-    </nz-tab>
-  </nz-tabs>
+    </div>
+  }
 
-  <!-- SECCIÓN DISCRETA: OPCIONES AVANZADAS DE SISTEMA -->
-  <div class="advanced-settings-wrapper mt-8 pt-6 border-t border-slate-800/80">
-    <button
-      nz-button
-      nzType="text"
-      (click)="toggleAdvancedSettings()"
-      class="text-xs text-slate-400 hover:text-indigo-400 flex items-center gap-2 p-0 h-auto cursor-pointer"
-    >
-      <span nz-icon [nzType]="showAdvancedSettings() ? 'down' : 'right'" class="text-[10px]"></span>
-      <span nz-icon nzType="setting" nzTheme="outline"></span>
-      <span class="font-medium">Opciones avanzadas del sistema (Motor de IA y API)</span>
-    </button>
+</div>
 
-    @if (showAdvancedSettings()) {
-      <div class="ai-config-panel p-6 bg-slate-900/60 rounded-2xl border border-slate-800 space-y-6 mt-4 transition-all animate-fadeIn">
-        <div class="space-y-2">
-          <div class="flex items-center gap-2">
-            <span nz-icon nzType="thunderbolt" nzTheme="fill" class="text-amber-400 text-xl"></span>
-            <h3 class="text-lg font-bold text-white m-0">Motor de Escaneo de Comprobantes con Gemini</h3>
-          </div>
-          <p class="text-sm text-slate-400 leading-relaxed">
-            La aplicación utiliza <strong>Gemini 3.1 Flash Lite</strong> con compresión y realce de documentos en el dispositivo para escanear facturas colombianas (Tiendas Ara, Dollarcity, D1, Éxito) reconociendo totales, IVA y categorías contables.
-          </p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
-            <div class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">Plan Gratuito Activo</div>
-            <p class="text-xs text-slate-400">
-              No requiere ningún pago. Incluye cuota gratuita de Google AI Studio renovable por minuto y optimizada para uso cotidiano.
-            </p>
-          </div>
-
-          <div class="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
-            <div class="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Clave Personal (Opcional)</div>
-            <p class="text-xs text-slate-400">
-              Si posees tu propia API Key de <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" class="text-indigo-400 underline hover:text-indigo-300">Google AI Studio</a>, puedes ingresarla aquí para gozar de cuota exclusiva.
-            </p>
-          </div>
-        </div>
-
-        <div class="space-y-3 pt-2">
-          <label class="block text-sm font-medium text-slate-300">
-            Clave de API Personal de Google AI Studio (Opcional):
-          </label>
-          <div class="flex flex-col sm:flex-row gap-3">
-            <input
-              #apiKeyInput
-              nz-input
-              type="password"
-              [value]="customApiKey()"
-              placeholder="AIzaSy..."
-              class="flex-1 rounded-xl bg-slate-950 border-slate-700 text-white"
-            />
-            <div class="flex gap-2">
-              <button
-                nz-button
-                nzType="primary"
-                (click)="saveCustomApiKey(apiKeyInput.value)"
-                class="rounded-xl px-5"
-              >
-                <span nz-icon nzType="save"></span>
-                Guardar Clave
-              </button>
-              @if (customApiKey()) {
-                <button
-                  nz-button
-                  nzType="default"
-                  nzDanger
-                  (click)="clearCustomApiKey(); apiKeyInput.value = ''"
-                  class="rounded-xl"
-                >
-                  <span nz-icon nzType="delete"></span>
-                  Restablecer
-                </button>
-              }
-            </div>
-          </div>
-          @if (customApiKey()) {
-            <div class="text-xs text-emerald-400 flex items-center gap-1.5 pt-1">
-              <span nz-icon nzType="check-circle" nzTheme="fill"></span>
-              Usando tu API Key personalizada de Google AI Studio para el escaneo de facturas.
-            </div>
-          } @else {
-            <div class="text-xs text-slate-400 pt-1">
-              Usando la conexión del sistema con compresión optimizada en el dispositivo.
-            </div>
-          }
-        </div>
-      </div>
-    }
-  </div>
-
-  <!-- MODAL: CREAR CATEGORÍA -->
+<!-- ============================================== -->
+  <!-- MODAL: CREAR / EDITAR CATEGORÍA                -->
+  <!-- ============================================== -->
   <nz-modal
     [nzVisible]="isCategoryModalVisible()"
-    nzTitle="Nueva Categoría Contable"
+    [nzTitle]="editingCategory() ? 'Editar Categoría' : 'Nueva Categoría'"
     (nzOnCancel)="closeCategoryModal()"
-    (nzOnOk)="onSubmitCategory()"
-    [nzOkLoading]="isSubmitting()"
-    nzOkText="Crear Categoría"
-    nzCancelText="Cancelar"
-    nzWidth="90%"
-    [nzStyle]="{ maxWidth: '480px' }"
+    [nzFooter]="null"
+    nzWidth="460px"
   >
     <ng-container *nzModalContent>
-      <form nz-form [formGroup]="categoryForm" nzLayout="vertical" class="enterprise-modal-form">
+      <form nz-form [formGroup]="categoryForm" (ngSubmit)="onSaveCategory()" nzLayout="vertical" class="enterprise-modal-form">
         <nz-form-item>
-          <nz-form-label nzRequired>Nombre de la Categoría</nz-form-label>
-          <nz-form-control nzErrorTip="Ingrese un nombre válido (Mínimo 3 caracteres)">
-            <input nz-input formControlName="name" placeholder="Ej. Nómina, Transporte, Servidores Cloud..." nzSize="large" />
+          <nz-form-label nzRequired nzFor="catName">Nombre de la Categoría</nz-form-label>
+          <nz-form-control nzErrorTip="El nombre es requerido (mín. 3 caracteres).">
+            <input nz-input formControlName="name" id="catName" placeholder="Ej. Alimentación, Transporte, Salario" nzSize="large" />
           </nz-form-control>
         </nz-form-item>
 
         <nz-form-item>
-          <nz-form-label nzRequired>Naturaleza Contable</nz-form-label>
-          <nz-form-control nzErrorTip="Seleccione si es ingreso o gasto">
-            <nz-select formControlName="type" nzSize="large">
-              <nz-option nzValue="EXPENSE" nzLabel="Gasto (Egreso)"></nz-option>
-              <nz-option nzValue="INCOME" nzLabel="Ingreso"></nz-option>
+          <nz-form-label nzRequired nzFor="catType">Tipo de Movimiento</nz-form-label>
+          <nz-form-control>
+            <nz-select formControlName="type" id="catType" nzSize="large">
+              <nz-option nzValue="EXPENSE" nzLabel="🔻 Gasto (Salida de dinero)"></nz-option>
+              <nz-option nzValue="INCOME" nzLabel="🔺 Ingreso (Entrada de dinero)"></nz-option>
             </nz-select>
           </nz-form-control>
         </nz-form-item>
+
+        <div class="modal-form-actions">
+          <button nz-button type="button" (click)="closeCategoryModal()" class="btn-modal-cancel">Cancelar</button>
+          <button nz-button nzType="primary" type="submit" [nzLoading]="isSubmitting()" class="btn-modal-save">
+            {{ editingCategory() ? 'Guardar Cambios' : 'Crear Categoría' }}
+          </button>
+        </div>
       </form>
     </ng-container>
   </nz-modal>
 
-  <!-- MODAL: CREAR MÉTODO DE PAGO -->
+  <!-- ============================================== -->
+  <!-- MODAL: CREAR / EDITAR BILLETERA O CUENTA       -->
+  <!-- ============================================== -->
   <nz-modal
     [nzVisible]="isMethodModalVisible()"
-    nzTitle="Nuevo Método o Billetera"
+    [nzTitle]="editingMethod() ? 'Editar Billetera o Cuenta' : 'Nueva Billetera o Cuenta'"
     (nzOnCancel)="closeMethodModal()"
-    (nzOnOk)="onSubmitMethod()"
-    [nzOkLoading]="isSubmitting()"
-    nzOkText="Crear Método"
-    nzCancelText="Cancelar"
-    nzWidth="90%"
-    [nzStyle]="{ maxWidth: '480px' }"
+    [nzFooter]="null"
+    nzWidth="460px"
   >
     <ng-container *nzModalContent>
-      <form nz-form [formGroup]="methodForm" nzLayout="vertical" class="enterprise-modal-form">
+      <form nz-form [formGroup]="methodForm" (ngSubmit)="onSaveMethod()" nzLayout="vertical" class="enterprise-modal-form">
         <nz-form-item>
-          <nz-form-label nzRequired>Nombre del Método o Billetera</nz-form-label>
-          <nz-form-control nzErrorTip="Ingrese un nombre válido (Mínimo 3 caracteres)">
-            <input nz-input formControlName="name" placeholder="Ej. Cuenta Corriente Corporativa, Tarjeta Débito..." nzSize="large" />
+          <nz-form-label nzRequired nzFor="methodName">Nombre de la Cuenta o Billetera</nz-form-label>
+          <nz-form-control nzErrorTip="El nombre es requerido (mín. 3 caracteres).">
+            <input nz-input formControlName="name" id="methodName" placeholder="Ej. Nequi, Efectivo, Daviplata, Tarjeta Débito" nzSize="large" />
           </nz-form-control>
         </nz-form-item>
+
+        <div class="modal-form-actions">
+          <button nz-button type="button" (click)="closeMethodModal()" class="btn-modal-cancel">Cancelar</button>
+          <button nz-button nzType="primary" type="submit" [nzLoading]="isSubmitting()" class="btn-modal-save">
+            {{ editingMethod() ? 'Guardar Cambios' : 'Guardar Cuenta' }}
+          </button>
+        </div>
       </form>
     </ng-container>
   </nz-modal>
 
-  <!-- MODAL: CONFIRMAR CONTRASEÑA PARA BÓVEDA BIOMÉTRICA -->
+  <!-- ============================================== -->
+  <!-- MODAL: CLAVE PARA BÓVEDA BIOMÉTRICA            -->
+  <!-- ============================================== -->
   <nz-modal
     [nzVisible]="isBiometricModalVisible()"
-    nzTitle="Blindar Acceso con Huella Dactilar"
-    (nzOnCancel)="onCancelBiometricModal()"
-    (nzOnOk)="onConfirmBiometricsWithPassword()"
-    [nzOkLoading]="isRegisteringBiometrics()"
-    nzOkText="Confirmar y Colocar Huella"
-    nzCancelText="Cancelar"
-    nzWidth="90%"
-    [nzStyle]="{ maxWidth: '440px' }"
+    nzTitle="Seguridad de la Bóveda Biométrica"
+    (nzOnCancel)="isBiometricModalVisible.set(false)"
+    [nzFooter]="null"
+    nzWidth="460px"
+    [nzClosable]="false"
+    [nzMaskClosable]="false"
   >
     <ng-container *nzModalContent>
-      <div class="space-y-4 py-2">
-        <p class="text-sm text-slate-600 m-0 leading-relaxed">
-          Ingresa tu contraseña actual para sellar la bóveda biométrica en este dispositivo con cifrado bancario <strong>AES-256</strong>. Así podrás ingresar siempre tocando tu sensor de huella, incluso tras cerrar sesión.
+      <div class="vault-modal-content">
+        <div class="vault-icon-header">
+          <span nz-icon nzType="key" nzTheme="outline"></span>
+        </div>
+        <h4>Cifra tu Clave en Este Dispositivo</h4>
+        <p>
+          Ingresa tu contraseña actual para cifrarla en la bóveda de hardware de tu equipo. Esto permite iniciar sesión de forma instantánea al tocar el sensor.
         </p>
 
-        <form nz-form [formGroup]="biometricPasswordForm" nzLayout="vertical" class="enterprise-modal-form mt-4">
-          <nz-form-item class="mb-0">
-            <nz-form-label nzRequired>Contraseña Actual</nz-form-label>
-            <nz-form-control nzErrorTip="Por favor ingresa tu contraseña">
+        <form nz-form [formGroup]="biometricPasswordForm" (ngSubmit)="onSaveBiometricPassword()" nzLayout="vertical" class="enterprise-modal-form mt-4">
+          <nz-form-item>
+            <nz-form-label nzRequired nzFor="biometricPassword">Contraseña Actual</nz-form-label>
+            <nz-form-control nzErrorTip="Ingresa tu contraseña (mínimo 6 caracteres).">
               <nz-input-password nzSize="large">
                 <input
+                  [type]="passwordVisible() ? 'text' : 'password'"
                   nz-input
                   formControlName="password"
+                  id="biometricPassword"
                   placeholder="Tu contraseña de acceso"
-                  (keyup.enter)="onConfirmBiometricsWithPassword()"
+                  nzSize="large"
                 />
               </nz-input-password>
             </nz-form-control>
           </nz-form-item>
+
+          <div class="modal-form-actions">
+            <button nz-button type="button" (click)="isBiometricModalVisible.set(false)" class="btn-modal-cancel">Omitir</button>
+            <button nz-button nzType="primary" type="submit" [nzLoading]="isSubmitting()" class="btn-modal-save">
+              Activar Acceso con Huella
+            </button>
+          </div>
         </form>
       </div>
     </ng-container>
   </nz-modal>
-
-</div>

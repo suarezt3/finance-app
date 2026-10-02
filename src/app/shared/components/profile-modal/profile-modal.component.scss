@@ -4,7 +4,7 @@
   display: block;
 }
 
-.enterprise-modal-tabs {
+.profile-modal-tabs {
   ::ng-deep {
     .ant-tabs-nav {
       margin-bottom: 20px !important;
@@ -40,6 +40,10 @@
 
 .profile-form {
   ::ng-deep {
+    .ant-form-item {
+      margin-bottom: 16px;
+    }
+
     .ant-form-item-label > label {
       font-size: 0.8125rem;
       font-weight: 600;
@@ -48,7 +52,8 @@
 
     .ant-input,
     .ant-input-password,
-    .ant-input-affix-wrapper {
+    .ant-input-affix-wrapper,
+    .ant-select-selector {
       border-radius: 8px !important;
     }
   }
@@ -61,15 +66,187 @@
     color: var(--color-slate-muted);
     margin-right: 6px;
   }
+
+  .input-helper-text {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: var(--color-slate-muted);
+    line-height: 1.4;
+  }
 }
 
+// SELECCIÓN DE AVATAR
+.avatar-selection-section {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  margin-bottom: 20px;
+
+  .avatar-preview-badge {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    flex-shrink: 0;
+  }
+
+  .avatar-picker-column {
+    flex: 1;
+    min-width: 0;
+
+    .avatar-picker-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--color-navy);
+      margin-bottom: 6px;
+    }
+
+    .avatar-grid-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      .avatar-chip-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        border: 2px solid transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.15s ease;
+
+        &:hover {
+          transform: scale(1.1);
+        }
+
+        &.is-selected {
+          border-color: #0f172a;
+          box-shadow: 0 0 0 2px #38bdf8;
+          transform: scale(1.15);
+        }
+      }
+    }
+  }
+}
+
+// CAJA DE DATOS DE LA CUENTA
+.account-info-box {
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 16px;
+  margin-bottom: 16px;
+
+  .account-field-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .field-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-slate-muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+
+      .field-icon {
+        font-size: 0.85rem;
+      }
+    }
+
+    .field-value-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+
+      .email-display {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--color-navy);
+        word-break: break-all;
+      }
+
+      .verified-tag {
+        margin: 0;
+        font-size: 0.725rem;
+        border-radius: 6px;
+      }
+    }
+
+    .date-display {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--color-slate-text);
+    }
+  }
+}
+
+// BANNER INFORMATIVO
+.preferences-helper-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  border-radius: 10px;
+  margin-bottom: 18px;
+
+  .banner-icon {
+    font-size: 1.1rem;
+    color: var(--color-blue-primary);
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  strong {
+    display: block;
+    font-size: 0.825rem;
+    color: var(--color-navy);
+    margin-bottom: 2px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--color-slate-muted);
+    line-height: 1.35;
+  }
+
+  &.warning {
+    background: rgba(220, 38, 38, 0.06);
+    border-color: rgba(220, 38, 38, 0.2);
+
+    .banner-icon {
+      color: #dc2626;
+    }
+  }
+}
+
+// BOTONES DE PIE
 .modal-footer-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 24px;
-  padding-top: 16px;
+  margin-top: 20px;
+  padding-top: 14px;
   border-top: 1px solid var(--color-border);
 
   .btn-cancel {

@@ -20,7 +20,7 @@
           </div>
           <div class="brand-title-group">
             <span class="brand-name">FinanceApp</span>
-            <span class="brand-tier-tag">ENTERPRISE</span>
+            <span class="brand-tier-tag">PERSONAL</span>
           </div>
         </div>
 
@@ -29,17 +29,17 @@
             <span class="pulse-ring"></span>
             <span class="status-dot"></span>
           </span>
-          <span class="status-label">Sistema Operativo · Grado Bancario</span>
+          <span class="status-label">Finanzas Personales · Seguro & Privado</span>
         </div>
       </div>
 
       <!-- Título y Mensaje Principal -->
       <div class="brand-hero">
         <h1 class="hero-headline">
-          Infraestructura de control financiero y tesorería institucional
+          Control inteligente de tu dinero, presupuestos y ahorros
         </h1>
         <p class="hero-subline">
-          Visibilidad integral de transacciones, liquidez, presupuestos y reportes analíticos con los más altos estándares de gobernanza y privacidad.
+          Gestiona tus ingresos y gastos diarios, define metas de ahorro y monitorea tu salud financiera con total tranquilidad y privacidad.
         </p>
       </div>
 
@@ -50,8 +50,8 @@
             <span nz-icon nzType="safety-certificate" nzTheme="outline"></span>
           </div>
           <div class="pillar-content">
-            <h3>Seguridad de Grado Financiero</h3>
-            <p>Protección perimetral con cifrado de datos en reposo y en tránsito bajo estándar AES-256.</p>
+            <h3>Máxima Privacidad & Seguridad</h3>
+            <p>Tus datos financieros son exclusivamente tuyos, protegidos con cifrado y biometría local.</p>
           </div>
         </div>
 
@@ -60,8 +60,8 @@
             <span nz-icon nzType="dashboard" nzTheme="outline"></span>
           </div>
           <div class="pillar-content">
-            <h3>Auditoría y Trazabilidad</h3>
-            <p>Registro histórico detallado de ingresos, egresos y conciliación de cuentas en tiempo real.</p>
+            <h3>Control Total de Gastos</h3>
+            <p>Visualiza en qué gastas tu dinero y planifica tus metas de ahorro mes a mes.</p>
           </div>
         </div>
 
@@ -70,8 +70,8 @@
             <span nz-icon nzType="file-done" nzTheme="outline"></span>
           </div>
           <div class="pillar-content">
-            <h3>Informes & Inteligencia de Flujo</h3>
-            <p>Exportaciones ejecutivas inmediatas para análisis de solvencia, liquidez y toma de decisiones.</p>
+            <h3>Reportes Claros y Amigables</h3>
+            <p>Gráficos sencillos e intuitivos para que siempre sepas cuánto tienes disponible.</p>
           </div>
         </div>
       </div>
@@ -79,18 +79,18 @@
       <!-- Métricas Institucionales -->
       <div class="enterprise-metrics-grid">
         <div class="metric-item">
-          <span class="metric-value">99.98%</span>
-          <span class="metric-label">Disponibilidad SLA</span>
+          <span class="metric-value">100%</span>
+          <span class="metric-label">Privado</span>
         </div>
         <div class="metric-divider"></div>
         <div class="metric-item">
           <span class="metric-value">256-bit</span>
-          <span class="metric-label">Cifrado Militar</span>
+          <span class="metric-label">Cifrado AES</span>
         </div>
         <div class="metric-divider"></div>
         <div class="metric-item">
-          <span class="metric-value">Zero-Trust</span>
-          <span class="metric-label">Arquitectura</span>
+          <span class="metric-value">Instantáneo</span>
+          <span class="metric-label">Sincronizado</span>
         </div>
       </div>
 
@@ -98,7 +98,7 @@
       <div class="brand-panel-footer">
         <div class="security-assurance">
           <span nz-icon nzType="lock" nzTheme="outline"></span>
-          <span>Acceso cifrado de extremo a extremo · Protocolo TLS 1.3 · Cumplimiento de Privacidad</span>
+          <span>Acceso seguro protegido · Finanzas personales protegidas</span>
         </div>
       </div>
 
@@ -106,7 +106,7 @@
   </aside>
 
   <!-- ======================================================== -->
-  <!-- PANEL DERECHO: FORMULARIO DE ACCESO ENTERPRISE          -->
+  <!-- PANEL DERECHO: FORMULARIO DE ACCESO                      -->
   <!-- ======================================================== -->
   <main class="enterprise-form-panel">
     <div class="form-container">
@@ -121,7 +121,7 @@
               <circle cx="16" cy="16" r="2" fill="currentColor" />
             </svg>
           </div>
-          <span class="mobile-brand-name">FinanceApp <span class="mobile-brand-sub">Enterprise</span></span>
+          <span class="mobile-brand-name">FinanceApp <span class="mobile-brand-sub">Finanzas</span></span>
         </div>
         <span class="mobile-security-tag">
           <span nz-icon nzType="lock"></span> Seguro
@@ -132,10 +132,10 @@
       <div class="portal-header-bar">
         <div class="portal-badge">
           <span class="badge-dot"></span>
-          <span>PORTAL DE ACCESO SEGURO</span>
+          <span>FINANZAS PERSONALES</span>
         </div>
         <div class="portal-protocol">
-          <span>SSL 256-BIT</span>
+          <span>ACCESO SEGURO</span>
         </div>
       </div>
 
@@ -169,20 +169,20 @@
       <div class="form-heading">
         <h2 class="form-title">
           @if (isRecoveryMode()) {
-            Recuperación de Acceso
+            Recuperar Contraseña
           } @else if (isLoginMode()) {
-            Acceso Corporativo
+            Iniciar Sesión
           } @else {
-            Registro de Nueva Cuenta
+            Crear tu Cuenta
           }
         </h2>
         <p class="form-subtitle">
           @if (isRecoveryMode()) {
-            Ingresa el correo corporativo asociado a tu cuenta para enviarte un enlace de autenticación segura.
+            Ingresa tu correo para enviarte un enlace seguro y restablecer tu contraseña.
           } @else if (isLoginMode()) {
-            Ingresa tus credenciales autorizadas para acceder al portal de finanzas.
+            Ingresa tus credenciales para acceder a tus finanzas personales.
           } @else {
-            Completa los datos para configurar tu cuenta y comenzar la gestión de finanzas.
+            Completa tus datos para empezar a tomar el control de tu dinero hoy mismo.
           }
         </p>
       </div>
@@ -248,7 +248,7 @@
                 id="fullName"
                 type="text"
                 formControlName="fullName"
-                placeholder="ej. Lic. Roberto Gómez"
+                placeholder="ej. Carlos Rodríguez"
                 nzSize="large"
                 autocomplete="name" />
             </nz-input-wrapper>
@@ -270,7 +270,7 @@
         <!-- Campo Correo Electrónico -->
         <div class="form-field-group">
           <label for="email" class="field-label">
-            <span>Correo Corporativo o Personal</span>
+            <span>Correo Electrónico</span>
             <span class="required-indicator">*</span>
           </label>
 
@@ -281,7 +281,7 @@
               id="email"
               type="email"
               formControlName="email"
-              placeholder="nombre@organizacion.com"
+              placeholder="tu@correo.com"
               nzSize="large"
               autocomplete="email" />
           </nz-input-wrapper>
@@ -337,15 +337,15 @@
                   <span>La contraseña es requerida.</span>
                 }
                 @if (authForm.controls.password.hasError('pattern')) {
-                  <span>No cumple con la directiva de seguridad corporativa.</span>
+                  <span>Debe cumplir los requisitos mínimos de seguridad.</span>
                 }
               </div>
             }
 
-            <!-- Checklist Interactivo de Directiva de Seguridad (Visible en Registro) -->
+            <!-- Checklist Interactivo de Requisitos (Visible en Registro) -->
             @if (!isLoginMode()) {
               <div class="password-policy-card">
-                <span class="policy-header">Requisitos de seguridad de acceso:</span>
+                <span class="policy-header">Requisitos para tu contraseña:</span>
                 <ul class="policy-checklist">
                   <li [class.met]="passwordHasMinLength()">
                     <span nz-icon [nzType]="passwordHasMinLength() ? 'check-circle' : 'minus-circle'" [nzTheme]="passwordHasMinLength() ? 'fill' : 'outline'"></span>
@@ -397,9 +397,9 @@
             @if (isRecoveryMode()) {
               Enviar enlace de recuperación
             } @else if (isLoginMode()) {
-              Ingresar al Portal
+              Ingresar a mi Cuenta
             } @else {
-              Crear Cuenta Empresarial
+              Crear mi Cuenta
             }
           </span>
           @if (!isLoading()) {
@@ -412,7 +412,7 @@
       <!-- Autenticación Federada / SSO (Oculto en Recuperación) -->
       @if (!isRecoveryMode()) {
         <div class="enterprise-divider">
-          <span class="divider-text">O autentícate mediante</span>
+          <span class="divider-text">o continúa con</span>
         </div>
 
         <button
@@ -426,7 +426,7 @@
             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
           </svg>
-          <span class="sso-label">Continuar con Google Workspace</span>
+          <span class="sso-label">Continuar con Google</span>
         </button>
       }
 
@@ -440,19 +440,19 @@
         } @else {
           <div class="footer-prompt">
             <span class="prompt-text">
-              {{ isLoginMode() ? '¿Aún no dispones de una cuenta?' : '¿Ya cuentas con credenciales autorizadas?' }}
+              {{ isLoginMode() ? '¿Aún no tienes una cuenta?' : '¿Ya tienes una cuenta registrada?' }}
             </span>
             <button type="button" class="prompt-button" (click)="toggleMode()">
-              {{ isLoginMode() ? 'Registrarse ahora' : 'Iniciar sesión aquí' }}
+              {{ isLoginMode() ? 'Crear Cuenta Gratis' : 'Iniciar Sesión' }}
             </button>
           </div>
         }
       </footer>
 
-      <!-- Sello de Seguridad Corporativo -->
+      <!-- Sello de Privacidad -->
       <div class="compliance-stamp">
         <span nz-icon nzType="safety" nzTheme="outline" class="stamp-icon"></span>
-        <span class="stamp-text">Autenticación segura respaldada por Supabase Auth · Cifrado integral de sesión</span>
+        <span class="stamp-text">Autenticación segura y cifrado de datos · Privacidad garantizada</span>
       </div>
 
     </div>

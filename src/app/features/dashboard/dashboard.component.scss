@@ -410,6 +410,18 @@
     background-color: var(--color-surface-hover);
   }
 
+  .user-custom-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+    flex-shrink: 0;
+  }
+
   .enterprise-avatar {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
     color: #ffffff !important;

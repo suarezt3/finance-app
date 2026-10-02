@@ -192,7 +192,7 @@ export class BiometricAuthService {
             challenge: challengeBytes,
             rp: {
               id: rpId,
-              name: 'FinanceApp Enterprise'
+              name: 'FinanceApp'
             },
             user: {
               id: userIdBytes,
@@ -218,7 +218,7 @@ export class BiometricAuthService {
           publicKey: {
             challenge: fallbackChallenge,
             rp: {
-              name: 'FinanceApp Enterprise'
+              name: 'FinanceApp'
             },
             user: {
               id: userIdBytes,

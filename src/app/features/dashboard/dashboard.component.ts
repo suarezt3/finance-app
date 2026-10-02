@@ -20,6 +20,7 @@ import { NzDrawerModule } from 'ng-zorro-antd/drawer';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
 import { ThemeService } from '../../core/services/theme.service';
+import { UserPreferencesService } from '../../core/services/user-preferences.service';
 
 // Importamos la librería de Onboarding y su tipado estricto
 import { driver, DriveStep } from 'driver.js';
@@ -51,9 +52,11 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   private readonly breakpointObserver = inject(BreakpointObserver);
   private readonly destroyRef = inject(DestroyRef);
   readonly themeService = inject(ThemeService);
+  readonly userPreferences = inject(UserPreferencesService);
 
   readonly profileModal = viewChild(ProfileModalComponent);
   readonly user = this.authService.currentUser;
+  readonly userAvatarMeta = this.userPreferences.currentAvatarMeta;
 
   // Estados
   readonly isDesktopCollapsed = signal<boolean>(false);

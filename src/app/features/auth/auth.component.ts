@@ -135,7 +135,7 @@ export class AuthComponent {
       'Invalid login credentials': 'El correo electrónico o la contraseña son incorrectos.',
       'Email not confirmed': 'Debes confirmar tu correo electrónico antes de iniciar sesión.',
       'For security purposes, you can only request this once every 60 seconds': 'Por razones de seguridad, debes esperar 60 segundos antes de solicitar otro enlace.',
-      'User not found': 'No existe ningún usuario registrado con este correo corporativo.'
+      'User not found': 'No existe ningún usuario registrado con este correo electrónico.'
     };
 
     return errorTranslations[errorMsg] || 'Ocurrió un error en la autenticación. Por favor, intenta de nuevo.';
@@ -172,7 +172,7 @@ export class AuthComponent {
           await this.biometricAuth.syncPasswordToVault(password);
         }
 
-        this.message.success('Sesión corporativa iniciada con éxito.');
+        this.message.success('¡Bienvenido a FinanceApp!');
         this.authForm.reset();
         await this.router.navigate(['/dashboard']);
 
@@ -182,7 +182,7 @@ export class AuthComponent {
         if (error) throw error;
 
         this.setMode(true);
-        this.message.success('Registro completado. Por favor, revisa tu correo electrónico institucional para validar tu acceso.', { nzDuration: 6000 });
+        this.message.success('Registro completado. Por favor, revisa tu correo electrónico para confirmar tu cuenta.', { nzDuration: 6000 });
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -205,7 +205,7 @@ export class AuthComponent {
         const localizedMessage = this.translateAuthError(err.message);
         this.message.error(localizedMessage);
       } else {
-        this.message.error('Error al conectar con el proveedor de identidad institucional.');
+        this.message.error('Error al conectar con el proveedor de autenticación.');
       }
     } finally {
       this.isLoading.set(false);

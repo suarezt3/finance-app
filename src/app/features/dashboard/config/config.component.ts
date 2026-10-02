@@ -1,9 +1,8 @@
 // src/app/features/dashboard/config/config.component.ts
-import { Component, inject, signal, OnInit } from '@angular/core';
-import { DatePipe } from '@angular/common';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
-import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTagModule } from 'ng-zorro-antd/tag';
@@ -11,20 +10,34 @@ import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzSelectModule } from 'ng-zorro-antd/select';
+import { NzSwitchModule } from 'ng-zorro-antd/switch';
+import { NzProgressModule } from 'ng-zorro-antd/progress';
 import { NzMessageService } from 'ng-zorro-antd/message';
+
 import { CatalogService, Category, PaymentMethod } from '../../../core/services/catalog.service';
 import { BiometricAuthService } from '../../../core/services/biometric-auth.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { PwaUpdateService } from '../../../core/services/pwa-update.service';
+import { UserPreferencesService } from '../../../core/services/user-preferences.service';
+import { TransactionService } from '../../../core/services/transaction.service';
 
 @Component({
   selector: 'app-config',
   standalone: true,
   imports: [
+    CommonModule,
     ReactiveFormsModule,
     DatePipe,
-    NzTabsModule, NzTableModule, NzButtonModule, NzIconModule,
-    NzTagModule, NzModalModule, NzFormModule, NzInputModule, NzSelectModule
+    NzTabsModule,
+    NzButtonModule,
+    NzIconModule,
+    NzTagModule,
+    NzModalModule,
+    NzFormModule,
+    NzInputModule,
+    NzSelectModule,
+    NzSwitchModule,
+    NzProgressModule
   ],
   templateUrl: './config.component.html',
   styleUrl: './config.component.scss'
@@ -37,6 +50,8 @@ export class ConfigComponent implements OnInit {
   readonly biometricAuth = inject(BiometricAuthService);
   private readonly authService = inject(AuthService);
   readonly pwaUpdate = inject(PwaUpdateService);
+  readonly userPreferences = inject(UserPreferencesService);
+  private readonly transactionService = inject(TransactionService);
 
   readonly categories = signal<Category[]>([]);
   readonly paymentMethods = signal<PaymentMethod[]>([]);
@@ -44,63 +59,115 @@ export class ConfigComponent implements OnInit {
   readonly isRegisteringBiometrics = signal<boolean>(false);
   readonly isTestingBiometrics = signal<boolean>(false);
   readonly isCheckingUpdates = signal<boolean>(false);
+  readonly isSavingPreferences = signal<boolean>(false);
 
+  // Total acumulado de ahorro actual estimado desde transacciones
+  readonly currentMonthSavings = signal<number>(0);
+
+  // Navegación adaptable
+  readonly activeTab = signal<'categories' | 'methods' | 'goals' | 'security'>('categories');
+  readonly categoryFilter = signal<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
+  readonly categorySearch = signal<string>('');
+  readonly methodSearch = signal<string>('');
+
+  readonly incomeCount = computed(() => this.categories().filter(c => c.type === 'INCOME').length);
+  readonly expenseCount = computed(() => this.categories().filter(c => c.type === 'EXPENSE').length);
+
+  readonly filteredCategories = computed(() => {
+    const list = this.categories();
+    const filter = this.categoryFilter();
+    const search = this.categorySearch().trim().toLowerCase();
+
+    return list.filter(item => {
+      const matchesType = filter === 'ALL' || item.type === filter;
+      const matchesSearch = !search || item.name.toLowerCase().includes(search);
+      return matchesType && matchesSearch;
+    });
+  });
+
+  readonly filteredMethods = computed(() => {
+    const list = this.paymentMethods();
+    const search = this.methodSearch().trim().toLowerCase();
+    if (!search) return list;
+    return list.filter(m => m.name.toLowerCase().includes(search));
+  });
+
+  // Modales y Edición
   readonly isCategoryModalVisible = signal<boolean>(false);
+  readonly editingCategory = signal<Category | null>(null);
+
   readonly isMethodModalVisible = signal<boolean>(false);
+  readonly editingMethod = signal<PaymentMethod | null>(null);
+
   readonly isBiometricModalVisible = signal<boolean>(false);
   readonly passwordVisible = signal<boolean>(false);
   readonly isSubmitting = signal<boolean>(false);
 
+  // Formulario de Contraseña para Bóveda Biométrica
   readonly biometricPasswordForm: FormGroup = this.fb.nonNullable.group({
     password: ['', [Validators.required, Validators.minLength(6)]]
   });
 
+  // Formulario de Categoría
   readonly categoryForm: FormGroup = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(3)]],
     type: ['EXPENSE', [Validators.required]]
   });
 
+  // Formulario de Billetera / Medio de Pago
   readonly methodForm: FormGroup = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(3)]]
   });
 
-  readonly customApiKey = signal<string>('');
-  readonly showAdvancedSettings = signal<boolean>(false);
+  // Formulario de Metas y Alertas
+  readonly goalsForm: FormGroup = this.fb.nonNullable.group({
+    savingsGoal: [500000, [Validators.required, Validators.min(0)]],
+    savingsGoalName: ['Meta de Ahorro Mensual', [Validators.required]],
+    expenseAlertThreshold: [200000, [Validators.required, Validators.min(0)]],
+    budgetAlertPercentage: [80, [Validators.required, Validators.min(10), Validators.max(100)]],
+    alertsEnabled: [true]
+  });
 
-  toggleAdvancedSettings(): void {
-    this.showAdvancedSettings.update(v => !v);
-  }
+  // Cálculos reactivos de metas
+  readonly savingsGoal = this.userPreferences.savingsGoal;
+  readonly savingsGoalName = this.userPreferences.savingsGoalName;
+  readonly currencySymbol = this.userPreferences.currencySymbol;
+  readonly preferredCurrency = this.userPreferences.preferredCurrency;
+
+  readonly savingsProgressPercentage = computed(() => {
+    const goal = this.savingsGoal();
+    if (goal <= 0) return 0;
+    const current = Math.max(0, this.currentMonthSavings());
+    const pct = Math.round((current / goal) * 100);
+    return Math.min(100, pct);
+  });
+
+  readonly remainingSavings = computed(() => {
+    const goal = this.savingsGoal();
+    const current = this.currentMonthSavings();
+    return Math.max(0, goal - current);
+  });
 
   async ngOnInit(): Promise<void> {
-    if (typeof window !== 'undefined') {
-      const savedKey = localStorage.getItem('custom_gemini_api_key') || '';
-      this.customApiKey.set(savedKey);
-    }
-    await this.loadCatalogs();
+    this.initGoalsForm();
+    await Promise.all([
+      this.loadCatalogs(),
+      this.loadTransactionsBalance()
+    ]);
   }
 
-  saveCustomApiKey(apiKey: string): void {
-    if (typeof window !== 'undefined') {
-      const trimmed = apiKey.trim();
-      if (trimmed) {
-        localStorage.setItem('custom_gemini_api_key', trimmed);
-        this.customApiKey.set(trimmed);
-        this.message.success('Clave de Gemini API guardada correctamente.');
-      } else {
-        this.clearCustomApiKey();
-      }
-    }
+  private initGoalsForm(): void {
+    const p = this.userPreferences.preferences();
+    this.goalsForm.patchValue({
+      savingsGoal: p.savingsGoal,
+      savingsGoalName: p.savingsGoalName,
+      expenseAlertThreshold: p.expenseAlertThreshold,
+      budgetAlertPercentage: p.budgetAlertPercentage,
+      alertsEnabled: p.alertsEnabled
+    });
   }
 
-  clearCustomApiKey(): void {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('custom_gemini_api_key');
-      this.customApiKey.set('');
-      this.message.info('Se restauró la clave y cuota predeterminada del sistema.');
-    }
-  }
-
-  private async loadCatalogs(): Promise<void> {
+  async loadCatalogs(): Promise<void> {
     this.isLoading.set(true);
     try {
       const [cats, methods] = await Promise.all([
@@ -109,143 +176,235 @@ export class ConfigComponent implements OnInit {
       ]);
       this.categories.set(cats);
       this.paymentMethods.set(methods);
-    } catch (error) {
-      console.error('Error cargando catálogos:', error);
-      this.message.error('Error al cargar los datos desde el servidor');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        this.message.error(`Error al cargar datos: ${err.message}`);
+      }
     } finally {
       this.isLoading.set(false);
     }
   }
 
+  async loadTransactionsBalance(): Promise<void> {
+    try {
+      const txs = await this.transactionService.getTransactions();
+      const currentYear = new Date().getFullYear();
+      const currentMonth = new Date().getMonth();
+
+      let income = 0;
+      let expense = 0;
+
+      txs.forEach(t => {
+        const txDate = new Date(t.date);
+        if (txDate.getFullYear() === currentYear && txDate.getMonth() === currentMonth) {
+          if (t.type === 'INCOME') income += Number(t.amount);
+          if (t.type === 'EXPENSE') expense += Number(t.amount);
+        }
+      });
+
+      const savings = Math.max(0, income - expense);
+      this.currentMonthSavings.set(savings);
+    } catch (err) {
+      console.warn('Error calculando balance para metas:', err);
+    }
+  }
+
   // ==========================================
-  // LÓGICA DE CATEGORÍAS
+  // CATEGORÍAS (CREAR / EDITAR / ELIMINAR)
   // ==========================================
 
-  openCategoryModal(): void {
-    this.categoryForm.reset({ type: 'EXPENSE', name: '' });
+  openCategoryModal(category?: Category): void {
+    if (category) {
+      this.editingCategory.set(category);
+      this.categoryForm.patchValue({
+        name: category.name,
+        type: category.type
+      });
+    } else {
+      this.editingCategory.set(null);
+      this.categoryForm.reset({ type: 'EXPENSE', name: '' });
+    }
     this.isCategoryModalVisible.set(true);
   }
 
   closeCategoryModal(): void {
     this.isCategoryModalVisible.set(false);
+    this.editingCategory.set(null);
+    this.categoryForm.reset({ type: 'EXPENSE' });
   }
 
-  async onSubmitCategory(): Promise<void> {
-    if (this.categoryForm.valid) {
-      this.isSubmitting.set(true);
-      try {
-        await this.catalogService.createCategory(this.categoryForm.getRawValue());
-        this.message.success('Categoría creada exitosamente');
-        this.closeCategoryModal();
-        await this.loadCatalogs();
-      } catch (error) {
-        this.message.error('No se pudo crear la categoría');
-      } finally {
-        this.isSubmitting.set(false);
+  async onSaveCategory(): Promise<void> {
+    if (this.categoryForm.invalid) {
+      Object.values(this.categoryForm.controls).forEach(c => {
+        c.markAsDirty();
+        c.updateValueAndValidity({ onlySelf: true });
+      });
+      return;
+    }
+
+    this.isSubmitting.set(true);
+    try {
+      const formValue = this.categoryForm.getRawValue();
+      const editing = this.editingCategory();
+
+      if (editing) {
+        await this.catalogService.updateCategory(editing.id, formValue);
+        this.message.success('Categoría actualizada exitosamente.');
+      } else {
+        await this.catalogService.createCategory(formValue);
+        this.message.success('Categoría creada exitosamente.');
       }
-    } else {
-      Object.values(this.categoryForm.controls).forEach(c => c.markAsDirty());
+
+      this.closeCategoryModal();
+      await this.loadCatalogs();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        this.message.error(err.message || 'Error al guardar la categoría.');
+      }
+    } finally {
+      this.isSubmitting.set(false);
     }
   }
 
   onDeleteCategory(id: string): void {
     this.modalService.confirm({
-      nzTitle: '¿Estás seguro de eliminar esta categoría?',
-      nzContent: 'Si esta categoría ya tiene transacciones asociadas, no se podrá borrar.',
+      nzTitle: '¿Eliminar esta categoría?',
+      nzContent: 'Esta acción no se puede deshacer. Las transacciones existentes podrían verse afectadas.',
       nzOkText: 'Sí, eliminar',
-      nzOkType: 'primary',
       nzOkDanger: true,
+      nzCancelText: 'Cancelar',
       nzOnOk: async () => {
         try {
-          this.isLoading.set(true);
           await this.catalogService.deleteCategory(id);
-          this.message.success('Categoría eliminada');
+          this.message.success('Categoría eliminada.');
           await this.loadCatalogs();
-        } catch (error) {
-          this.message.error('No se puede eliminar: La categoría está en uso');
-        } finally {
-          this.isLoading.set(false);
+        } catch (err: unknown) {
+          if (err instanceof Error) {
+            this.message.error(err.message || 'No se pudo eliminar la categoría.');
+          }
         }
-      },
-      nzCancelText: 'Cancelar'
+      }
     });
   }
 
   // ==========================================
-  // LÓGICA DE MÉTODOS DE PAGO
+  // BILLETERAS / MEDIOS DE PAGO
   // ==========================================
 
-  openMethodModal(): void {
-    this.methodForm.reset({ name: '' });
+  openMethodModal(method?: PaymentMethod): void {
+    if (method) {
+      this.editingMethod.set(method);
+      this.methodForm.patchValue({
+        name: method.name
+      });
+    } else {
+      this.editingMethod.set(null);
+      this.methodForm.reset({ name: '' });
+    }
     this.isMethodModalVisible.set(true);
   }
 
   closeMethodModal(): void {
     this.isMethodModalVisible.set(false);
+    this.editingMethod.set(null);
+    this.methodForm.reset();
   }
 
-  async onSubmitMethod(): Promise<void> {
-    if (this.methodForm.valid) {
-      this.isSubmitting.set(true);
-      try {
-        await this.catalogService.createPaymentMethod(this.methodForm.getRawValue());
-        this.message.success('Método de pago creado exitosamente');
-        this.closeMethodModal();
-        await this.loadCatalogs();
-      } catch (error) {
-        this.message.error('No se pudo crear el método de pago');
-      } finally {
-        this.isSubmitting.set(false);
+  async onSaveMethod(): Promise<void> {
+    if (this.methodForm.invalid) {
+      Object.values(this.methodForm.controls).forEach(c => {
+        c.markAsDirty();
+        c.updateValueAndValidity({ onlySelf: true });
+      });
+      return;
+    }
+
+    this.isSubmitting.set(true);
+    try {
+      const formValue = this.methodForm.getRawValue();
+      const editing = this.editingMethod();
+
+      if (editing) {
+        await this.catalogService.updatePaymentMethod(editing.id, formValue);
+        this.message.success('Cuenta o billetera actualizada.');
+      } else {
+        await this.catalogService.createPaymentMethod(formValue);
+        this.message.success('Billetera o cuenta agregada.');
       }
-    } else {
-      Object.values(this.methodForm.controls).forEach(c => c.markAsDirty());
+
+      this.closeMethodModal();
+      await this.loadCatalogs();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        this.message.error(err.message || 'Error al guardar el medio de pago.');
+      }
+    } finally {
+      this.isSubmitting.set(false);
     }
   }
 
   onDeleteMethod(id: string): void {
     this.modalService.confirm({
-      nzTitle: '¿Estás seguro de eliminar este método de pago?',
-      // FIX: Homologamos la advertencia del modal para coincidir con la regla de negocio
-      nzContent: 'Si este método de pago ya tiene transacciones asociadas, no se podrá borrar.',
+      nzTitle: '¿Eliminar esta cuenta o billetera?',
+      nzContent: 'Solo podrás eliminarla si no tiene transacciones registradas vinculadas.',
       nzOkText: 'Sí, eliminar',
-      nzOkType: 'primary',
       nzOkDanger: true,
+      nzCancelText: 'Cancelar',
       nzOnOk: async () => {
         try {
-          this.isLoading.set(true);
           await this.catalogService.deletePaymentMethod(id);
-          this.message.success('Método de pago eliminado');
+          this.message.success('Cuenta eliminada exitosamente.');
           await this.loadCatalogs();
-        } catch (error) {
-          this.message.error('No se puede eliminar: El método está en uso');
-        } finally {
-          this.isLoading.set(false);
+        } catch (err: unknown) {
+          if (err instanceof Error) {
+            if (err.message === 'METHOD_IN_USE') {
+              this.message.warning('No puedes eliminar esta cuenta porque tiene transacciones registradas.');
+            } else {
+              this.message.error(err.message || 'Error al eliminar.');
+            }
+          }
         }
-      },
-      nzCancelText: 'Cancelar'
+      }
     });
   }
 
   // ==========================================
-  // SEGURIDAD Y ACCESO BIOMÉTRICO (HUELLA)
+  // METAS DE AHORRO Y ALERTAS
   // ==========================================
 
-  onRegisterBiometrics(): void {
-    this.biometricPasswordForm.reset();
-    this.passwordVisible.set(false);
-    this.isBiometricModalVisible.set(true);
-  }
-
-  onCancelBiometricModal(): void {
-    this.isBiometricModalVisible.set(false);
-  }
-
-  async onConfirmBiometricsWithPassword(): Promise<void> {
-    if (this.biometricPasswordForm.invalid) {
-      Object.values(this.biometricPasswordForm.controls).forEach(c => c.markAsDirty());
+  onSaveGoals(): void {
+    if (this.goalsForm.invalid) {
+      Object.values(this.goalsForm.controls).forEach(c => {
+        c.markAsDirty();
+        c.updateValueAndValidity({ onlySelf: true });
+      });
       return;
     }
 
+    this.isSavingPreferences.set(true);
+    try {
+      const val = this.goalsForm.getRawValue();
+      this.userPreferences.updatePreferences({
+        savingsGoal: Number(val.savingsGoal),
+        savingsGoalName: val.savingsGoalName,
+        expenseAlertThreshold: Number(val.expenseAlertThreshold),
+        budgetAlertPercentage: Number(val.budgetAlertPercentage),
+        alertsEnabled: val.alertsEnabled
+      });
+
+      this.message.success('Metas de ahorro y alertas guardadas correctamente.');
+    } catch (err) {
+      this.message.error('Error al guardar las metas de ahorro.');
+    } finally {
+      this.isSavingPreferences.set(false);
+    }
+  }
+
+  // ==========================================
+  // SEGURIDAD & BIOMETRÍA
+  // ==========================================
+
+  async onRegisterBiometrics(): Promise<void> {
     const user = this.authService.currentUser();
     const email = user?.email;
     if (!email) {
@@ -253,21 +412,40 @@ export class ConfigComponent implements OnInit {
       return;
     }
 
-    const { password } = this.biometricPasswordForm.getRawValue();
     this.isRegisteringBiometrics.set(true);
     try {
-      const result = await this.biometricAuth.registerBiometrics(email, password);
+      const result = await this.biometricAuth.registerBiometrics(email);
       if (result.success) {
-        this.isBiometricModalVisible.set(false);
-        this.message.success(result.message);
+        this.message.success('¡Huella dactilar vinculada exitosamente con tu dispositivo!');
+        this.isBiometricModalVisible.set(true);
       } else {
-        this.message.warning(result.message, { nzDuration: 6000 });
+        this.message.warning(result.message || 'No se pudo completar el registro biométrico.', { nzDuration: 6000 });
       }
-    } catch (err: any) {
-      console.error('Error registrando biometría:', err);
-      this.message.error('No se pudo completar el registro de la huella.');
+    } catch (err: unknown) {
+      this.message.error('Ocurrió un error inesperado durante el registro.', { nzDuration: 6000 });
     } finally {
       this.isRegisteringBiometrics.set(false);
+    }
+  }
+
+  async onSaveBiometricPassword(): Promise<void> {
+    if (this.biometricPasswordForm.invalid) {
+      this.biometricPasswordForm.markAllAsTouched();
+      return;
+    }
+
+    const { password } = this.biometricPasswordForm.getRawValue();
+    this.isSubmitting.set(true);
+
+    try {
+      await this.biometricAuth.syncPasswordToVault(password);
+      this.message.success('Bóveda biométrica activada. Podrás iniciar sesión con tu huella.');
+      this.isBiometricModalVisible.set(false);
+      this.biometricPasswordForm.reset();
+    } catch (err) {
+      this.message.error('Error guardando en la bóveda.');
+    } finally {
+      this.isSubmitting.set(false);
     }
   }
 
@@ -276,23 +454,22 @@ export class ConfigComponent implements OnInit {
     try {
       const result = await this.biometricAuth.testBiometrics();
       if (result.success) {
-        this.message.success(result.message);
+        this.message.success('¡Autenticación biométrica exitosa! Sensor verificado.');
       } else {
-        this.message.warning(result.message, { nzDuration: 5000 });
+        this.message.warning(result.message || 'No se completó la verificación.', { nzDuration: 6000 });
       }
-    } catch (err: any) {
-      console.error('Error en prueba biométrica:', err);
-      this.message.error('Error al probar el sensor biométrico.');
+    } catch (err) {
+      this.message.error('Error durante la prueba biométrica.');
     } finally {
       this.isTestingBiometrics.set(false);
     }
   }
 
-  onDisableBiometrics(): void {
+  onUnlinkBiometrics(): void {
     this.modalService.confirm({
-      nzTitle: '¿Desvincular huella dactilar de este equipo?',
-      nzContent: 'Ya no podrás ingresar a FinanceApp tocando el sensor biométrico en este navegador hasta que vuelvas a vincularlo.',
-      nzOkText: 'Desvincular',
+      nzTitle: '¿Desvincular huella dactilar?',
+      nzContent: 'Deberás ingresar con tu correo y contraseña en este dispositivo.',
+      nzOkText: 'Sí, desvincular',
       nzOkDanger: true,
       nzCancelText: 'Cancelar',
       nzOnOk: () => {
@@ -309,14 +486,14 @@ export class ConfigComponent implements OnInit {
   async onCheckForUpdates(): Promise<void> {
     this.isCheckingUpdates.set(true);
     try {
-      const result = await this.pwaUpdate.checkForUpdateManual();
-      if (result.hasUpdate) {
-        this.message.success(result.message);
+      const updateFound = await this.pwaUpdate.checkForUpdate();
+      if (updateFound) {
+        this.message.info('¡Se ha detectado una nueva versión! Preparando actualización...');
       } else {
-        this.message.info(result.message);
+        this.message.success('Tienes la versión más reciente del sistema.');
       }
-    } catch {
-      this.message.error('No se pudo comprobar la versión en este momento.');
+    } catch (err) {
+      this.message.warning('No se pudo verificar la actualización en este momento.');
     } finally {
       this.isCheckingUpdates.set(false);
     }

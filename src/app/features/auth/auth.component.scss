@@ -290,13 +290,21 @@
 // ========================================================
 .enterprise-form-panel {
   flex: 1;
+  width: 100%;
+  max-width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  padding: 2.5rem 1.5rem;
+  min-height: 100dvh;
+  padding: 1.25rem 1rem;
   background-color: #f8fafc;
   box-sizing: border-box;
+  overflow-x: hidden;
+
+  @media (max-width: 480px) {
+    padding: 1rem 0.75rem;
+  }
 
   @media (min-width: 640px) {
     padding: 3rem 2rem;
@@ -304,15 +312,22 @@
 
   .form-container {
     width: 100%;
-    max-width: 440px;
+    max-width: 410px;
+    margin: 0 auto;
     background: #ffffff;
-    border-radius: 16px;
-    padding: 2.25rem 2rem;
+    border-radius: 20px;
+    padding: 1.5rem 1.25rem;
     border: 1px solid #e2e8f0;
     box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.06), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+    box-sizing: border-box;
+
+    @media (max-width: 480px) {
+      padding: 1.25rem 1rem;
+      border-radius: 16px;
+    }
 
     @media (min-width: 640px) {
-      padding: 2.75rem 2.5rem;
+      padding: 2.5rem 2.25rem;
     }
   }
 
@@ -863,22 +878,27 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    padding: 12px 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 12px;
     margin-bottom: 1rem;
     border-radius: 12px;
     background: linear-gradient(135deg, rgba(37, 99, 235, 0.06) 0%, rgba(99, 102, 241, 0.08) 100%);
     border: 1px solid rgba(99, 102, 241, 0.25);
     box-shadow: 0 2px 6px rgba(99, 102, 241, 0.06);
+    width: 100%;
+    box-sizing: border-box;
 
     .biometric-card-content {
       display: flex;
       align-items: center;
       gap: 10px;
+      min-width: 0;
+      flex: 1 1 150px;
 
       .biometric-icon-wrapper {
-        width: 38px;
-        height: 38px;
+        width: 36px;
+        height: 36px;
         border-radius: 10px;
         background: #e0e7ff;
         color: #4338ca;
@@ -891,17 +911,19 @@
       .biometric-card-text {
         display: flex;
         flex-direction: column;
+        min-width: 0;
+        overflow: hidden;
 
         .biometric-card-title {
-          font-size: 0.85rem;
+          font-size: 0.825rem;
           font-weight: 700;
           color: #1e293b;
         }
 
         .biometric-card-subtitle {
-          font-size: 0.72rem;
+          font-size: 0.7rem;
           color: #64748b;
-          max-width: 170px;
+          max-width: 100%;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
@@ -912,9 +934,10 @@
     .btn-biometric-trigger {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
       padding: 7px 12px;
-      font-size: 0.8rem;
+      font-size: 0.775rem;
       font-weight: 600;
       color: #ffffff;
       background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
@@ -924,6 +947,11 @@
       box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
       transition: all 0.2s ease;
       white-space: nowrap;
+      flex-shrink: 0;
+
+      @media (max-width: 360px) {
+        width: 100%;
+      }
 
       &:hover:not(:disabled) {
         transform: translateY(-1px);

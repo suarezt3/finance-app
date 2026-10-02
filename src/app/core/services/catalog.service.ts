@@ -77,7 +77,7 @@ export class CatalogService {
     }
 
     console.error('Fallo al resolver workspace_id tras múltiples reintentos:', lastError);
-    throw new Error('No se pudo resolver el workspace corporativo');
+    throw new Error('No se pudo resolver tu espacio personal');
   }
 
   // ==========================================
@@ -134,6 +134,18 @@ export class CatalogService {
     }
   }
 
+  async updateCategory(id: string, categoryData: { name: string, type: string }): Promise<void> {
+    const { error } = await this.supabase
+      .from('categories')
+      .update(categoryData)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error actualizando categoría:', error.message);
+      throw new Error(error.message);
+    }
+  }
+
   async deleteCategory(id: string): Promise<void> {
     const { error } = await this.supabase
       .from('categories')
@@ -154,6 +166,18 @@ export class CatalogService {
 
     if (error) {
       console.error('Error creando método de pago:', error.message);
+      throw new Error(error.message);
+    }
+  }
+
+  async updatePaymentMethod(id: string, methodData: { name: string }): Promise<void> {
+    const { error } = await this.supabase
+      .from('payment_methods')
+      .update(methodData)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error actualizando método de pago:', error.message);
       throw new Error(error.message);
     }
   }

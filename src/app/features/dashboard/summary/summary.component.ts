@@ -24,6 +24,7 @@ import { TransactionModalComponent } from '../../../shared/components/transactio
 import { ExpensesDonutChart, ExpenseCategorySlice } from './expenses-donut-chart/expenses-donut-chart';
 import { BalanceAreaChart } from './balance-area-chart/balance-area-chart';
 import { ThemeService } from '../../../core/services/theme.service';
+import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 
 type Timeframe = '7d' | '30d' | '1y' | 'all' | 'custom-year';
 
@@ -57,7 +58,11 @@ export class SummaryComponent implements OnInit {
   private readonly transactionService = inject(TransactionService);
   private readonly catalogService = inject(CatalogService);
   readonly themeService = inject(ThemeService);
+  readonly userPreferences = inject(UserPreferencesService);
   private readonly destroyRef = inject(DestroyRef);
+
+  readonly currencySymbol = this.userPreferences.currencySymbol;
+  readonly preferredCurrency = this.userPreferences.preferredCurrency;
   private readonly breakpointObserver = inject(BreakpointObserver);
 
   // Estado puro
@@ -177,7 +182,7 @@ export class SummaryComponent implements OnInit {
       totalBalance: (totalIncome - totalExpenses) + transferImpact,
       totalIncome,
       totalExpenses,
-      currency: 'COP',
+      currency: this.preferredCurrency(),
       lastUpdated: new Date()
     };
   });

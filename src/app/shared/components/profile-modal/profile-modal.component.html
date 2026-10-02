@@ -1,27 +1,79 @@
 <!-- src/app/shared/components/profile-modal/profile-modal.component.html -->
 <nz-modal
   [nzVisible]="isVisible()"
-  nzTitle="Configuración de Perfil y Seguridad"
+  nzTitle="Mi Perfil y Preferencias"
   (nzOnCancel)="closeModal()"
   [nzFooter]="null"
-  nzWidth="520px"
-  class="enterprise-profile-modal"
+  nzWidth="540px"
+  class="profile-settings-modal"
 >
   <ng-container *nzModalContent>
-    <nz-tabs class="enterprise-modal-tabs">
+    <nz-tabs class="profile-modal-tabs">
 
-      <!-- PESTAÑA 1: DATOS PERSONALES -->
-      <nz-tab nzTitle="Datos Personales">
+      <!-- ========================================== -->
+      <!-- PESTAÑA 1: DATOS PERSONALES & AVATAR       -->
+      <!-- ========================================== -->
+      <nz-tab nzTitle="Mi Cuenta">
         <form nz-form [formGroup]="profileForm" (ngSubmit)="updateProfile()" nzLayout="vertical" class="profile-form">
+          
+          <!-- SELECCIÓN VISUAL DE AVATAR -->
+          <div class="avatar-selection-section">
+            <div class="avatar-preview-badge" [style.background]="selectedAvatarMeta.bgGradient">
+              <span class="preview-emoji">{{ selectedAvatarMeta.emoji }}</span>
+            </div>
+            <div class="avatar-picker-column">
+              <span class="avatar-picker-label">Elige tu Avatar Personal</span>
+              <div class="avatar-grid-chips">
+                @for (avatar of avatars; track avatar.id) {
+                  <button
+                    type="button"
+                    class="avatar-chip-btn"
+                    [class.is-selected]="profileForm.get('avatarId')?.value === avatar.id"
+                    [style.background]="avatar.bgGradient"
+                    (click)="selectAvatar(avatar.id)"
+                    [title]="avatar.name"
+                  >
+                    <span class="chip-emoji">{{ avatar.emoji }}</span>
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+
+          <!-- CAMPO NOMBRE COMPLETO -->
           <nz-form-item>
             <nz-form-label nzRequired nzFor="fullName">Nombre Completo</nz-form-label>
-            <nz-form-control nzErrorTip="Por favor ingresa un nombre válido (mín. 3 caracteres).">
+            <nz-form-control nzErrorTip="Ingresa un nombre válido (mín. 3 caracteres).">
               <nz-input-wrapper class="full-width">
                 <span nz-icon nzType="user" nzInputPrefix class="input-prefix-icon"></span>
                 <input type="text" nz-input formControlName="fullName" id="fullName" placeholder="Ej. Roberto Gómez" nzSize="large" />
               </nz-input-wrapper>
             </nz-form-control>
           </nz-form-item>
+
+          <!-- CORREO ELECTRÓNICO (SOLO LECTURA CON BADGE VERIFICADO) -->
+          <div class="account-info-box">
+            <div class="account-field-item">
+              <span class="field-title">
+                <span nz-icon nzType="mail" class="field-icon"></span> Correo Electrónico
+              </span>
+              <div class="field-value-row">
+                <span class="email-display">{{ currentUser()?.email || 'correo@ejemplo.com' }}</span>
+                <nz-tag nzColor="success" class="verified-tag">
+                  <span nz-icon nzType="check-circle" nzTheme="fill"></span> Verificado
+                </nz-tag>
+              </div>
+            </div>
+
+            <div class="account-field-item mt-2">
+              <span class="field-title">
+                <span nz-icon nzType="calendar" class="field-icon"></span> Fecha de Registro
+              </span>
+              <span class="date-display">
+                {{ currentUser()?.created_at ? (currentUser()?.created_at | date:'d \'de\' MMMM, y') : 'Usuario registrado' }}
+              </span>
+            </div>
+          </div>
 
           <div class="modal-footer-actions">
             <button nz-button type="button" (click)="closeModal()" class="btn-cancel">Cancelar</button>
@@ -32,9 +84,90 @@
         </form>
       </nz-tab>
 
-      <!-- PESTAÑA 2: SEGURIDAD (CONTRASEÑA) -->
+      <!-- ========================================== -->
+      <!-- PESTAÑA 2: PREFERENCIAS FINANCIERAS        -->
+      <!-- ========================================== -->
+      <nz-tab nzTitle="Preferencias">
+        <form nz-form [formGroup]="profileForm" (ngSubmit)="updateProfile()" nzLayout="vertical" class="profile-form">
+          
+          <div class="preferences-helper-banner">
+            <span nz-icon nzType="sliders" nzTheme="outline" class="banner-icon"></span>
+            <div>
+              <strong>Ajustes de Moneda y Período</strong>
+              <p>Personaliza cómo se representan tus importes y en qué día del mes comienza tu ciclo de gastos.</p>
+            </div>
+          </div>
+
+          <!-- SELECTOR DE MONEDA PREFERIDA -->
+          <nz-form-item>
+            <nz-form-label nzRequired nzFor="preferredCurrency">Moneda Principal de la Cuenta</nz-form-label>
+            <nz-form-control>
+              <nz-select
+                formControlName="preferredCurrency"
+                id="preferredCurrency"
+                nzSize="large"
+                class="full-width"
+                nzPlaceHolder="Selecciona tu moneda"
+              >
+                @for (curr of currencies; track curr.code) {
+                  <nz-option
+                    [nzValue]="curr.code"
+                    [nzLabel]="curr.flag + ' ' + curr.code + ' (' + curr.symbol + ') - ' + curr.name"
+                  ></nz-option>
+                }
+              </nz-select>
+            </nz-form-control>
+            <span class="input-helper-text">
+              Los balances, gráficos y transacciones usarán este formato por defecto.
+            </span>
+          </nz-form-item>
+
+          <!-- DÍA DE CORTE DEL MES -->
+          <nz-form-item class="mt-3">
+            <nz-form-label nzRequired nzFor="cutoffDay">Día de Corte Mensual</nz-form-label>
+            <nz-form-control>
+              <nz-select
+                formControlName="cutoffDay"
+                id="cutoffDay"
+                nzSize="large"
+                class="full-width"
+                nzPlaceHolder="Selecciona el día de corte"
+              >
+                @for (day of cutoffDays; track day) {
+                  <nz-option
+                    [nzValue]="day"
+                    [nzLabel]="'Día ' + day + ' de cada mes' + (day === 1 ? ' (Inicio de mes estándar)' : '') + (day === 15 ? ' (Quincena)' : '')"
+                  ></nz-option>
+                }
+              </nz-select>
+            </nz-form-control>
+            <span class="input-helper-text">
+              Define cuándo inicia tu período contable cada mes para calcular tus presupuestos y resúmenes.
+            </span>
+          </nz-form-item>
+
+          <div class="modal-footer-actions">
+            <button nz-button type="button" (click)="closeModal()" class="btn-cancel">Cancelar</button>
+            <button nz-button nzType="primary" type="submit" [nzLoading]="isSavingProfile()" class="btn-save-profile">
+              Guardar Preferencias
+            </button>
+          </div>
+        </form>
+      </nz-tab>
+
+      <!-- ========================================== -->
+      <!-- PESTAÑA 3: SEGURIDAD (CONTRASEÑA)          -->
+      <!-- ========================================== -->
       <nz-tab nzTitle="Seguridad & Acceso">
         <form nz-form [formGroup]="securityForm" (ngSubmit)="updatePassword()" nzLayout="vertical" class="profile-form">
+
+          <div class="preferences-helper-banner warning">
+            <span nz-icon nzType="lock" nzTheme="outline" class="banner-icon"></span>
+            <div>
+              <strong>Cambiar Contraseña de Acceso</strong>
+              <p>Elige una contraseña robusta de al menos 8 caracteres para mantener tus finanzas seguras.</p>
+            </div>
+          </div>
 
           <nz-form-item>
             <nz-form-label nzRequired nzFor="newPassword">Nueva Contraseña</nz-form-label>
@@ -53,7 +186,7 @@
           </nz-form-item>
 
           <nz-form-item>
-            <nz-form-label nzRequired nzFor="confirmPassword">Confirmar Contraseña</nz-form-label>
+            <nz-form-label nzRequired nzFor="confirmPassword">Confirmar Nueva Contraseña</nz-form-label>
             <nz-form-control [nzErrorTip]="passwordErrorTpl">
               <nz-input-password nzSize="large" class="full-width">
                 <span nz-icon nzType="lock" nzInputPrefix class="input-prefix-icon"></span>

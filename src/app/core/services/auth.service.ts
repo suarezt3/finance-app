@@ -108,9 +108,33 @@ export class AuthService {
   }
 
   async updateProfileName(fullName: string): Promise<UserResponse> {
-    return this.supabase.auth.updateUser({
-      data: { full_name: fullName }
+    return this.updateProfile({ fullName });
+  }
+
+  async updateProfile(profileData: {
+    fullName?: string;
+    avatarUrl?: string;
+    preferredCurrency?: string;
+    cutoffDay?: number;
+  }): Promise<UserResponse> {
+    const currentMeta = this._currentUser()?.user_metadata || {};
+    const updatedMeta = {
+      ...currentMeta,
+      ...(profileData.fullName !== undefined ? { full_name: profileData.fullName } : {}),
+      ...(profileData.avatarUrl !== undefined ? { avatar_url: profileData.avatarUrl } : {}),
+      ...(profileData.preferredCurrency !== undefined ? { preferred_currency: profileData.preferredCurrency } : {}),
+      ...(profileData.cutoffDay !== undefined ? { cutoff_day: profileData.cutoffDay } : {})
+    };
+
+    const response = await this.supabase.auth.updateUser({
+      data: updatedMeta
     });
+
+    if (response.data?.user) {
+      this._currentUser.set(response.data.user);
+    }
+
+    return response;
   }
 
   async updatePassword(newPassword: string): Promise<UserResponse> {
