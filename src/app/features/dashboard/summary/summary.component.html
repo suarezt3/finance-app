@@ -35,7 +35,7 @@
     </div>
   }
 
-  <!-- CABECERA Y CONTROLES -->
+  <!-- CABECERA Y TÍTULO -->
   <header class="summary-header">
     <div class="summary-title">
       <div class="title-with-badge">
@@ -44,65 +44,95 @@
       </div>
       <p class="update-subline">Última actualización: {{ summary().lastUpdated | date:'mediumTime' }}</p>
     </div>
+  </header>
 
-    <div class="summary-actions">
-      <!-- Selector de Periodo Segmented Control Apple Style -->
-      <div class="timeframe-scroll-container">
-        <nz-radio-group [ngModel]="timeframe()" (ngModelChange)="timeframe.set($event)" nzButtonStyle="solid" class="apple-segmented-control">
-          <label nz-radio-button nzValue="month">Mes</label>
-          <label nz-radio-button nzValue="7d">7D</label>
-          <label nz-radio-button nzValue="30d">30D</label>
-          <label nz-radio-button nzValue="1y">1A</label>
-          <label nz-radio-button nzValue="all">Todo</label>
-        </nz-radio-group>
+  <!-- BARRA DE CONTROL UNIFICADA Y STICKY (Flota y permanece accesible durante el scroll) -->
+  <div class="sticky-control-bar">
+    <div class="control-bar-inner">
+
+      <!-- 1. NAVEGADOR DE PERÍODO ERGONÓMICO -->
+      <div class="period-navigator-unified">
+        <!-- Selector Rápido de Modo de Período -->
+        <nz-select
+          [ngModel]="timeframe()"
+          (ngModelChange)="onTimeframeSelect($event)"
+          class="timeframe-mode-select"
+          [nzDropdownMatchSelectWidth]="false">
+          <nz-option nzValue="month" nzLabel="Mensual"></nz-option>
+          <nz-option nzValue="custom-year" nzLabel="Anual"></nz-option>
+          <nz-option nzValue="30d" nzLabel="30 Días"></nz-option>
+          <nz-option nzValue="7d" nzLabel="7 Días"></nz-option>
+          <nz-option nzValue="all" nzLabel="Histórico"></nz-option>
+        </nz-select>
+
+        <!-- Stepper interactivo (< Período >) para Mes y Año (Cero teclado virtual) -->
+        @if (timeframe() === 'month' || timeframe() === 'custom-year') {
+          <div class="stepper-controls">
+            <button
+              type="button"
+              class="btn-step"
+              (click)="onPrevPeriod()"
+              nz-tooltip
+              [nzTooltipTitle]="timeframe() === 'month' ? 'Mes anterior' : 'Año anterior'">
+              <span nz-icon nzType="left" nzTheme="outline"></span>
+            </button>
+
+            <span class="period-display-label">
+              @if (timeframe() === 'month') {
+                {{ selectedMonthDate() | date:'MMMM yyyy':'':'es' | titlecase }}
+              } @else {
+                Año {{ (selectedYear() || selectedMonthDate()).getFullYear() }}
+              }
+            </span>
+
+            <button
+              type="button"
+              class="btn-step"
+              (click)="onNextPeriod()"
+              nz-tooltip
+              [nzTooltipTitle]="timeframe() === 'month' ? 'Mes siguiente' : 'Año siguiente'">
+              <span nz-icon nzType="right" nzTheme="outline"></span>
+            </button>
+
+            @if (!isCurrentPeriod()) {
+              <button
+                type="button"
+                class="btn-today-pill"
+                (click)="onCurrentPeriod()"
+                nz-tooltip
+                nzTooltipTitle="Volver al período actual">
+                Hoy
+              </button>
+            }
+          </div>
+        }
       </div>
 
-      <!-- Navegador Rápido de Mes (Activo cuando timeframe es 'month') -->
-      @if (timeframe() === 'month') {
-        <div class="month-navigator-box">
-          <button type="button" class="btn-month-step" (click)="onPrevMonth()" nz-tooltip nzTooltipTitle="Mes anterior">
-            <span nz-icon nzType="left" nzTheme="outline"></span>
-          </button>
-          <span class="month-label-display">
-            {{ selectedMonthDate() | date:'MMMM yyyy':'':'es' | titlecase }}
-          </span>
-          <button type="button" class="btn-month-step" (click)="onNextMonth()" nz-tooltip nzTooltipTitle="Mes siguiente">
-            <span nz-icon nzType="right" nzTheme="outline"></span>
-          </button>
-          <button type="button" class="btn-month-today-pill" (click)="onCurrentMonth()" nz-tooltip nzTooltipTitle="Volver al mes actual">
-            Hoy
-          </button>
-        </div>
-      }
+      <!-- 2. SELECTOR DE CUENTAS / BILLETERA (Compacto) -->
+      <div class="wallet-filter-unified">
+        <nz-select
+          [ngModel]="selectedPaymentMethod()"
+          (ngModelChange)="selectedPaymentMethod.set($event)"
+          nzPlaceHolder="Todas las cuentas"
+          nzAllowClear
+          class="wallet-selector-compact"
+          [nzDropdownMatchSelectWidth]="false">
+          @for (method of paymentMethods(); track method.id) {
+            <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
+          }
+        </nz-select>
+      </div>
 
-      <!-- Selector de Año -->
-      <nz-date-picker
-        nzMode="year"
-        [ngModel]="selectedYear()"
-        (ngModelChange)="onYearSelected($event)"
-        nzPlaceHolder="Año Histórico"
-        class="enterprise-select year-picker">
-      </nz-date-picker>
+      <!-- 3. ACCIÓN NUEVO MOVIMIENTO (Visible en Desktop, en móvil se utiliza el FAB) -->
+      <div class="desktop-action-wrap">
+        <button nz-button nzType="primary" (click)="openModal()" class="btn-new-tx-compact">
+          <span nz-icon nzType="plus"></span>
+          <span>Nuevo Movimiento</span>
+        </button>
+      </div>
 
-      <!-- Selector de Billetera -->
-      <nz-select
-        [ngModel]="selectedPaymentMethod()"
-        (ngModelChange)="selectedPaymentMethod.set($event)"
-        nzPlaceHolder="Todas las cuentas"
-        nzAllowClear
-        class="enterprise-select wallet-selector">
-        @for (method of paymentMethods(); track method.id) {
-          <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
-        }
-      </nz-select>
-
-      <!-- Botón Nuevo Movimiento -->
-      <button nz-button nzType="primary" (click)="openModal()" class="btn-new-transaction">
-        <span nz-icon nzType="plus"></span>
-        <span>Nuevo Movimiento</span>
-      </button>
     </div>
-  </header>
+  </div>
 
   <!-- TARJETAS DE KPIs (Grid Responsivo Inteligente) -->
   <nz-row [nzGutter]="{ xs: 12, sm: 16, md: 16, lg: 20 }" class="kpi-grid-row">

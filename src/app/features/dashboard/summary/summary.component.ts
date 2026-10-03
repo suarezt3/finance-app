@@ -15,6 +15,7 @@ import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
 import { RouterLink } from '@angular/router';
 
@@ -51,7 +52,7 @@ export interface TransactionView extends TransactionWithDetails {
     DecimalPipe, DatePipe, TitleCasePipe, FormsModule, RouterLink,
     NzGridModule, NzCardModule, NzStatisticModule,
     NzButtonModule, NzIconModule, NzRadioModule, NzDatePickerModule,
-    NzSelectModule, NzTableModule, NzTagModule,
+    NzSelectModule, NzTableModule, NzTagModule, NzTooltipModule,
     TransactionModalComponent, ExpensesDonutChart, BalanceAreaChart
   ],
   templateUrl: './summary.component.html',
@@ -88,27 +89,78 @@ export class SummaryComponent implements OnInit {
   readonly isModalVisible = signal<boolean>(false);
   readonly timeframe = signal<Timeframe>('month');
   readonly selectedMonthDate = signal<Date>(new Date());
-  readonly selectedYear = signal<Date | null>(null);
+  readonly selectedYear = signal<Date | null>(new Date());
   readonly selectedPaymentMethod = signal<string | null>(null);
   readonly chartViewMode = signal<'balance' | 'income-expense'>('balance');
 
   readonly isMobileView = signal<boolean>(false);
 
-  // Navegación rápida de mes
+  // Navegación rápida unificada de períodos
+  readonly isCurrentPeriod = computed<boolean>(() => {
+    const now = new Date();
+    const tf = this.timeframe();
+    if (tf === 'month') {
+      const d = this.selectedMonthDate();
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    }
+    if (tf === 'custom-year') {
+      const y = this.selectedYear() || now;
+      return y.getFullYear() === now.getFullYear();
+    }
+    return true;
+  });
+
+  onPrevPeriod(): void {
+    const tf = this.timeframe();
+    if (tf === 'month') {
+      const d = new Date(this.selectedMonthDate());
+      d.setMonth(d.getMonth() - 1);
+      this.selectedMonthDate.set(d);
+    } else if (tf === 'custom-year') {
+      const y = this.selectedYear() || new Date();
+      const newD = new Date(y);
+      newD.setFullYear(newD.getFullYear() - 1);
+      this.selectedYear.set(newD);
+    }
+  }
+
+  onNextPeriod(): void {
+    const tf = this.timeframe();
+    if (tf === 'month') {
+      const d = new Date(this.selectedMonthDate());
+      d.setMonth(d.getMonth() + 1);
+      this.selectedMonthDate.set(d);
+    } else if (tf === 'custom-year') {
+      const y = this.selectedYear() || new Date();
+      const newD = new Date(y);
+      newD.setFullYear(newD.getFullYear() + 1);
+      this.selectedYear.set(newD);
+    }
+  }
+
+  onCurrentPeriod(): void {
+    const now = new Date();
+    this.selectedMonthDate.set(now);
+    this.selectedYear.set(now);
+  }
+
+  onTimeframeSelect(newTf: Timeframe): void {
+    this.timeframe.set(newTf);
+    if (newTf === 'custom-year' && !this.selectedYear()) {
+      this.selectedYear.set(new Date());
+    }
+  }
+
   onPrevMonth(): void {
-    const d = new Date(this.selectedMonthDate());
-    d.setMonth(d.getMonth() - 1);
-    this.selectedMonthDate.set(d);
+    this.onPrevPeriod();
   }
 
   onNextMonth(): void {
-    const d = new Date(this.selectedMonthDate());
-    d.setMonth(d.getMonth() + 1);
-    this.selectedMonthDate.set(d);
+    this.onNextPeriod();
   }
 
   onCurrentMonth(): void {
-    this.selectedMonthDate.set(new Date());
+    this.onCurrentPeriod();
   }
 
   // ==========================================
