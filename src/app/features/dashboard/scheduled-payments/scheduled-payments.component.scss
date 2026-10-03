@@ -1,0 +1,648 @@
+// src/app/features/dashboard/scheduled-payments/scheduled-payments.component.scss
+
+:host {
+  display: block;
+}
+
+.scheduled-payments-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  padding-bottom: 96px; // Holgura para el FAB flotante en móviles
+}
+
+// 1. CABECERA
+.payments-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  .header-titles {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--color-navy);
+        letter-spacing: -0.02em;
+      }
+
+      .count-badge {
+        font-size: 0.725rem;
+        font-weight: 700;
+        background: rgba(37, 99, 235, 0.1);
+        color: var(--color-blue-primary);
+        padding: 3px 10px;
+        border-radius: 9999px;
+      }
+    }
+
+    .subtitle {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--color-slate-muted);
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .btn-enable-notifications {
+      border-radius: 9px;
+      height: 40px;
+      font-weight: 600;
+      color: #d97706;
+      border-color: rgba(217, 119, 6, 0.3);
+      background: rgba(245, 158, 11, 0.08);
+
+      &:hover {
+        background: rgba(245, 158, 11, 0.15);
+      }
+    }
+
+    .btn-create-payment {
+      border-radius: 9px;
+      height: 40px;
+      font-weight: 600;
+      background: var(--color-blue-primary);
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+    }
+  }
+}
+
+// 2. RESUMEN DE COMPROMISOS (KPIs)
+.kpi-row {
+  margin-bottom: 4px;
+}
+
+.payment-kpi-card {
+  border-radius: 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  padding: 8px 12px;
+
+  &.highlight {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.04) 0%, rgba(59, 130, 246, 0.02) 100%);
+    border-color: rgba(37, 99, 235, 0.2);
+
+    html.dark & {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.12) 0%, rgba(30, 58, 138, 0.08) 100%);
+    }
+  }
+
+  &.urgent {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(239, 68, 68, 0.03);
+  }
+
+  .kpi-label {
+    font-size: 0.775rem;
+    font-weight: 600;
+    color: var(--color-slate-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  .kpi-value-group {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin-top: 4px;
+
+    .currency {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--color-navy);
+    }
+
+    .amount {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--color-navy);
+      letter-spacing: -0.02em;
+
+      &.urgent-amount {
+        color: #ef4444;
+      }
+
+      &.paid-amount {
+        color: #10b981;
+      }
+    }
+
+    .kpi-sub-label {
+      font-size: 0.775rem;
+      color: var(--color-slate-muted);
+      margin-left: 4px;
+    }
+  }
+}
+
+// 3. PASARELAS RÁPIDAS
+.quick-portals-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 14px 16px;
+
+  .portals-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+
+    .portals-title-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      .portal-thunder-icon {
+        color: #f59e0b;
+        font-size: 1.1rem;
+      }
+
+      .portals-title {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--color-navy);
+      }
+    }
+
+    .portals-hint {
+      font-size: 0.725rem;
+      color: var(--color-slate-muted);
+    }
+  }
+
+  .portals-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+
+    .portal-card-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--color-surface-muted);
+      border: 1px solid var(--color-border);
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background: var(--color-surface-hover);
+        border-color: var(--color-blue-primary);
+        transform: translateY(-1px);
+      }
+
+      .portal-icon-box {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+      }
+
+      .portal-text-group {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        min-width: 0;
+
+        .portal-name {
+          font-size: 0.825rem;
+          font-weight: 700;
+          color: var(--color-navy);
+        }
+
+        .portal-desc {
+          font-size: 0.675rem;
+          color: var(--color-slate-muted);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+      }
+
+      .portal-arrow {
+        color: var(--color-slate-muted);
+        font-size: 0.8rem;
+      }
+    }
+  }
+}
+
+// 4. PESTAÑAS DE FILTRO
+.payments-filter-tabs {
+  .segmented-filter-bar {
+    display: inline-flex;
+    background: var(--color-surface-muted);
+    padding: 3px;
+    border-radius: 10px;
+    border: 1px solid var(--color-border);
+    max-width: 100%;
+    overflow-x: auto;
+
+    .filter-tab-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 7px;
+      border: none;
+      background: transparent;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--color-slate-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+
+      &:hover {
+        color: var(--color-navy);
+      }
+
+      &.active {
+        background: var(--color-surface);
+        color: var(--color-navy);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+      }
+
+      .filter-count {
+        font-size: 0.7rem;
+        padding: 1px 6px;
+        border-radius: 9999px;
+        background: rgba(148, 163, 184, 0.18);
+        color: var(--color-slate-text);
+
+        &.urgent {
+          background: rgba(239, 68, 68, 0.15);
+          color: #ef4444;
+          font-weight: 700;
+        }
+      }
+    }
+  }
+}
+
+// 5. CARDS FEED
+.payments-cards-feed {
+  width: 100%;
+
+  .empty-payments-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 16px;
+    background: var(--color-surface);
+    border: 1px dashed var(--color-border);
+    border-radius: 16px;
+    text-align: center;
+
+    .empty-icon-wrap {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--color-surface-muted);
+      color: var(--color-slate-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      margin-bottom: 14px;
+    }
+
+    h4 {
+      margin: 0 0 6px 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--color-navy);
+    }
+
+    p {
+      margin: 0 0 20px 0;
+      font-size: 0.85rem;
+      color: var(--color-slate-muted);
+      max-width: 360px;
+    }
+  }
+
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 14px;
+
+    @media (max-width: 640px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .payment-item-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    }
+
+    &.urgency-overdue {
+      border-left: 4px solid #ef4444;
+    }
+
+    &.urgency-today {
+      border-left: 4px solid #f59e0b;
+      background: linear-gradient(to right, rgba(245, 158, 11, 0.03), var(--color-surface));
+    }
+
+    &.urgency-upcoming {
+      border-left: 4px solid #3b82f6;
+    }
+
+    &.urgency-paid {
+      border-left: 4px solid #10b981;
+      opacity: 0.85;
+    }
+
+    .card-main-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+
+      .card-identity {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        min-width: 0;
+
+        .card-category-avatar {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          background: rgba(37, 99, 235, 0.1);
+          color: var(--color-blue-primary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.1rem;
+          flex-shrink: 0;
+        }
+
+        .card-titles {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          min-width: 0;
+
+          .title-with-recurrence {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+
+            .payment-title {
+              margin: 0;
+              font-size: 0.95rem;
+              font-weight: 700;
+              color: var(--color-navy);
+              word-break: break-word;
+            }
+
+            .recurrence-pill {
+              font-size: 0.65rem;
+              font-weight: 700;
+              padding: 1px 6px;
+              border-radius: 4px;
+              background: var(--color-surface-muted);
+              color: var(--color-slate-muted);
+              border: 1px solid var(--color-border);
+              text-transform: uppercase;
+            }
+          }
+
+          .card-sub-meta {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.725rem;
+            color: var(--color-slate-muted);
+
+            .category-tag {
+              font-weight: 600;
+              color: var(--color-slate-text);
+            }
+
+            .meta-dot {
+              color: #94a3b8;
+            }
+
+            .due-date-text strong {
+              color: var(--color-navy);
+            }
+          }
+        }
+      }
+
+      .card-amount-box {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        flex-shrink: 0;
+
+        .amount-value {
+          font-size: 1.15rem;
+          font-weight: 800;
+          color: var(--color-navy);
+          letter-spacing: -0.015em;
+        }
+
+        .urgency-status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 0.675rem;
+          font-weight: 700;
+          padding: 2px 7px;
+          border-radius: 9999px;
+          margin-top: 3px;
+
+          &.badge-overdue {
+            background: rgba(239, 68, 68, 0.12);
+            color: #ef4444;
+          }
+
+          &.badge-today {
+            background: rgba(245, 158, 11, 0.14);
+            color: #d97706;
+          }
+
+          &.badge-upcoming {
+            background: rgba(59, 130, 246, 0.12);
+            color: #2563eb;
+          }
+
+          &.badge-normal {
+            background: var(--color-surface-muted);
+            color: var(--color-slate-muted);
+          }
+
+          &.badge-paid {
+            background: rgba(16, 185, 129, 0.12);
+            color: #10b981;
+          }
+        }
+      }
+    }
+
+    .card-notes-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--color-slate-muted);
+      background: var(--color-surface-muted);
+      padding: 6px 10px;
+      border-radius: 6px;
+
+      .notes-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .card-actions-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid var(--color-border);
+
+      .btn-card-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 0.775rem;
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        transition: all 0.15s ease;
+
+        &.pay-link-btn {
+          background: rgba(37, 99, 235, 0.1);
+          color: var(--color-blue-primary);
+
+          &:hover {
+            background: rgba(37, 99, 235, 0.2);
+          }
+        }
+
+        &.confirm-paid-btn {
+          background: #10b981;
+          color: #ffffff;
+          box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
+
+          &:hover {
+            background: #059669;
+          }
+        }
+      }
+
+      .paid-stamp {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #10b981;
+      }
+
+      .spacer {
+        flex: 1;
+      }
+
+      .secondary-actions {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+
+        .btn-icon-action {
+          width: 30px;
+          height: 30px;
+          border-radius: 6px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--color-slate-muted);
+
+          &:hover {
+            color: var(--color-navy);
+            background: var(--color-surface-hover);
+          }
+        }
+      }
+    }
+  }
+}
+
+// 6. MODAL DE CREACIÓN
+.create-payment-form {
+  .full-width {
+    width: 100%;
+  }
+
+  .form-row-two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+
+    @media (max-width: 480px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  ::ng-deep {
+    .ant-form-item {
+      margin-bottom: 14px;
+    }
+
+    .ant-input,
+    .ant-input-number,
+    .ant-select-selector,
+    .ant-picker {
+      border-radius: 8px !important;
+    }
+  }
+}

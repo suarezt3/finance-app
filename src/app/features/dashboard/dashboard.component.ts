@@ -23,6 +23,7 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
 import { ThemeService } from '../../core/services/theme.service';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
+import { ScheduledPaymentService } from '../../core/services/scheduled-payment.service';
 
 // Importamos la librería de Onboarding y su tipado estricto
 import { driver, DriveStep } from 'driver.js';
@@ -57,6 +58,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   private readonly destroyRef = inject(DestroyRef);
   readonly themeService = inject(ThemeService);
   readonly userPreferences = inject(UserPreferencesService);
+  readonly scheduledPaymentService = inject(ScheduledPaymentService);
 
   readonly profileModal = viewChild(ProfileModalComponent);
   readonly user = this.authService.currentUser;

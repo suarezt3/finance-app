@@ -21,6 +21,16 @@
       </a>
     </li>
 
+    <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()" [id]="prefix + '-pagos'">
+      <a routerLink="/dashboard/pagos-programados">
+        <span nz-icon nzType="calendar" nzTheme="outline"></span>
+        <span>Pagos Programados</span>
+        @if (scheduledPaymentService.urgentCount() > 0) {
+          <span class="nav-urgent-badge">{{ scheduledPaymentService.urgentCount() }}</span>
+        }
+      </a>
+    </li>
+
     <div class="menu-section-header" [class.collapsed]="isDesktopCollapsed()">
       <span>SISTEMA</span>
     </div>

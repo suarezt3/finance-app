@@ -1,0 +1,96 @@
+// src/app/features/dashboard/scheduled-payments/confirm-payment-modal/confirm-payment-modal.component.scss
+
+:host {
+  display: block;
+}
+
+.confirm-payment-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 12px;
+  margin-bottom: 14px;
+
+  html.dark & {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: rgba(16, 185, 129, 0.3);
+  }
+
+  .header-icon-box {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #10b981;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .header-info {
+    display: flex;
+    flex-direction: column;
+
+    h4 {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--color-navy);
+    }
+
+    .info-due-date {
+      font-size: 0.75rem;
+      color: var(--color-slate-muted);
+    }
+  }
+}
+
+.confirm-info-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--color-surface-muted);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 0.775rem;
+  color: var(--color-slate-text);
+  line-height: 1.4;
+
+  .callout-icon {
+    color: var(--color-blue-primary);
+    font-size: 0.95rem;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+}
+
+.confirm-payment-form {
+  .full-width {
+    width: 100%;
+  }
+
+  .helper-note {
+    display: block;
+    font-size: 0.725rem;
+    color: var(--color-slate-muted);
+    margin-top: 3px;
+  }
+
+  ::ng-deep {
+    .ant-form-item {
+      margin-bottom: 16px;
+    }
+
+    .ant-input-number,
+    .ant-select-selector,
+    .ant-picker {
+      border-radius: 8px !important;
+    }
+  }
+}

@@ -27,6 +27,7 @@ import { ExpensesDonutChart, ExpenseCategorySlice } from './expenses-donut-chart
 import { BalanceAreaChart } from './balance-area-chart/balance-area-chart';
 import { ThemeService } from '../../../core/services/theme.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
+import { ScheduledPaymentService } from '../../../core/services/scheduled-payment.service';
 
 type Timeframe = '7d' | '30d' | '1y' | 'all' | 'custom-year';
 
@@ -61,6 +62,7 @@ export class SummaryComponent implements OnInit {
   private readonly catalogService = inject(CatalogService);
   readonly themeService = inject(ThemeService);
   readonly userPreferences = inject(UserPreferencesService);
+  readonly scheduledPaymentService = inject(ScheduledPaymentService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly currencySymbol = this.userPreferences.currencySymbol;

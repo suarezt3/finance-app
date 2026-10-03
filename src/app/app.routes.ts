@@ -45,6 +45,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/dashboard/transactions/transactions.component').then(m => m.TransactionsComponent)
       },
       {
+        path: 'pagos-programados',
+        loadComponent: () => import('./features/dashboard/scheduled-payments/scheduled-payments.component').then(m => m.ScheduledPaymentsComponent)
+      },
+      {
         path: 'transactions',
         redirectTo: 'transacciones'
       }

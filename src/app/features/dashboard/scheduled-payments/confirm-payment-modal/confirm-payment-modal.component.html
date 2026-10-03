@@ -1,0 +1,86 @@
+<!-- src/app/features/dashboard/scheduled-payments/confirm-payment-modal/confirm-payment-modal.component.html -->
+<nz-modal
+  [nzVisible]="isVisible()"
+  nzTitle="Confirmar Pago de Factura o Servicio"
+  (nzOnCancel)="onCancel()"
+  (nzOnOk)="onSubmit()"
+  [nzOkLoading]="isSubmitting()"
+  nzOkText="Confirmar y Descontar Fondos"
+  nzCancelText="Cancelar"
+  nzWidth="480px"
+  class="confirm-payment-modal"
+>
+  <ng-container *nzModalContent>
+    @if (payment(); as p) {
+      <div class="confirm-payment-header">
+        <div class="header-icon-box">
+          <span nz-icon nzType="check-circle" nzTheme="fill"></span>
+        </div>
+        <div class="header-info">
+          <h4>{{ p.title }}</h4>
+          <span class="info-due-date">Fecha de vencimiento programada: {{ p.dueDate | date:'dd/MM/yyyy' }}</span>
+        </div>
+      </div>
+
+      <div class="confirm-info-callout">
+        <span nz-icon nzType="info-circle" nzTheme="outline" class="callout-icon"></span>
+        <div class="callout-text">
+          Verifica el valor real pagado y selecciona la cuenta de la cual salió el dinero para descontarlo de tu saldo.
+        </div>
+      </div>
+
+      <form nz-form [formGroup]="confirmForm" nzLayout="vertical" class="confirm-payment-form">
+        <!-- 1. MONTO REALMENTE PAGADO -->
+        <nz-form-item>
+          <nz-form-label nzRequired nzFor="amount">Monto Efectuado / Pagado</nz-form-label>
+          <nz-form-control nzErrorTip="Ingresa un monto válido mayor a 0">
+            <nz-input-number
+              formControlName="amount"
+              id="amount"
+              [nzMin]="0.01"
+              [nzStep]="1000"
+              appDecimalInput
+              nzSize="large"
+              class="full-width"
+              placeholder="0"
+            ></nz-input-number>
+          </nz-form-control>
+          <span class="helper-note">Puedes editar el monto si la factura incluyó recargos, intereses o descuentos.</span>
+        </nz-form-item>
+
+        <!-- 2. MEDIO DE PAGO / BILLETERA DE SALIDA -->
+        <nz-form-item>
+          <nz-form-label nzRequired nzFor="paymentMethodId">Billetera o Cuenta de Pago</nz-form-label>
+          <nz-form-control nzErrorTip="Selecciona el método con el que pagaste">
+            <nz-select
+              formControlName="paymentMethodId"
+              id="paymentMethodId"
+              nzPlaceHolder="Seleccionar billetera..."
+              nzSize="large"
+              class="full-width"
+            >
+              @for (method of paymentMethods(); track method.id) {
+                <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
+              }
+            </nz-select>
+          </nz-form-control>
+          <span class="helper-note">El dinero se restará automáticamente del saldo de esta cuenta.</span>
+        </nz-form-item>
+
+        <!-- 3. FECHA EN QUE SE EFECTUÓ EL PAGO -->
+        <nz-form-item>
+          <nz-form-label nzRequired nzFor="paymentDate">Fecha del Pago</nz-form-label>
+          <nz-form-control nzErrorTip="La fecha es obligatoria">
+            <nz-date-picker
+              formControlName="paymentDate"
+              id="paymentDate"
+              nzFormat="dd/MM/yyyy"
+              nzSize="large"
+              class="full-width"
+            ></nz-date-picker>
+          </nz-form-control>
+        </nz-form-item>
+      </form>
+    }
+  </ng-container>
+</nz-modal>

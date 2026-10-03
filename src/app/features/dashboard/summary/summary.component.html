@@ -16,6 +16,25 @@
     </div>
   }
 
+  <!-- BANNER DE PAGOS PROGRAMADOS POR VENCER -->
+  @if (scheduledPaymentService.urgentCount() > 0) {
+    <div class="scheduled-payment-alert-banner">
+      <div class="alert-icon-box">
+        <span nz-icon nzType="clock-circle" nzTheme="outline"></span>
+      </div>
+      <div class="alert-text-box">
+        <h4>Compromisos de Pago Próximos</h4>
+        <p>
+          Tienes <strong>{{ scheduledPaymentService.urgentCount() }} factura(s) o servicio(s)</strong> que vencen hoy o en las próximas 48 horas.
+        </p>
+      </div>
+      <a routerLink="/dashboard/pagos-programados" class="btn-banner-link">
+        <span>Ir a Pagar</span>
+        <span nz-icon nzType="arrow-right"></span>
+      </a>
+    </div>
+  }
+
   <!-- CABECERA Y CONTROLES -->
   <header class="summary-header">
     <div class="summary-title">

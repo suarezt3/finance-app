@@ -160,6 +160,22 @@
           color: #60a5fa !important;
         }
       }
+
+      .nav-urgent-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 9999px;
+        background-color: #ef4444;
+        color: #ffffff;
+        font-size: 0.675rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-left: 8px;
+      }
     }
   }
 }
