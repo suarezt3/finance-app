@@ -6,7 +6,9 @@ import { Router, RouterOutlet, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 
 import { AuthService } from '../../core/services/auth.service';
+import { TransactionService } from '../../core/services/transaction.service';
 import { ProfileModalComponent } from '../../shared/components/profile-modal/profile-modal.component';
+import { TransactionModalComponent } from '../../shared/components/transaction-modal/transaction-modal.component';
 
 // Módulos de NG-Zorro
 import { NzLayoutModule } from 'ng-zorro-antd/layout';
@@ -40,13 +42,15 @@ import { driver, DriveStep } from 'driver.js';
     NzDropdownModule,
     NzDrawerModule,
     NzTooltipModule,
-    ProfileModalComponent
+    ProfileModalComponent,
+    TransactionModalComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent implements OnInit, AfterViewInit {
   private readonly authService = inject(AuthService);
+  private readonly transactionService = inject(TransactionService);
   private readonly router = inject(Router);
   private readonly message = inject(NzMessageService);
   private readonly breakpointObserver = inject(BreakpointObserver);
@@ -62,6 +66,7 @@ export class DashboardComponent implements OnInit, AfterViewInit {
   readonly isDesktopCollapsed = signal<boolean>(false);
   readonly isMobileMenuOpen = signal<boolean>(false);
   readonly isMobileView = signal<boolean>(false);
+  readonly isGlobalTransactionModalOpen = signal<boolean>(false);
 
   // Computados
   readonly userName = computed(() => {
@@ -241,5 +246,17 @@ export class DashboardComponent implements OnInit, AfterViewInit {
         }
       }
     ];
+  }
+
+  openGlobalTransactionModal(): void {
+    this.isGlobalTransactionModalOpen.set(true);
+  }
+
+  closeGlobalTransactionModal(): void {
+    this.isGlobalTransactionModalOpen.set(false);
+  }
+
+  onGlobalTransactionSaved(): void {
+    this.transactionService.notifyTransactionsChanged();
   }
 }

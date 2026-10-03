@@ -123,6 +123,8 @@ export class TransactionService {
       console.error('Error en Supabase insertando transacción:', insertError.message);
       throw new Error(insertError.message);
     }
+
+    this.notifyTransactionsChanged();
   }
 
   /**
@@ -150,7 +152,7 @@ export class TransactionService {
       payment_method_id: transferData.source_method_id,
       user_id: userId,
       workspace_id: workspaceId,
-      category_id: null // Las transferencias por lo general no afectan el presupuesto por categorías
+      category_id: null
     };
 
     const incomeTx = {
@@ -167,12 +169,14 @@ export class TransactionService {
     // 3. Ejecución en un solo lote (Array Insert)
     const { error: insertError } = await this.supabase
       .from('transactions')
-      .insert([expenseTx, incomeTx]); // <-- Enviamos ambas en una sola petición HTTP
+      .insert([expenseTx, incomeTx]);
 
     if (insertError) {
       console.error('Error al ejecutar la transferencia:', insertError.message);
       throw new Error(insertError.message);
     }
+
+    this.notifyTransactionsChanged();
   }
 
   /**
@@ -195,6 +199,8 @@ export class TransactionService {
       console.error('Error actualizando transacción:', error.message);
       throw new Error(error.message);
     }
+
+    this.notifyTransactionsChanged();
   }
 
   async deleteTransaction(id: string): Promise<void> {
@@ -204,5 +210,11 @@ export class TransactionService {
       .eq('id', id);
 
     if (error) throw new Error(error.message);
+
+    this.notifyTransactionsChanged();
+  }
+
+  public notifyTransactionsChanged(): void {
+    this.transactionsChanged$.next();
   }
 }

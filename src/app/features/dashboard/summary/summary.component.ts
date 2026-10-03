@@ -87,6 +87,7 @@ export class SummaryComponent implements OnInit {
   readonly timeframe = signal<Timeframe>('30d');
   readonly selectedYear = signal<Date | null>(null);
   readonly selectedPaymentMethod = signal<string | null>(null);
+  readonly chartViewMode = signal<'balance' | 'income-expense'>('balance');
 
   readonly isMobileView = signal<boolean>(false);
 
@@ -289,6 +290,44 @@ export class SummaryComponent implements OnInit {
     }
 
     return { dates, values };
+  });
+
+  // -- DATOS PARA EL GRÁFICO COMPARATIVO D3: INGRESOS VS GASTOS --
+  readonly incomeExpenseChartData = computed<{ dates: string[]; incomes: number[]; expenses: number[] }>(() => {
+    const txs = this.masterFilteredTransactions();
+    const tf = this.timeframe();
+    if (txs.length === 0) return { dates: [], incomes: [], expenses: [] };
+
+    const isMonthly = tf === '1y' || tf === 'all' || tf === 'custom-year';
+    const sortedTxs = [...txs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const grouped = new Map<string, { income: number; expense: number }>();
+
+    for (const tx of sortedTxs) {
+      const dateObj = new Date(tx.date);
+      let key = isMonthly ? `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-01` : tx.date;
+
+      if (!grouped.has(key)) {
+        grouped.set(key, { income: 0, expense: 0 });
+      }
+      const entry = grouped.get(key)!;
+
+      if (!tx.isTransfer) {
+        if (tx.type === 'INCOME') entry.income += Number(tx.amount);
+        if (tx.type === 'EXPENSE') entry.expense += Number(tx.amount);
+      }
+    }
+
+    const dates: string[] = [];
+    const incomes: number[] = [];
+    const expenses: number[] = [];
+
+    for (const [dateString, val] of grouped.entries()) {
+      dates.push(dateString);
+      incomes.push(val.income);
+      expenses.push(val.expense);
+    }
+
+    return { dates, incomes, expenses };
   });
 
   // -- DATOS PARA EL GRÁFICO DE ANILLOS D3 (SLATE NAVY & FINANCIAL BLUE) --

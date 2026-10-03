@@ -10,6 +10,13 @@ export interface BalancePoint {
   value: number;
 }
 
+export interface IncomeExpensePoint {
+  index: number;
+  date: string;
+  income: number;
+  expense: number;
+}
+
 export interface YAxisTick {
   y: number;
   formatted: string;
@@ -22,11 +29,12 @@ export interface XAxisTick {
 
 @Component({
   selector: 'app-balance-area-chart',
+  standalone: true,
   imports: [CommonModule, DecimalPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="balance-chart-root" #chartRoot>
-      @if (dates().length === 0 || values().length === 0) {
+      @if (dates().length === 0 || (mode() === 'balance' && values().length === 0) || (mode() === 'income-expense' && incomes().length === 0 && expenses().length === 0)) {
         <div class="empty-balance-state">
           <div class="empty-icon-wrap">
             <svg viewBox="0 0 48 48" class="empty-svg-icon">
@@ -41,11 +49,26 @@ export interface XAxisTick {
               />
             </svg>
           </div>
-          <p class="empty-title">Sin historial de balance</p>
+          <p class="empty-title">Sin historial de datos</p>
           <span class="empty-desc">No se registran movimientos en el periodo o cuenta seleccionada.</span>
         </div>
       } @else {
         <div class="chart-canvas-container">
+          
+          <!-- LEYENDA CUANDO SE ENCUENTRA EN MODO INGRESOS VS GASTOS -->
+          @if (mode() === 'income-expense') {
+            <div class="chart-dual-legend">
+              <span class="legend-badge income">
+                <span class="legend-indicator income-indicator"></span>
+                <span>Ingresos</span>
+              </span>
+              <span class="legend-badge expense">
+                <span class="legend-indicator expense-indicator"></span>
+                <span>Gastos</span>
+              </span>
+            </div>
+          }
+
           <svg
             #svgElement
             viewBox="0 0 640 260"
@@ -57,20 +80,40 @@ export interface XAxisTick {
             (touchend)="onPointerLeave()">
 
             <defs>
-              <!-- Gradiente Slate Navy & Financial Blue reactivo para el área -->
+              <!-- 1. Gradiente Balance (Azul) -->
               <linearGradient id="balanceAreaGradD3" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" [attr.stop-color]="gradTopColor()" [attr.stop-opacity]="gradTopOpacity()" />
                 <stop offset="65%" [attr.stop-color]="gradMidColor()" stop-opacity="0.08" />
                 <stop offset="100%" [attr.stop-color]="gradTopColor()" stop-opacity="0.00" />
               </linearGradient>
 
-              <!-- Filtro de sombra para la línea -->
+              <!-- 2. Gradiente Ingresos (Verde Esmeralda) -->
+              <linearGradient id="incomeAreaGradD3" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#10b981" stop-opacity="0.28" />
+                <stop offset="70%" stop-color="#059669" stop-opacity="0.06" />
+                <stop offset="100%" stop-color="#10b981" stop-opacity="0.00" />
+              </linearGradient>
+
+              <!-- 3. Gradiente Gastos (Coral / Rojo) -->
+              <linearGradient id="expenseAreaGradD3" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#ef4444" stop-opacity="0.25" />
+                <stop offset="70%" stop-color="#dc2626" stop-opacity="0.06" />
+                <stop offset="100%" stop-color="#ef4444" stop-opacity="0.00" />
+              </linearGradient>
+
+              <!-- Filtros de resplandor para las líneas -->
               <filter id="lineGlow" x="-10%" y="-10%" width="120%" height="120%">
                 <feDropShadow dx="0" dy="2" stdDeviation="2" [attr.flood-color]="lineColor()" flood-opacity="0.3" />
               </filter>
+              <filter id="incomeLineGlow" x="-10%" y="-10%" width="120%" height="120%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#10b981" flood-opacity="0.3" />
+              </filter>
+              <filter id="expenseLineGlow" x="-10%" y="-10%" width="120%" height="120%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#ef4444" flood-opacity="0.3" />
+              </filter>
             </defs>
 
-            <!-- 1. RETÍCULA HORIZONTAL Y EJE Y -->
+            <!-- RETÍCULA HORIZONTAL Y EJE Y -->
             <g class="grid-group">
               @for (tick of yTicks(); track tick.y) {
                 <line
@@ -90,7 +133,7 @@ export interface XAxisTick {
               }
             </g>
 
-            <!-- 2. EJE X (FECHAS) -->
+            <!-- EJE X (FECHAS) -->
             <g class="x-axis-group">
               @for (tick of xTicks(); track tick.x) {
                 <text
@@ -103,61 +146,129 @@ export interface XAxisTick {
               }
             </g>
 
-            <!-- 3. ÁREA CON GRADIENTE D3 -->
-            @if (areaPath()) {
-              <path [attr.d]="areaPath()" fill="url(#balanceAreaGradD3)" class="area-shape" />
+            <!-- MODO 1: BALANCE NETO (UNA LÍNEA AZUL + ÁREA) -->
+            @if (mode() === 'balance') {
+              @if (areaPath()) {
+                <path [attr.d]="areaPath()" fill="url(#balanceAreaGradD3)" class="area-shape" />
+              }
+
+              @if (linePath()) {
+                <path
+                  [attr.d]="linePath()"
+                  fill="none"
+                  [attr.stroke]="lineColor()"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  filter="url(#lineGlow)"
+                  class="line-stroke"
+                />
+              }
+
+              <!-- FOCO EN HOVER PARA BALANCE -->
+              @if (hoveredPoint(); as hp) {
+                <line
+                  [attr.x1]="hp.x"
+                  [attr.y1]="margins.top"
+                  [attr.x2]="hp.x"
+                  [attr.y2]="height - margins.bottom"
+                  class="crosshair-guide"
+                />
+                <circle
+                  [attr.cx]="hp.x"
+                  [attr.cy]="hp.y"
+                  r="7"
+                  [attr.fill]="lineColor()"
+                  fill-opacity="0.25"
+                  class="hover-pulse-ring"
+                />
+                <circle
+                  [attr.cx]="hp.x"
+                  [attr.cy]="hp.y"
+                  r="4.5"
+                  [attr.fill]="focalFill()"
+                  [attr.stroke]="focalStroke()"
+                  stroke-width="2.5"
+                  class="hover-focal-point"
+                />
+              }
             }
 
-            <!-- 4. LÍNEA PRINCIPAL D3 -->
-            @if (linePath()) {
-              <path
-                [attr.d]="linePath()"
-                fill="none"
-                [attr.stroke]="lineColor()"
-                stroke-width="2.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                filter="url(#lineGlow)"
-                class="line-stroke"
-              />
-            }
+            <!-- MODO 2: INGRESOS VS GASTOS (DOS LÍNEAS + ÁREAS) -->
+            @if (mode() === 'income-expense') {
+              <!-- Áreas -->
+              @if (incomeAreaPath()) {
+                <path [attr.d]="incomeAreaPath()" fill="url(#incomeAreaGradD3)" class="area-shape" />
+              }
+              @if (expenseAreaPath()) {
+                <path [attr.d]="expenseAreaPath()" fill="url(#expenseAreaGradD3)" class="area-shape" />
+              }
 
-            <!-- 5. CROSSHAIR Y PUNTO EN HOVER -->
-            @if (hoveredPoint(); as hp) {
-              <!-- Línea vertical de guía -->
-              <line
-                [attr.x1]="hp.x"
-                [attr.y1]="margins.top"
-                [attr.x2]="hp.x"
-                [attr.y2]="height - margins.bottom"
-                class="crosshair-guide"
-              />
+              <!-- Línea Ingresos -->
+              @if (incomeLinePath()) {
+                <path
+                  [attr.d]="incomeLinePath()"
+                  fill="none"
+                  stroke="#10b981"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  filter="url(#incomeLineGlow)"
+                  class="line-stroke"
+                />
+              }
 
-              <!-- Anillo exterior de foco -->
-              <circle
-                [attr.cx]="hp.x"
-                [attr.cy]="hp.y"
-                r="7"
-                [attr.fill]="lineColor()"
-                fill-opacity="0.25"
-                class="hover-pulse-ring"
-              />
+              <!-- Línea Gastos -->
+              @if (expenseLinePath()) {
+                <path
+                  [attr.d]="expenseLinePath()"
+                  fill="none"
+                  stroke="#ef4444"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  filter="url(#expenseLineGlow)"
+                  class="line-stroke"
+                />
+              }
 
-              <!-- Punto focal central -->
-              <circle
-                [attr.cx]="hp.x"
-                [attr.cy]="hp.y"
-                r="4.5"
-                [attr.fill]="focalFill()"
-                [attr.stroke]="focalStroke()"
-                stroke-width="2.5"
-                class="hover-focal-point"
-              />
+              <!-- FOCO EN HOVER PARA INGRESOS VS GASTOS -->
+              @if (hoveredDualPoint(); as hdp) {
+                <line
+                  [attr.x1]="hdp.x"
+                  [attr.y1]="margins.top"
+                  [attr.x2]="hdp.x"
+                  [attr.y2]="height - margins.bottom"
+                  class="crosshair-guide"
+                />
+
+                <!-- Punto Ingresos (Verde) -->
+                <circle
+                  [attr.cx]="hdp.x"
+                  [attr.cy]="hdp.incomeY"
+                  r="5"
+                  fill="#ffffff"
+                  stroke="#10b981"
+                  stroke-width="2.5"
+                  class="hover-focal-point"
+                />
+
+                <!-- Punto Gastos (Rojo) -->
+                <circle
+                  [attr.cx]="hdp.x"
+                  [attr.cy]="hdp.expenseY"
+                  r="5"
+                  fill="#ffffff"
+                  stroke="#ef4444"
+                  stroke-width="2.5"
+                  class="hover-focal-point"
+                />
+              }
             }
           </svg>
 
-          <!-- TOOLTIP FLOTANTE INTERACTIVO -->
-          @if (hoveredPoint(); as hp) {
+          <!-- TOOLTIP FLOTANTE INTERACTIVO: BALANCE -->
+          @if (mode() === 'balance' && hoveredPoint(); as hp) {
             <div
               class="d3-tooltip-card"
               [style.left.px]="hp.tooltipX"
@@ -166,8 +277,43 @@ export interface XAxisTick {
               <div class="tooltip-body">
                 <span class="tooltip-label">Saldo Acumulado:</span>
                 <span class="tooltip-value tabular-nums" [class.is-negative]="hp.value < 0">
-                  \${{ hp.value | number:'1.0-2':'es' }}
+                  {{ currencySymbol() }}{{ hp.value | number:'1.0-2':'es' }}
                 </span>
+              </div>
+            </div>
+          }
+
+          <!-- TOOLTIP FLOTANTE INTERACTIVO: INGRESOS VS GASTOS -->
+          @if (mode() === 'income-expense' && hoveredDualPoint(); as hdp) {
+            <div
+              class="d3-tooltip-card dual-tooltip"
+              [style.left.px]="hdp.tooltipX"
+              [style.top.px]="hdp.tooltipY">
+              <div class="tooltip-header">{{ hdp.dateFormatted }}</div>
+              <div class="tooltip-dual-body">
+                <div class="tooltip-dual-row">
+                  <span class="dual-label income-label">
+                    <span class="bullet income"></span> Ingresos:
+                  </span>
+                  <span class="dual-val income-val tabular-nums">
+                    +{{ currencySymbol() }}{{ hdp.income | number:'1.0-2':'es' }}
+                  </span>
+                </div>
+                <div class="tooltip-dual-row">
+                  <span class="dual-label expense-label">
+                    <span class="bullet expense"></span> Gastos:
+                  </span>
+                  <span class="dual-val expense-val tabular-nums">
+                    -{{ currencySymbol() }}{{ hdp.expense | number:'1.0-2':'es' }}
+                  </span>
+                </div>
+                <div class="tooltip-divider"></div>
+                <div class="tooltip-dual-row net-row">
+                  <span class="dual-label">Flujo Neto:</span>
+                  <span class="dual-val tabular-nums" [class.positive]="(hdp.income - hdp.expense) >= 0" [class.negative]="(hdp.income - hdp.expense) < 0">
+                    {{ (hdp.income - hdp.expense) >= 0 ? '+' : '-' }}{{ currencySymbol() }}{{ ((hdp.income - hdp.expense) >= 0 ? (hdp.income - hdp.expense) : -(hdp.income - hdp.expense)) | number:'1.0-2':'es' }}
+                  </span>
+                </div>
               </div>
             </div>
           }
@@ -228,6 +374,53 @@ export interface XAxisTick {
       height: 100%;
     }
 
+    .chart-dual-legend {
+      position: absolute;
+      top: 4px;
+      right: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 5;
+      background: var(--color-surface);
+      padding: 3px 8px;
+      border-radius: 8px;
+      border: 1px solid var(--color-border);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+      .legend-badge {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.725rem;
+        font-weight: 700;
+
+        &.income {
+          color: #059669;
+          html.dark & { color: #34d399; }
+        }
+
+        &.expense {
+          color: #dc2626;
+          html.dark & { color: #f87171; }
+        }
+
+        .legend-indicator {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+
+          &.income-indicator {
+            background-color: #10b981;
+          }
+
+          &.expense-indicator {
+            background-color: #ef4444;
+          }
+        }
+      }
+    }
+
     .d3-area-svg {
       width: 100%;
       height: 100%;
@@ -245,87 +438,77 @@ export interface XAxisTick {
         font-size: 10px;
         font-weight: 600;
         fill: var(--color-slate-muted);
-        font-family: 'Inter', sans-serif;
+        font-family: inherit;
         transition: fill 0.2s ease;
       }
 
       .x-axis-label {
-        font-size: 10.5px;
+        font-size: 10px;
         font-weight: 600;
         fill: var(--color-slate-muted);
-        font-family: 'Inter', sans-serif;
+        font-family: inherit;
         transition: fill 0.2s ease;
       }
 
-      .area-shape {
-        pointer-events: none;
-      }
-
       .line-stroke {
-        pointer-events: none;
         transition: stroke 0.2s ease;
       }
 
       .crosshair-guide {
-        stroke: var(--color-slate-muted);
+        stroke: var(--color-blue-primary);
         stroke-width: 1;
         stroke-dasharray: 3 3;
-        pointer-events: none;
+        opacity: 0.6;
       }
 
       .hover-pulse-ring {
-        pointer-events: none;
+        animation: pulseRing 1.5s infinite ease-out;
       }
 
       .hover-focal-point {
-        pointer-events: none;
-        filter: drop-shadow(0 2px 4px rgba(15, 23, 42, 0.3));
-        transition: fill 0.2s ease, stroke 0.2s ease;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
       }
     }
 
-    // TOOLTIP FLOTANTE
+    @keyframes pulseRing {
+      0% { r: 6; opacity: 0.8; }
+      50% { r: 10; opacity: 0.2; }
+      100% { r: 6; opacity: 0.8; }
+    }
+
     .d3-tooltip-card {
       position: absolute;
-      transform: translate(-50%, -115%);
-      background-color: #020617;
-      border: 1px solid #1e293b;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 4px 10px -2px rgba(0, 0, 0, 0.4);
-      border-radius: 8px;
-      padding: 8px 12px;
       pointer-events: none;
-      white-space: nowrap;
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 8px 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
       z-index: 20;
-      transition: left 0.05s ease, top 0.05s ease;
+      transform: translate(-50%, -120%);
+      transition: left 0.08s ease-out, top 0.08s ease-out;
+      min-width: 130px;
 
-      &::after {
-        content: '';
-        position: absolute;
-        bottom: -5px;
-        left: 50%;
-        transform: translateX(-50%);
-        border-width: 5px 5px 0;
-        border-style: solid;
-        border-color: #020617 transparent transparent transparent;
+      &.dual-tooltip {
+        min-width: 170px;
       }
 
       .tooltip-header {
-        font-size: 0.7rem;
+        font-size: 0.725rem;
         font-weight: 600;
         color: #94a3b8;
+        margin-bottom: 5px;
         text-transform: capitalize;
-        margin-bottom: 2px;
       }
 
       .tooltip-body {
         display: flex;
-        align-items: center;
-        gap: 6px;
+        flex-direction: column;
+        gap: 2px;
 
         .tooltip-label {
-          font-size: 0.725rem;
+          font-size: 0.7rem;
           color: #cbd5e1;
-          font-weight: 500;
         }
 
         .tooltip-value {
@@ -338,6 +521,59 @@ export interface XAxisTick {
           }
         }
       }
+
+      .tooltip-dual-body {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+
+        .tooltip-dual-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+          font-size: 0.775rem;
+
+          .dual-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: #cbd5e1;
+            font-weight: 500;
+
+            .bullet {
+              width: 6px;
+              height: 6px;
+              border-radius: 50%;
+
+              &.income { background-color: #10b981; }
+              &.expense { background-color: #ef4444; }
+            }
+          }
+
+          .dual-val {
+            font-weight: 700;
+
+            &.income-val { color: #34d399; }
+            &.expense-val { color: #f87171; }
+
+            &.positive { color: #34d399; }
+            &.negative { color: #f87171; }
+          }
+
+          &.net-row {
+            margin-top: 2px;
+            font-weight: 700;
+            color: #ffffff;
+          }
+        }
+
+        .tooltip-divider {
+          height: 1px;
+          background: rgba(255, 255, 255, 0.1);
+          margin: 3px 0;
+        }
+      }
     }
   `]
 })
@@ -346,11 +582,15 @@ export class BalanceAreaChart {
 
   readonly dates = input<string[]>([]);
   readonly values = input<number[]>([]);
+  readonly incomes = input<number[]>([]);
+  readonly expenses = input<number[]>([]);
+  readonly mode = input<'balance' | 'income-expense'>('balance');
+  readonly currencySymbol = input<string>('$');
   readonly timeframe = input<string>('30d');
 
   readonly isDark = computed(() => this.themeService.isDarkMode());
 
-  // Colores dinámicos según el modo
+  // Colores dinámicos según el tema
   readonly lineColor = computed(() => this.isDark() ? '#38bdf8' : '#2563eb');
   readonly gradTopColor = computed(() => this.isDark() ? '#38bdf8' : '#2563eb');
   readonly gradMidColor = computed(() => this.isDark() ? '#1e3a8a' : '#3b82f6');
@@ -363,7 +603,7 @@ export class BalanceAreaChart {
 
   readonly width = 640;
   readonly height = 260;
-  readonly margins = { top: 20, right: 24, bottom: 32, left: 62 };
+  readonly margins = { top: 24, right: 24, bottom: 32, left: 62 };
 
   readonly hoveredPoint = signal<{
     x: number;
@@ -374,8 +614,19 @@ export class BalanceAreaChart {
     value: number;
   } | null>(null);
 
-  // Puntos normalizados
-  private readonly points = computed<BalancePoint[]>(() => {
+  readonly hoveredDualPoint = signal<{
+    x: number;
+    incomeY: number;
+    expenseY: number;
+    tooltipX: number;
+    tooltipY: number;
+    dateFormatted: string;
+    income: number;
+    expense: number;
+  } | null>(null);
+
+  // 1. Puntos para modo Balance
+  private readonly balancePoints = computed<BalancePoint[]>(() => {
     const d = this.dates();
     const v = this.values();
     if (d.length === 0 || v.length === 0) return [];
@@ -388,42 +639,75 @@ export class BalanceAreaChart {
     return pts;
   });
 
-  // Escala X
+  // 2. Puntos para modo Ingresos vs Gastos
+  private readonly dualPoints = computed<IncomeExpensePoint[]>(() => {
+    const d = this.dates();
+    const inc = this.incomes();
+    const exp = this.expenses();
+    if (d.length === 0) return [];
+
+    const len = Math.min(d.length, Math.max(inc.length, exp.length));
+    const pts: IncomeExpensePoint[] = [];
+    for (let i = 0; i < len; i++) {
+      pts.push({
+        index: i,
+        date: d[i],
+        income: Number(inc[i]) || 0,
+        expense: Number(exp[i]) || 0
+      });
+    }
+    return pts;
+  });
+
+  // Escala X común
   private readonly xScale = computed(() => {
-    const pts = this.points();
-    const count = pts.length;
+    const count = this.dates().length;
     const maxIdx = count > 1 ? count - 1 : 1;
     return scaleLinear()
       .domain([0, maxIdx])
       .range([this.margins.left, this.width - this.margins.right]);
   });
 
-  // Escala Y
+  // Escala Y adaptada según el modo
   private readonly yScale = computed(() => {
-    const pts = this.points();
-    if (pts.length === 0) return scaleLinear().domain([0, 100]).range([this.height - this.margins.bottom, this.margins.top]);
-
-    const vals = pts.map(p => p.value);
-    let min = Math.min(...vals);
-    let max = Math.max(...vals);
-
-    if (min === max) {
-      min -= 1000;
-      max += 1000;
+    if (this.mode() === 'income-expense') {
+      const dual = this.dualPoints();
+      if (dual.length === 0) {
+        return scaleLinear().domain([0, 100]).range([this.height - this.margins.bottom, this.margins.top]);
+      }
+      const maxVal = Math.max(100, ...dual.map(p => Math.max(p.income, p.expense)));
+      return scaleLinear()
+        .domain([0, maxVal * 1.15])
+        .range([this.height - this.margins.bottom, this.margins.top]);
     } else {
-      const padding = (max - min) * 0.15;
-      min -= padding;
-      max += padding;
-    }
+      const pts = this.balancePoints();
+      if (pts.length === 0) {
+        return scaleLinear().domain([0, 100]).range([this.height - this.margins.bottom, this.margins.top]);
+      }
 
-    return scaleLinear()
-      .domain([min, max])
-      .range([this.height - this.margins.bottom, this.margins.top]);
+      const vals = pts.map(p => p.value);
+      let min = Math.min(...vals);
+      let max = Math.max(...vals);
+
+      if (min === max) {
+        min -= 1000;
+        max += 1000;
+      } else {
+        const padding = (max - min) * 0.15;
+        min -= padding;
+        max += padding;
+      }
+
+      return scaleLinear()
+        .domain([min, max])
+        .range([this.height - this.margins.bottom, this.margins.top]);
+    }
   });
 
-  // Generador de Trazado de Línea D3
+  // Trazados para MODO BALANCE
   readonly linePath = computed<string>(() => {
-    const pts = this.points();
+    if (this.mode() !== 'balance') return '';
+    const pts = this.balancePoints();
     if (pts.length === 0) return '';
 
     const x = this.xScale();
@@ -437,9 +721,9 @@ export class BalanceAreaChart {
     return lineGen(pts) || '';
   });
 
-  // Generador de Trazado de Área D3
   readonly areaPath = computed<string>(() => {
-    const pts = this.points();
+    if (this.mode() !== 'balance') return '';
+    const pts = this.balancePoints();
     if (pts.length === 0) return '';
 
     const x = this.xScale();
@@ -455,7 +739,76 @@ export class BalanceAreaChart {
     return areaGen(pts) || '';
   });
 
-  // Ticks y Etiquetas del Eje Y
+  // Trazados para MODO INGRESOS VS GASTOS
+  readonly incomeLinePath = computed<string>(() => {
+    if (this.mode() !== 'income-expense') return '';
+    const pts = this.dualPoints();
+    if (pts.length === 0) return '';
+
+    const x = this.xScale();
+    const y = this.yScale();
+
+    const lineGen = line<IncomeExpensePoint>()
+      .x(d => x(d.index))
+      .y(d => y(d.income))
+      .curve(curveMonotoneX);
+
+    return lineGen(pts) || '';
+  });
+
+  readonly incomeAreaPath = computed<string>(() => {
+    if (this.mode() !== 'income-expense') return '';
+    const pts = this.dualPoints();
+    if (pts.length === 0) return '';
+
+    const x = this.xScale();
+    const y = this.yScale();
+    const baseline = this.height - this.margins.bottom;
+
+    const areaGen = area<IncomeExpensePoint>()
+      .x(d => x(d.index))
+      .y0(baseline)
+      .y1(d => y(d.income))
+      .curve(curveMonotoneX);
+
+    return areaGen(pts) || '';
+  });
+
+  readonly expenseLinePath = computed<string>(() => {
+    if (this.mode() !== 'income-expense') return '';
+    const pts = this.dualPoints();
+    if (pts.length === 0) return '';
+
+    const x = this.xScale();
+    const y = this.yScale();
+
+    const lineGen = line<IncomeExpensePoint>()
+      .x(d => x(d.index))
+      .y(d => y(d.expense))
+      .curve(curveMonotoneX);
+
+    return lineGen(pts) || '';
+  });
+
+  readonly expenseAreaPath = computed<string>(() => {
+    if (this.mode() !== 'income-expense') return '';
+    const pts = this.dualPoints();
+    if (pts.length === 0) return '';
+
+    const x = this.xScale();
+    const y = this.yScale();
+    const baseline = this.height - this.margins.bottom;
+
+    const areaGen = area<IncomeExpensePoint>()
+      .x(d => x(d.index))
+      .y0(baseline)
+      .y1(d => y(d.expense))
+      .curve(curveMonotoneX);
+
+    return areaGen(pts) || '';
+  });
+
+  // Ticks Eje Y
   readonly yTicks = computed<YAxisTick[]>(() => {
     const y = this.yScale();
     const rawTicks = y.ticks(5);
@@ -466,40 +819,38 @@ export class BalanceAreaChart {
     }));
   });
 
-  // Ticks y Etiquetas del Eje X
+  // Ticks Eje X
   readonly xTicks = computed<XAxisTick[]>(() => {
-    const pts = this.points();
-    if (pts.length === 0) return [];
+    const datesList = this.dates();
+    const count = datesList.length;
+    if (count === 0) return [];
 
     const x = this.xScale();
-    const count = pts.length;
-
     const desiredTicks = Math.min(6, count);
     const step = Math.max(1, Math.floor((count - 1) / (desiredTicks - 1)));
     const ticks: XAxisTick[] = [];
 
     for (let i = 0; i < count; i += step) {
       ticks.push({
-        x: x(pts[i].index),
-        label: this.formatDateLabel(pts[i].date)
+        x: x(i),
+        label: this.formatDateLabel(datesList[i])
       });
     }
 
     const lastIdx = count - 1;
-    if (ticks.length > 0 && ticks[ticks.length - 1].x !== x(pts[lastIdx].index)) {
+    if (ticks.length > 0 && ticks[ticks.length - 1].x !== x(lastIdx)) {
       if (ticks.length >= desiredTicks) {
         ticks.pop();
       }
       ticks.push({
-        x: x(pts[lastIdx].index),
-        label: this.formatDateLabel(pts[lastIdx].date)
+        x: x(lastIdx),
+        label: this.formatDateLabel(datesList[lastIdx])
       });
     }
 
     return ticks;
   });
 
-  // Manejo de eventos puntero para Tooltip reactivo
   onPointerMove(event: MouseEvent): void {
     const svg = this.svgElement()?.nativeElement;
     const root = this.chartRoot()?.nativeElement;
@@ -526,59 +877,91 @@ export class BalanceAreaChart {
   }
 
   private updateHoverFromSvgX(svgX: number, svgRect: DOMRect, rootEl: HTMLElement): void {
-    const pts = this.points();
-    if (pts.length === 0) return;
+    const count = this.dates().length;
+    if (count === 0) return;
 
     const x = this.xScale();
     const y = this.yScale();
 
-    let closestPt = pts[0];
+    let closestIdx = 0;
     let minDistance = Infinity;
 
-    for (const pt of pts) {
-      const ptX = x(pt.index);
+    for (let i = 0; i < count; i++) {
+      const ptX = x(i);
       const dist = Math.abs(ptX - svgX);
       if (dist < minDistance) {
         minDistance = dist;
-        closestPt = pt;
+        closestIdx = i;
       }
     }
 
-    const ptSvgX = x(closestPt.index);
-    const ptSvgY = y(closestPt.value);
-
+    const ptSvgX = x(closestIdx);
     const rootRect = rootEl.getBoundingClientRect();
     const screenX = svgRect.left + (ptSvgX / this.width) * svgRect.width;
-    const screenY = svgRect.top + (ptSvgY / this.height) * svgRect.height;
 
-    const tooltipX = screenX - rootRect.left;
-    const tooltipY = screenY - rootRect.top;
+    if (this.mode() === 'income-expense') {
+      const dual = this.dualPoints();
+      if (!dual[closestIdx]) return;
+      const pt = dual[closestIdx];
 
-    this.hoveredPoint.set({
-      x: ptSvgX,
-      y: ptSvgY,
-      tooltipX,
-      tooltipY,
-      dateFormatted: this.formatDateFull(closestPt.date),
-      value: closestPt.value
-    });
+      const incY = y(pt.income);
+      const expY = y(pt.expense);
+      const focusY = Math.min(incY, expY);
+
+      const screenY = svgRect.top + (focusY / this.height) * svgRect.height;
+      const tooltipX = screenX - rootRect.left;
+      const tooltipY = Math.max(10, screenY - rootRect.top);
+
+      this.hoveredDualPoint.set({
+        x: ptSvgX,
+        incomeY: incY,
+        expenseY: expY,
+        tooltipX,
+        tooltipY,
+        dateFormatted: this.formatDateFull(pt.date),
+        income: pt.income,
+        expense: pt.expense
+      });
+      this.hoveredPoint.set(null);
+    } else {
+      const pts = this.balancePoints();
+      if (!pts[closestIdx]) return;
+      const pt = pts[closestIdx];
+
+      const ptSvgY = y(pt.value);
+      const screenY = svgRect.top + (ptSvgY / this.height) * svgRect.height;
+      const tooltipX = screenX - rootRect.left;
+      const tooltipY = Math.max(10, screenY - rootRect.top);
+
+      this.hoveredPoint.set({
+        x: ptSvgX,
+        y: ptSvgY,
+        tooltipX,
+        tooltipY,
+        dateFormatted: this.formatDateFull(pt.date),
+        value: pt.value
+      });
+      this.hoveredDualPoint.set(null);
+    }
   }
 
   onPointerLeave(): void {
     this.hoveredPoint.set(null);
+    this.hoveredDualPoint.set(null);
   }
 
   private formatCurrencyCompact(val: number): string {
     const absVal = Math.abs(val);
     const sign = val < 0 ? '-' : '';
+    const sym = this.currencySymbol();
 
     if (absVal >= 1_000_000) {
-      return `${sign}$${(absVal / 1_000_000).toFixed(1)}M`;
+      return `${sign}${sym}${(absVal / 1_000_000).toFixed(1)}M`;
     }
     if (absVal >= 1_000) {
-      return `${sign}$${(absVal / 1_000).toFixed(0)}k`;
+      return `${sign}${sym}${(absVal / 1_000).toFixed(0)}k`;
     }
-    return `${sign}$${absVal.toFixed(0)}`;
+    return `${sign}${sym}${absVal.toFixed(0)}`;
   }
 
   private formatDateLabel(dateStr: string): string {

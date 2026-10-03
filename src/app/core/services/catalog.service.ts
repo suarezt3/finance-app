@@ -147,6 +147,23 @@ export class CatalogService {
   }
 
   async deleteCategory(id: string): Promise<void> {
+    // 1. PRE-CHECK: Verificamos si existe al menos una transacción usando esta categoría
+    const { data: usageData, error: usageError } = await this.supabase
+      .from('transactions')
+      .select('id')
+      .eq('category_id', id)
+      .limit(1);
+
+    if (usageError) {
+      console.error('Error verificando uso de la categoría:', usageError.message);
+      throw new Error('Error al validar la integridad de la categoría.');
+    }
+
+    if (usageData && usageData.length > 0) {
+      throw new Error('CATEGORY_IN_USE');
+    }
+
+    // 2. ELIMINACIÓN: Si pasó la validación, procedemos a borrar de forma segura.
     const { error } = await this.supabase
       .from('categories')
       .delete()
@@ -154,6 +171,9 @@ export class CatalogService {
 
     if (error) {
       console.error('Error eliminando categoría:', error.message);
+      if (error.code === '23503' || error.message?.toLowerCase().includes('foreign key') || error.message?.toLowerCase().includes('violates')) {
+        throw new Error('CATEGORY_IN_USE');
+      }
       throw new Error(error.message);
     }
   }

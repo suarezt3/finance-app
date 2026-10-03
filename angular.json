@@ -61,9 +61,6 @@
             "outputMode": "server",
             "ssr": {
               "entry": "src/server.ts"
-            },
-            "security": {
-              "allowedHosts": ["*"]
             }
           },
           "configurations": {

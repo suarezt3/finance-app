@@ -43,6 +43,10 @@ export const routes: Routes = [
       {
         path: 'transacciones',
         loadComponent: () => import('./features/dashboard/transactions/transactions.component').then(m => m.TransactionsComponent)
+      },
+      {
+        path: 'transactions',
+        redirectTo: 'transacciones'
       }
     ]
   },

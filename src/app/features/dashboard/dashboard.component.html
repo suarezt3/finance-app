@@ -195,5 +195,25 @@
 
   </nz-layout>
 
+  <!-- BOTÓN FLOTANTE GLOBAL (FAB): REGISTRAR MOVIMIENTO DESDE CUALQUIER LUGAR -->
+  <button
+    type="button"
+    class="global-fab-action-btn"
+    (click)="openGlobalTransactionModal()"
+    id="global-fab-new-tx"
+    aria-label="Registrar nuevo movimiento"
+  >
+    <div class="fab-icon-wrap">
+      <span nz-icon nzType="plus" class="fab-icon"></span>
+    </div>
+    <span class="fab-text">Nuevo Movimiento</span>
+  </button>
+
   <app-profile-modal></app-profile-modal>
+
+  <app-transaction-modal
+    [isVisible]="isGlobalTransactionModalOpen()"
+    (closeModal)="closeGlobalTransactionModal()"
+    (transactionSaved)="onGlobalTransactionSaved()">
+  </app-transaction-modal>
 </nz-layout>

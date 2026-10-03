@@ -160,16 +160,36 @@
     <nz-col [nzXs]="24" [nzLg]="14">
       <nz-card class="dashboard-chart-card" [nzTitle]="balanceChartHeader" [nzBordered]="false">
         <ng-template #balanceChartHeader>
-          <div class="chart-header-group">
-            <span class="chart-title">Evolución de Balance</span>
-            <span class="chart-sub">{{ timeframeText() }}</span>
+          <div class="chart-header-group has-mode-toggle">
+            <div class="chart-title-sub">
+              <span class="chart-title">
+                {{ chartViewMode() === 'balance' ? 'Evolución de Balance' : 'Ingresos vs Gastos' }}
+              </span>
+              <span class="chart-sub">{{ timeframeText() }}</span>
+            </div>
+
+            <div class="chart-mode-toggle-wrap">
+              <nz-radio-group
+                [ngModel]="chartViewMode()"
+                (ngModelChange)="chartViewMode.set($event)"
+                nzSize="small"
+                nzButtonStyle="solid"
+                class="chart-segmented-control">
+                <label nz-radio-button nzValue="balance">Balance</label>
+                <label nz-radio-button nzValue="income-expense">Ingresos vs Gastos</label>
+              </nz-radio-group>
+            </div>
           </div>
         </ng-template>
 
         <app-balance-area-chart
-          [dates]="balanceChartData().dates"
+          [mode]="chartViewMode()"
+          [dates]="chartViewMode() === 'balance' ? balanceChartData().dates : incomeExpenseChartData().dates"
           [values]="balanceChartData().values"
-          [timeframe]="timeframe()">
+          [incomes]="incomeExpenseChartData().incomes"
+          [expenses]="incomeExpenseChartData().expenses"
+          [timeframe]="timeframe()"
+          [currencySymbol]="currencySymbol()">
         </app-balance-area-chart>
       </nz-card>
     </nz-col>
@@ -202,7 +222,7 @@
         <span class="recent-main-title">Últimos 5 Movimientos</span>
         <span class="recent-subtitle">Actividad reciente registrada en tus cuentas</span>
       </div>
-      <a routerLink="/dashboard/transactions" class="btn-view-all-link">
+      <a routerLink="/dashboard/transacciones" class="btn-view-all-link">
         <span>Ver todas las transacciones</span>
         <span nz-icon nzType="arrow-right" class="arrow-icon"></span>
       </a>

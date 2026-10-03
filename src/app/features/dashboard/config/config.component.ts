@@ -304,7 +304,18 @@ export class ConfigComponent implements OnInit {
           await this.loadCatalogs();
         } catch (err: unknown) {
           if (err instanceof Error) {
-            this.message.error(err.message || 'No se pudo eliminar la categoría.');
+            if (
+              err.message === 'CATEGORY_IN_USE' ||
+              err.message.toLowerCase().includes('foreign key') ||
+              err.message.toLowerCase().includes('violates')
+            ) {
+              this.message.warning(
+                'No puedes eliminar esta categoría porque está asignada a transacciones registradas. Puedes editar su nombre o reasignar las transacciones antes de eliminarla.',
+                { nzDuration: 6000 }
+              );
+            } else {
+              this.message.error(err.message || 'No se pudo eliminar la categoría.');
+            }
           }
         }
       }
