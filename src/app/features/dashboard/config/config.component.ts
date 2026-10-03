@@ -65,13 +65,8 @@ export class ConfigComponent implements OnInit {
   readonly isCheckingUpdates = signal<boolean>(false);
   readonly isSavingPreferences = signal<boolean>(false);
 
-  // Estadísticas del mes actual para explicación y cálculo del ahorro
-  readonly currentMonthIncome = signal<number>(0);
-  readonly currentMonthExpense = signal<number>(0);
-  readonly currentMonthSavings = signal<number>(0);
-
   // Navegación adaptable
-  readonly activeTab = signal<'categories' | 'methods' | 'goals' | 'security'>('categories');
+  readonly activeTab = signal<'categories' | 'methods' | 'alerts' | 'security'>('categories');
   readonly categoryFilter = signal<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
   readonly categorySearch = signal<string>('');
   readonly methodSearch = signal<string>('');
@@ -125,13 +120,11 @@ export class ConfigComponent implements OnInit {
     name: ['', [Validators.required, Validators.minLength(3)]]
   });
 
-  // Formulario de Metas y Alertas
-  readonly goalsForm: FormGroup = this.fb.nonNullable.group({
-    savingsGoal: [500000, [Validators.required, Validators.min(0)]],
-    savingsGoalName: ['Meta de Ahorro Mensual', [Validators.required]],
-    expenseAlertThreshold: [200000, [Validators.required, Validators.min(0)]],
+  // Formulario de Alertas de Presupuesto
+  readonly alertsForm: FormGroup = this.fb.nonNullable.group({
+    alertsEnabled: [true],
     budgetAlertPercentage: [80, [Validators.required, Validators.min(10), Validators.max(100)]],
-    alertsEnabled: [true]
+    expenseAlertThreshold: [200000, [Validators.required, Validators.min(0)]]
   });
 
   // Formateadores con puntos de miles para campos numéricos
@@ -148,33 +141,14 @@ export class ConfigComponent implements OnInit {
     return isNaN(parsedNumber) ? 0 : parsedNumber;
   };
 
-  // Cálculos reactivos de metas
-  readonly savingsGoal = this.userPreferences.savingsGoal;
-  readonly savingsGoalName = this.userPreferences.savingsGoalName;
   readonly currencySymbol = this.userPreferences.currencySymbol;
   readonly preferredCurrency = this.userPreferences.preferredCurrency;
-
-  readonly savingsProgressPercentage = computed(() => {
-    const goal = this.savingsGoal();
-    if (goal <= 0) return 0;
-    const current = Math.max(0, this.currentMonthSavings());
-    const pct = Math.round((current / goal) * 100);
-    return Math.min(100, pct);
-  });
-
-  readonly remainingSavings = computed(() => {
-    const goal = this.savingsGoal();
-    const current = this.currentMonthSavings();
-    return Math.max(0, goal - current);
-  });
 
   constructor() {
     // Sincronizar reactivamente formulario cuando las preferencias de la nube se carguen
     effect(() => {
       const p = this.userPreferences.preferences();
-      this.goalsForm.patchValue({
-        savingsGoal: p.savingsGoal,
-        savingsGoalName: p.savingsGoalName,
+      this.alertsForm.patchValue({
         expenseAlertThreshold: p.expenseAlertThreshold,
         budgetAlertPercentage: p.budgetAlertPercentage,
         alertsEnabled: p.alertsEnabled
@@ -183,10 +157,7 @@ export class ConfigComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    await Promise.all([
-      this.loadCatalogs(),
-      this.loadTransactionsBalance()
-    ]);
+    await this.loadCatalogs();
   }
 
   async loadCatalogs(): Promise<void> {
@@ -204,32 +175,6 @@ export class ConfigComponent implements OnInit {
       }
     } finally {
       this.isLoading.set(false);
-    }
-  }
-
-  async loadTransactionsBalance(): Promise<void> {
-    try {
-      const txs = await this.transactionService.getTransactions();
-      const currentYear = new Date().getFullYear();
-      const currentMonth = new Date().getMonth();
-
-      let income = 0;
-      let expense = 0;
-
-      txs.forEach(t => {
-        const txDate = new Date(t.date);
-        if (txDate.getFullYear() === currentYear && txDate.getMonth() === currentMonth) {
-          if (t.type === 'INCOME') income += Number(t.amount);
-          if (t.type === 'EXPENSE') expense += Number(t.amount);
-        }
-      });
-
-      this.currentMonthIncome.set(income);
-      this.currentMonthExpense.set(expense);
-      const savings = Math.max(0, income - expense);
-      this.currentMonthSavings.set(savings);
-    } catch (err) {
-      console.warn('Error calculando balance para metas:', err);
     }
   }
 
@@ -404,12 +349,12 @@ export class ConfigComponent implements OnInit {
   }
 
   // ==========================================
-  // METAS DE AHORRO Y ALERTAS
+  // ALERTAS DE PRESUPUESTO
   // ==========================================
 
-  onSaveGoals(): void {
-    if (this.goalsForm.invalid) {
-      Object.values(this.goalsForm.controls).forEach(c => {
+  onSaveAlerts(): void {
+    if (this.alertsForm.invalid) {
+      Object.values(this.alertsForm.controls).forEach(c => {
         c.markAsDirty();
         c.updateValueAndValidity({ onlySelf: true });
       });
@@ -418,18 +363,16 @@ export class ConfigComponent implements OnInit {
 
     this.isSavingPreferences.set(true);
     try {
-      const val = this.goalsForm.getRawValue();
+      const val = this.alertsForm.getRawValue();
       this.userPreferences.updatePreferences({
-        savingsGoal: Number(val.savingsGoal),
-        savingsGoalName: val.savingsGoalName,
         expenseAlertThreshold: Number(val.expenseAlertThreshold),
         budgetAlertPercentage: Number(val.budgetAlertPercentage),
         alertsEnabled: val.alertsEnabled
       });
 
-      this.message.success('Metas de ahorro y alertas guardadas y sincronizadas en la nube.');
+      this.message.success('Reglas de alerta de presupuesto guardadas y sincronizadas en la nube.');
     } catch (err) {
-      this.message.error('Error al guardar las metas de ahorro.');
+      this.message.error('Error al guardar las alertas de presupuesto.');
     } finally {
       this.isSavingPreferences.set(false);
     }

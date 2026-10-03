@@ -1,8 +1,8 @@
-// src/app/features/dashboard/transactions/transactions.component.ts
 import { Component, inject, signal, computed, OnInit, viewChild, DestroyRef } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { BreakpointObserver } from '@angular/cdk/layout';
 
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
@@ -16,6 +16,7 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzStatisticModule } from 'ng-zorro-antd/statistic';
 import { NzCardModule } from 'ng-zorro-antd/card';
+import { NzPaginationModule } from 'ng-zorro-antd/pagination';
 
 import { TransactionService } from '../../../core/services/transaction.service';
 import { TransactionWithDetails } from '../../../core/models/transaction.model';
@@ -41,7 +42,7 @@ export interface TransactionView extends TransactionWithDetails {
     ReactiveFormsModule, DatePipe, DecimalPipe,
     NzTableModule, NzTagModule, NzButtonModule, NzIconModule,
     NzInputModule, NzDatePickerModule, NzSelectModule, NzGridModule,
-    NzStatisticModule, NzCardModule,
+    NzStatisticModule, NzCardModule, NzPaginationModule,
     NzModalModule,
     TransactionModalComponent
   ],
@@ -56,6 +57,7 @@ export class TransactionsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly exportService = inject(ExportService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly breakpointObserver = inject(BreakpointObserver);
 
   readonly transactionModal = viewChild(TransactionModalComponent);
 
@@ -65,6 +67,11 @@ export class TransactionsComponent implements OnInit {
 
   readonly isModalVisible = signal<boolean>(false);
   readonly currentTxToEdit = signal<TransactionWithDetails | null>(null);
+
+  // Estados y paginación móvil
+  readonly isMobileView = signal<boolean>(false);
+  readonly mobilePageIndex = signal<number>(1);
+  readonly mobilePageSize = 10;
 
   readonly filterForm: FormGroup = this.fb.group({
     searchTerm: [''],
@@ -216,11 +223,48 @@ export class TransactionsComponent implements OnInit {
     return totalIncome - totalExpenses;
   });
 
+  // Paginación reactiva para vista móvil en tarjetas
+  readonly pagedMobileTransactions = computed(() => {
+    const list = this.filteredTransactions();
+    const page = this.mobilePageIndex();
+    const size = this.mobilePageSize;
+    const start = (page - 1) * size;
+    return list.slice(start, start + size);
+  });
+
+  readonly mobileStartItem = computed(() => {
+    const list = this.filteredTransactions();
+    if (list.length === 0) return 0;
+    return (this.mobilePageIndex() - 1) * this.mobilePageSize + 1;
+  });
+
+  readonly mobileEndItem = computed(() => {
+    const list = this.filteredTransactions();
+    return Math.min(this.mobilePageIndex() * this.mobilePageSize, list.length);
+  });
+
+  onMobilePageChange(page: number): void {
+    this.mobilePageIndex.set(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   // ==========================================
   // CICLO DE VIDA Y ORQUESTACIÓN
   // ==========================================
 
   async ngOnInit(): Promise<void> {
+    this.breakpointObserver.observe(['(max-width: 767px)'])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(result => {
+        this.isMobileView.set(result.matches);
+      });
+
+    this.filterForm.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.mobilePageIndex.set(1);
+      });
+
     await Promise.all([
       this.loadTransactions(),
       this.loadCatalogs()

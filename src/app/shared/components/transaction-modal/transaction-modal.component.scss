@@ -4,6 +4,81 @@
   display: block;
 }
 
+.total-balance-display-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(59, 130, 246, 0.04) 100%);
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  margin-bottom: 12px;
+
+  html.dark & {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.16) 0%, rgba(30, 58, 138, 0.1) 100%);
+    border-color: rgba(59, 130, 246, 0.25);
+  }
+
+  .balance-card-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .balance-icon-pill {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--color-blue-primary);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .balance-labels {
+      display: flex;
+      flex-direction: column;
+
+      .balance-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--color-navy);
+      }
+
+      .balance-subtitle {
+        font-size: 0.675rem;
+        color: var(--color-slate-muted);
+      }
+    }
+  }
+
+  .balance-card-value {
+    display: flex;
+    align-items: center;
+
+    .balance-amount {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #059669;
+      letter-spacing: -0.015em;
+
+      html.dark & {
+        color: #34d399;
+      }
+
+      &.negative {
+        color: #dc2626;
+
+        html.dark & {
+          color: #f87171;
+        }
+      }
+    }
+  }
+}
+
 .transaction-modal-form {
   display: flex;
   flex-direction: column;

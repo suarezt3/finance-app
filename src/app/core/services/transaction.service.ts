@@ -95,7 +95,26 @@ export class TransactionService {
     }
 
     // Calculamos el saldo neto: Ingresos - Gastos
-    return data.reduce((acc, tx) => {
+    return (data || []).reduce((acc, tx) => {
+      const amount = Number(tx.amount);
+      return tx.type === 'INCOME' ? acc + amount : acc - amount;
+    }, 0);
+  }
+
+  /**
+   * Obtiene el saldo total disponible global (acumulado de todas las cuentas).
+   */
+  async getTotalBalance(): Promise<number> {
+    const { data, error } = await this.supabase
+      .from('transactions')
+      .select('type, amount');
+
+    if (error) {
+      console.error('Error calculando saldo total:', error.message);
+      return 0;
+    }
+
+    return (data || []).reduce((acc, tx) => {
       const amount = Number(tx.amount);
       return tx.type === 'INCOME' ? acc + amount : acc - amount;
     }, 0);

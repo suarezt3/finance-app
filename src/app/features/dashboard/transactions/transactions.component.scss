@@ -387,3 +387,266 @@
     }
   }
 }
+
+// ==========================================
+// 5. VISTA MÓVIL: TARJETAS Y PAGINACIÓN CENTRADA (DESPEJADA DEL FAB)
+// ==========================================
+.transactions-container {
+  @media (max-width: 767px) {
+    padding-bottom: 96px; // Holgura para que el FAB en la esquina no obstruya los controles
+  }
+}
+
+.mobile-transactions-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+
+  .mobile-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 36px 16px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    text-align: center;
+
+    .empty-icon-wrap {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--color-surface-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: var(--color-slate-muted);
+      margin-bottom: 12px;
+    }
+
+    h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--color-navy);
+      margin-bottom: 4px;
+    }
+
+    p {
+      font-size: 0.825rem;
+      color: var(--color-slate-muted);
+      margin-bottom: 16px;
+    }
+  }
+
+  .mobile-cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mobile-movement-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+    transition: all 0.2s ease;
+
+    .mobile-card-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+    }
+
+    .mobile-icon-circle {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.05rem;
+      flex-shrink: 0;
+
+      &.income {
+        background: rgba(16, 185, 129, 0.12);
+        color: #059669;
+
+        html.dark & {
+          background: rgba(16, 185, 129, 0.2);
+          color: #34d399;
+        }
+      }
+
+      &.expense {
+        background: rgba(239, 68, 68, 0.12);
+        color: #dc2626;
+
+        html.dark & {
+          background: rgba(239, 68, 68, 0.2);
+          color: #f87171;
+        }
+      }
+
+      &.transfer {
+        background: rgba(59, 130, 246, 0.12);
+        color: #2563eb;
+
+        html.dark & {
+          background: rgba(59, 130, 246, 0.2);
+          color: #60a5fa;
+        }
+      }
+    }
+
+    .mobile-card-headline {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      flex: 1;
+
+      .mobile-card-desc {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: var(--color-navy);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .mobile-meta-tags {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.725rem;
+        color: var(--color-slate-muted);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        .mobile-tag-category {
+          font-weight: 600;
+          color: var(--color-slate-text);
+        }
+
+        .meta-dot {
+          color: #94a3b8;
+        }
+
+        .mobile-tag-wallet {
+          display: inline-flex;
+          align-items: center;
+          gap: 3px;
+
+          .wallet-mini-icon {
+            font-size: 0.7rem;
+          }
+        }
+      }
+    }
+
+    .mobile-card-amount {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      flex-shrink: 0;
+
+      .mobile-amount-val {
+        font-size: 0.95rem;
+        font-weight: 800;
+
+        &.income {
+          color: #059669;
+          html.dark & { color: #34d399; }
+        }
+
+        &.expense {
+          color: #dc2626;
+          html.dark & { color: #f87171; }
+        }
+
+        &.transfer {
+          color: #2563eb;
+          html.dark & { color: #60a5fa; }
+        }
+      }
+
+      .mobile-date-sub {
+        font-size: 0.7rem;
+        color: var(--color-slate-muted);
+      }
+    }
+
+    .mobile-card-actions {
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--color-border);
+
+      .mobile-action-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 6px 0;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 0.775rem;
+        font-weight: 600;
+        border-radius: 6px;
+        transition: background 0.15s ease;
+
+        &.btn-edit {
+          color: var(--color-slate-text);
+          &:hover {
+            background: var(--color-surface-hover);
+          }
+        }
+
+        &.btn-delete {
+          color: #ef4444;
+          &:hover {
+            background: rgba(239, 68, 68, 0.08);
+          }
+        }
+      }
+
+      .action-divider {
+        width: 1px;
+        height: 16px;
+        background: var(--color-border);
+      }
+    }
+  }
+
+  .mobile-pagination-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 0 32px 0;
+    margin-bottom: 24px;
+
+    ::ng-deep .ant-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mobile-pagination-counter {
+      font-size: 0.75rem;
+      color: var(--color-slate-muted);
+      font-weight: 500;
+    }
+  }
+}
+

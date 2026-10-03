@@ -76,16 +76,33 @@ export class TransactionModalComponent implements OnInit {
   readonly availableBalance = signal<number | null>(null);
   readonly isCheckingBalance = signal<boolean>(false);
 
+  // Saldo total disponible acumulado (todas las cuentas)
+  readonly totalAvailableBalance = signal<number | null>(null);
+  readonly isLoadingTotalBalance = signal<boolean>(false);
+
   constructor() {
     effect(() => {
       const visible = this.isVisible();
       if (visible) {
+        this.loadTotalBalance();
         // Al abrir el modal, si los catálogos aún no están en memoria, refrescar de inmediato
         if (this.categories().length === 0 || this.paymentMethods().length === 0) {
           this.loadCatalogs();
         }
       }
     });
+  }
+
+  async loadTotalBalance(): Promise<void> {
+    this.isLoadingTotalBalance.set(true);
+    try {
+      const total = await this.transactionService.getTotalBalance();
+      this.totalAvailableBalance.set(total);
+    } catch (e) {
+      console.warn('Error cargando saldo total disponible:', e);
+    } finally {
+      this.isLoadingTotalBalance.set(false);
+    }
   }
 
   // -- FORMULARIO REACTIVO --

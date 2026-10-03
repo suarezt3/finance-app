@@ -39,12 +39,11 @@
     <button
       type="button"
       class="tab-nav-btn"
-      [class.active]="activeTab() === 'goals'"
-      (click)="activeTab.set('goals')"
+      [class.active]="activeTab() === 'alerts'"
+      (click)="activeTab.set('alerts')"
     >
-      <span nz-icon nzType="fund" nzTheme="outline"></span>
-      <span class="tab-label">Metas & Alertas</span>
-      <span class="count-pill beta-pill">BETA</span>
+      <span nz-icon nzType="bell" nzTheme="outline"></span>
+      <span class="tab-label">Alertas de Presupuesto</span>
     </button>
 
     <button
@@ -262,164 +261,44 @@
   }
 
   <!-- ============================================== -->
-  <!-- SECCIÓN 3: METAS DE AHORRO Y ALERTAS (BETA)    -->
+  <!-- SECCIÓN 3: ALERTAS DE PRESUPUESTO              -->
   <!-- ============================================== -->
-  @if (activeTab() === 'goals') {
+  @if (activeTab() === 'alerts') {
     <div class="tab-view-content">
-      <div class="goals-container">
+      <div class="goals-container alerts-view-container">
         
-        <!-- EXPLICACIÓN CLARA DEL FUNCIONAMIENTO DEL AHORRO -->
-        <div class="savings-explanation-banner">
+        <!-- EXPLICACIÓN CLARA DEL FUNCIONAMIENTO DE ALERTAS -->
+        <div class="savings-explanation-banner alert-explanation-banner">
           <div class="explanation-icon-wrap">
-            <span nz-icon nzType="info-circle" nzTheme="fill"></span>
+            <span nz-icon nzType="safety-certificate" nzTheme="fill"></span>
           </div>
           <div class="explanation-content">
-            <h4>¿Cómo funciona tu Meta de Ahorro en FinanceApp?</h4>
+            <h4>Control y Alertas Inteligentes de Presupuesto</h4>
             <p>
-              <strong>1. Ahorro por Flujo Neto Automático:</strong> Tu ahorro del mes se calcula restando tus gastos de tus ingresos reales (<strong>Ingresos − Gastos</strong>). Todo dinero que no gastes se acumula directamente hacia tu meta.
-            </p>
-            <p class="mt-1">
-              <strong>2. Billeteras de Ahorro:</strong> También puedes crear una billetera llamada <em>"Hucha de Ahorros"</em> o <em>"Fondo de Emergencia"</em> y transferir dinero hacia ella. Las transferencias apartan el dinero sin computarse como un gasto falso.
+              Configura límites preventivos para tus finanzas personales. FinanceApp te notificará automáticamente en el Resumen Ejecutivo cuando tus gastos alcancen el porcentaje crítico de tus ingresos o cuando registres un gasto inusualmente alto.
             </p>
           </div>
         </div>
 
-        <!-- TARJETA DE PROGRESO DE META ACTUAL CON DESGLOSE -->
-        <div class="savings-summary-card">
-          <div class="savings-card-header">
-            <div class="savings-icon-box">
-              <span nz-icon nzType="rocket" nzTheme="outline"></span>
-            </div>
-            <div class="savings-title-box">
-              <h3>{{ savingsGoalName() }}</h3>
-              <span class="savings-subtext">Progreso mensual en tiempo real</span>
-            </div>
-            <div class="savings-amount-badge">
-              <span class="symbol">{{ currencySymbol() }}</span>
-              <span class="amount">{{ savingsGoal() | number:'1.0-0' }}</span>
-            </div>
-          </div>
-
-          <!-- MINI DESGLOSE FINANCIERO DEL MES -->
-          <div class="savings-breakdown-row">
-            <div class="breakdown-col">
-              <span class="breakdown-label">Ingresos del Mes</span>
-              <span class="breakdown-val income">+{{ currencySymbol() }}{{ currentMonthIncome() | number:'1.0-0' }}</span>
-            </div>
-            <div class="breakdown-col">
-              <span class="breakdown-label">Gastos del Mes</span>
-              <span class="breakdown-val expense">-{{ currencySymbol() }}{{ currentMonthExpense() | number:'1.0-0' }}</span>
-            </div>
-            <div class="breakdown-col highlight">
-              <span class="breakdown-label">Ahorro Disponible</span>
-              <span class="breakdown-val saved">{{ currencySymbol() }}{{ currentMonthSavings() | number:'1.0-0' }}</span>
-            </div>
-          </div>
-
-          <div class="savings-progress-section">
-            <div class="progress-labels-row">
-              <span class="label-saved">
-                Progreso: <strong>{{ savingsProgressPercentage() }}%</strong>
-              </span>
-              <span class="label-pct">Meta: {{ currencySymbol() }}{{ savingsGoal() | number:'1.0-0' }}</span>
-            </div>
-
-            <nz-progress
-              [nzPercent]="savingsProgressPercentage()"
-              [nzStrokeColor]="savingsProgressPercentage() >= 100 ? '#10b981' : '#3b82f6'"
-              [nzStatus]="savingsProgressPercentage() >= 100 ? 'success' : 'active'"
-              [nzShowInfo]="false"
-              class="savings-progress-bar"
-            ></nz-progress>
-
-            <div class="progress-footer-note">
-              @if (savingsProgressPercentage() >= 100) {
-                <span class="status-achieved">
-                  <span nz-icon nzType="check-circle" nzTheme="fill"></span> ¡Felicidades! Has alcanzado tu meta de ahorro mensual.
-                </span>
-              } @else {
-                <span class="status-pending">
-                  Te faltan <strong>{{ currencySymbol() }} {{ remainingSavings() | number:'1.0-0' }}</strong> para completar tu objetivo.
-                </span>
-              }
-            </div>
-          </div>
-        </div>
-
-        <!-- FORMULARIO DE CONFIGURACIÓN DE METAS Y ALERTAS -->
-        <div class="goals-form-card">
+        <!-- FORMULARIO DE CONFIGURACIÓN DE ALERTAS -->
+        <div class="goals-form-card alerts-form-card">
           <div class="card-section-title">
-            <span nz-icon nzType="setting" nzTheme="outline"></span>
-            <h4>Configurar Objetivos y Reglas de Notificación</h4>
+            <span nz-icon nzType="bell" nzTheme="outline"></span>
+            <h4>Reglas de Notificación de Presupuesto</h4>
           </div>
 
-          <form nz-form [formGroup]="goalsForm" (ngSubmit)="onSaveGoals()" nzLayout="vertical" class="goals-settings-form">
+          <form nz-form [formGroup]="alertsForm" (ngSubmit)="onSaveAlerts()" nzLayout="vertical" class="goals-settings-form">
             
-            <div class="form-grid-two">
-              <!-- Nombre de la Meta -->
-              <nz-form-item>
-                <nz-form-label nzRequired nzFor="savingsGoalName">Nombre de tu Meta de Ahorro</nz-form-label>
-                <nz-form-control>
-                  <nz-input-wrapper class="full-width">
-                    <span nz-icon nzType="tag" nzInputPrefix class="prefix-icon"></span>
-                    <input nz-input formControlName="savingsGoalName" id="savingsGoalName" placeholder="Ej. Ahorro para Vacaciones" nzSize="large" />
-                  </nz-input-wrapper>
-                </nz-form-control>
-              </nz-form-item>
-
-              <!-- Monto de la Meta con Formateo de Puntos de Miles -->
-              <nz-form-item>
-                <nz-form-label nzRequired nzFor="savingsGoal">Monto de Ahorro Mensual Deseado</nz-form-label>
-                <nz-form-control>
-                  <nz-input-number
-                    formControlName="savingsGoal"
-                    id="savingsGoal"
-                    [nzMin]="0"
-                    [nzStep]="50000"
-                    [nzFormatter]="formatterCurrency"
-                    [nzParser]="parserCurrency"
-                    appDecimalInput
-                    nzSize="large"
-                    class="full-width formatted-currency-input"
-                    placeholder="Ej. 500.000"
-                  ></nz-input-number>
-                </nz-form-control>
-                <span class="helper-text">Escribe el monto deseado. Se aplican puntos de miles automáticamente.</span>
-              </nz-form-item>
-            </div>
-
-            <div class="divider-line"></div>
-
             <div class="alert-settings-header">
               <div class="alert-info-text">
-                <h5>Alertas de Gastos Elevados y Presupuesto</h5>
-                <p>Recibe advertencias inmediatas al registrar compras altas o cuando tus gastos excedan tu límite mensual.</p>
+                <h5>Activar Notificaciones de Límite Presupuestal</h5>
+                <p>Muestra advertencias en tiempo real cuando tus consumos excedan tus parámetros de seguridad.</p>
               </div>
               <nz-switch formControlName="alertsEnabled"></nz-switch>
             </div>
 
-            @if (goalsForm.get('alertsEnabled')?.value) {
-              <div class="form-grid-two mt-3">
-                <!-- Umbral de Gasto Individual con Formateo de Puntos de Miles -->
-                <nz-form-item>
-                  <nz-form-label nzRequired nzFor="expenseAlertThreshold">Alerta por Gasto Individual Mayor A</nz-form-label>
-                  <nz-form-control>
-                    <nz-input-number
-                      formControlName="expenseAlertThreshold"
-                      id="expenseAlertThreshold"
-                      [nzMin]="0"
-                      [nzStep]="20000"
-                      [nzFormatter]="formatterCurrency"
-                      [nzParser]="parserCurrency"
-                      appDecimalInput
-                      nzSize="large"
-                      class="full-width formatted-currency-input"
-                      placeholder="Ej. 200.000"
-                    ></nz-input-number>
-                  </nz-form-control>
-                  <span class="helper-text">Se mostrará una advertencia si registras un gasto que supere esta cifra.</span>
-                </nz-form-item>
-
+            @if (alertsForm.get('alertsEnabled')?.value) {
+              <div class="form-grid-two mt-4">
                 <!-- % de Presupuesto Mensual -->
                 <nz-form-item>
                   <nz-form-label nzRequired nzFor="budgetAlertPercentage">Alerta de Límite de Presupuesto (%)</nz-form-label>
@@ -437,6 +316,26 @@
                   </nz-form-control>
                   <span class="helper-text">Muestra un banner en el resumen cuando los gastos superen este % de tus ingresos.</span>
                 </nz-form-item>
+
+                <!-- Umbral de Gasto Individual con Formateo de Puntos de Miles -->
+                <nz-form-item>
+                  <nz-form-label nzRequired nzFor="expenseAlertThreshold">Alerta por Gasto Individual Mayor A</nz-form-label>
+                  <nz-form-control>
+                    <nz-input-number
+                      formControlName="expenseAlertThreshold"
+                      id="expenseAlertThreshold"
+                      [nzMin]="0"
+                      [nzStep]="20000"
+                      [nzFormatter]="formatterCurrency"
+                      [nzParser]="parserCurrency"
+                      appDecimalInput
+                      nzSize="large"
+                      class="full-width formatted-currency-input"
+                      placeholder="Ej. 200.000"
+                    ></nz-input-number>
+                  </nz-form-control>
+                  <span class="helper-text">Se mostrará una advertencia al registrar un gasto que supere esta cifra.</span>
+                </nz-form-item>
               </div>
             }
 
@@ -449,7 +348,7 @@
                 class="btn-save-goals"
               >
                 <span nz-icon nzType="save"></span>
-                <span>Guardar Metas y Alertas</span>
+                <span>Guardar Alertas de Presupuesto</span>
               </button>
             </div>
           </form>

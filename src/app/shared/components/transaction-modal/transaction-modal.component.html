@@ -1,17 +1,39 @@
 <!-- src/app/shared/components/transaction-modal/transaction-modal.component.html -->
 <nz-modal
   [nzVisible]="isVisible()"
-  [nzTitle]="transactionToEdit() ? 'Editar Transacción' : 'Registrar Nueva Transacción'"
+  [nzTitle]="transactionToEdit() ? 'Editar Movimiento' : 'Registrar Nuevo Movimiento'"
   (nzOnCancel)="onCancel()"
   (nzOnOk)="onSubmit()"
   [nzOkLoading]="isSubmitting()"
-  nzOkText="Guardar Transacción"
+  nzOkText="Guardar Movimiento"
   nzCancelText="Cancelar"
   nzWidth="520px"
   class="enterprise-transaction-modal"
 >
   <ng-container *nzModalContent>
     <form nz-form [formGroup]="transactionForm" nzLayout="vertical" class="transaction-modal-form">
+
+      <!-- BANNER DE SALDO TOTAL DISPONIBLE -->
+      <div class="total-balance-display-card">
+        <div class="balance-card-info">
+          <div class="balance-icon-pill">
+            <span nz-icon nzType="wallet" nzTheme="outline"></span>
+          </div>
+          <div class="balance-labels">
+            <span class="balance-title">Saldo Total Disponible</span>
+            <span class="balance-subtitle">Liquidez actual acumulada</span>
+          </div>
+        </div>
+        <div class="balance-card-value">
+          @if (isLoadingTotalBalance()) {
+            <nz-spin nzSimple></nz-spin>
+          } @else {
+            <span class="balance-amount tabular-nums" [class.negative]="(totalAvailableBalance() ?? 0) < 0">
+              {{ userPreferences.currencySymbol() }}{{ (totalAvailableBalance() ?? 0) | number:'1.0-2':'es' }}
+            </span>
+          }
+        </div>
+      </div>
 
       <!-- 0. ESCANEAR FACTURA CON GEMINI AI (Acceso Directo: Cámara o Archivo) -->
       @if (!transactionToEdit()) {

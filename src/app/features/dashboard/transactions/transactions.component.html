@@ -19,7 +19,7 @@
 
       <button nz-button nzType="primary" (click)="openNewModal()" class="btn-action-new">
         <span nz-icon nzType="plus"></span>
-        <span class="btn-text">Nueva Transacción</span>
+        <span class="btn-text">Nuevo Movimiento</span>
       </button>
     </div>
   </header>
@@ -124,84 +124,187 @@
     </form>
   </div>
 
-  <!-- TABLA DE TRANSACCIONES AUDITADA -->
-  <div class="table-container">
-    <nz-table
-      #txTable
-      [nzData]="filteredTransactions()"
-      [nzLoading]="isLoading()"
-      nzSize="middle"
-      nzShowPagination
-      [nzPageSize]="10"
-      [nzScroll]="{ x: '960px' }"
-      class="enterprise-tx-table">
-      <thead>
-        <tr>
-          <th nzWidth="110px">Fecha</th>
-          <th nzWidth="220px">Descripción</th>
-          <th nzWidth="140px">Categoría</th>
-          <th nzWidth="150px">Método de Pago</th>
-          <th nzWidth="120px" nzAlign="center">Naturaleza</th>
-          <th nzWidth="130px" nzAlign="right">Monto</th>
-          <th nzWidth="90px" nzAlign="center">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (tx of txTable.data; track tx.id) {
+  <!-- 1. VISTA ESCRITORIO: TABLA DE TRANSACCIONES AUDITADA -->
+  @if (!isMobileView()) {
+    <div class="table-container desktop-table-view">
+      <nz-table
+        #txTable
+        [nzData]="filteredTransactions()"
+        [nzLoading]="isLoading()"
+        nzSize="middle"
+        nzShowPagination
+        [nzPageSize]="10"
+        [nzScroll]="{ x: '960px' }"
+        class="enterprise-tx-table">
+        <thead>
           <tr>
-            <td class="cell-date tabular-nums">{{ tx.date | date:'dd/MM/yyyy' }}</td>
-            <td class="cell-desc">{{ tx.description || 'Sin descripción' }}</td>
+            <th nzWidth="110px">Fecha</th>
+            <th nzWidth="220px">Descripción</th>
+            <th nzWidth="140px">Categoría</th>
+            <th nzWidth="150px">Método de Pago</th>
+            <th nzWidth="120px" nzAlign="center">Naturaleza</th>
+            <th nzWidth="130px" nzAlign="right">Monto</th>
+            <th nzWidth="90px" nzAlign="center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (tx of txTable.data; track tx.id) {
+            <tr>
+              <td class="cell-date tabular-nums">{{ tx.date | date:'dd/MM/yyyy' }}</td>
+              <td class="cell-desc">{{ tx.description || 'Sin descripción' }}</td>
 
-            <!-- CATEGORÍA -->
-            <td class="cell-category">
-              <span class="category-name">{{ tx.displayCategory }}</span>
-            </td>
+              <!-- CATEGORÍA -->
+              <td class="cell-category">
+                <span class="category-name">{{ tx.displayCategory }}</span>
+              </td>
 
-            <!-- MÉTODO: Flujo para transferencias -->
-            <td class="cell-method">
-              @if (tx.isMergedTransfer) {
-                <div class="method-transfer-flow">
-                  <span>{{ tx.sourceMethodName }}</span>
-                  <span nz-icon nzType="arrow-right" class="flow-arrow"></span>
-                  <span>{{ tx.destinationMethodName }}</span>
+              <!-- MÉTODO: Flujo para transferencias -->
+              <td class="cell-method">
+                @if (tx.isMergedTransfer) {
+                  <div class="method-transfer-flow">
+                    <span>{{ tx.sourceMethodName }}</span>
+                    <span nz-icon nzType="arrow-right" class="flow-arrow"></span>
+                    <span>{{ tx.destinationMethodName }}</span>
+                  </div>
+                } @else {
+                  <span class="method-single">{{ tx.payment_methods?.name || '---' }}</span>
+                }
+              </td>
+
+              <!-- NATURALEZA -->
+              <td nzAlign="center">
+                @if (tx.isTransfer) {
+                  <span class="status-tag tag-transfer">Transferencia</span>
+                } @else if (tx.type === 'INCOME') {
+                  <span class="status-tag tag-income">Ingreso</span>
+                } @else {
+                  <span class="status-tag tag-expense">Gasto</span>
+                }
+              </td>
+
+              <!-- MONTO -->
+              <td nzAlign="right" class="cell-amount tabular-nums" [class.income]="tx.type === 'INCOME' && !tx.isTransfer" [class.expense]="tx.type === 'EXPENSE' && !tx.isTransfer">
+                {{ tx.isTransfer ? '' : (tx.type === 'INCOME' ? '+' : '-') }} ${{ tx.amount | number:'1.0-2':'es' }}
+              </td>
+
+              <!-- ACCIONES -->
+              <td nzAlign="center">
+                <div class="action-buttons-group">
+                  <button nz-button nzType="text" nzSize="small" (click)="openEditModal(tx)" class="action-btn edit" [attr.aria-label]="'Editar transacción'">
+                    <span nz-icon nzType="edit" nzTheme="outline"></span>
+                  </button>
+                  <button nz-button nzType="text" nzDanger nzSize="small" (click)="onDelete(tx)" class="action-btn delete" [attr.aria-label]="'Eliminar transacción'">
+                    <span nz-icon nzType="delete" nzTheme="outline"></span>
+                  </button>
                 </div>
-              } @else {
-                <span class="method-single">{{ tx.payment_methods?.name || '---' }}</span>
-              }
-            </td>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    </div>
+  } @else {
+    <!-- 2. VISTA MÓVIL: TARJETAS FINANCIERAS TÁCTILES + PAGINACIÓN CENTRADA DESPEJADA DEL FAB -->
+    <div class="mobile-transactions-view">
+      @if (filteredTransactions().length === 0) {
+        <div class="mobile-empty-state">
+          <div class="empty-icon-wrap">
+            <span nz-icon nzType="inbox" nzTheme="outline"></span>
+          </div>
+          <h4>No hay movimientos</h4>
+          <p>No se encontraron registros con los filtros seleccionados.</p>
+          <button nz-button nzType="primary" (click)="openNewModal()">
+            <span nz-icon nzType="plus"></span> Nuevo Movimiento
+          </button>
+        </div>
+      } @else {
+        <div class="mobile-cards-list">
+          @for (tx of pagedMobileTransactions(); track tx.id) {
+            <div
+              class="mobile-movement-card"
+              [class.is-income]="tx.type === 'INCOME' && !tx.isTransfer"
+              [class.is-expense]="tx.type === 'EXPENSE' && !tx.isTransfer"
+              [class.is-transfer]="tx.isTransfer"
+            >
+              <div class="mobile-card-top">
+                <div
+                  class="mobile-icon-circle"
+                  [class.income]="tx.type === 'INCOME' && !tx.isTransfer"
+                  [class.expense]="tx.type === 'EXPENSE' && !tx.isTransfer"
+                  [class.transfer]="tx.isTransfer"
+                >
+                  @if (tx.isTransfer) {
+                    <span nz-icon nzType="swap" nzTheme="outline"></span>
+                  } @else if (tx.type === 'INCOME') {
+                    <span nz-icon nzType="arrow-down" nzTheme="outline"></span>
+                  } @else {
+                    <span nz-icon nzType="arrow-up" nzTheme="outline"></span>
+                  }
+                </div>
 
-            <!-- NATURALEZA -->
-            <td nzAlign="center">
-              @if (tx.isTransfer) {
-                <span class="status-tag tag-transfer">Transferencia</span>
-              } @else if (tx.type === 'INCOME') {
-                <span class="status-tag tag-income">Ingreso</span>
-              } @else {
-                <span class="status-tag tag-expense">Gasto</span>
-              }
-            </td>
+                <div class="mobile-card-headline">
+                  <span class="mobile-card-desc">
+                    {{ tx.description || (tx.isTransfer ? 'Transferencia' : (tx.displayCategory || 'Movimiento')) }}
+                  </span>
+                  <div class="mobile-meta-tags">
+                    <span class="mobile-tag-category">{{ tx.displayCategory }}</span>
+                    <span class="meta-dot">·</span>
+                    <span class="mobile-tag-wallet">
+                      <span nz-icon nzType="wallet" class="wallet-mini-icon"></span>
+                      @if (tx.isMergedTransfer) {
+                        {{ tx.sourceMethodName }} → {{ tx.destinationMethodName }}
+                      } @else {
+                        {{ tx.payment_methods?.name || 'Billetera' }}
+                      }
+                    </span>
+                  </div>
+                </div>
 
-            <!-- MONTO -->
-            <td nzAlign="right" class="cell-amount tabular-nums" [class.income]="tx.type === 'INCOME' && !tx.isTransfer" [class.expense]="tx.type === 'EXPENSE' && !tx.isTransfer">
-              {{ tx.isTransfer ? '' : (tx.type === 'INCOME' ? '+' : '-') }} ${{ tx.amount | number:'1.0-2':'es' }}
-            </td>
+                <div class="mobile-card-amount">
+                  <span
+                    class="mobile-amount-val tabular-nums"
+                    [class.income]="tx.type === 'INCOME' && !tx.isTransfer"
+                    [class.expense]="tx.type === 'EXPENSE' && !tx.isTransfer"
+                    [class.transfer]="tx.isTransfer"
+                  >
+                    {{ tx.isTransfer ? '' : (tx.type === 'INCOME' ? '+' : '-') }}${{ tx.amount | number:'1.0-2':'es' }}
+                  </span>
+                  <span class="mobile-date-sub tabular-nums">{{ tx.date | date:'dd/MM/yyyy' }}</span>
+                </div>
+              </div>
 
-            <!-- ACCIONES -->
-            <td nzAlign="center">
-              <div class="action-buttons-group">
-                <button nz-button nzType="text" nzSize="small" (click)="openEditModal(tx)" class="action-btn edit" [attr.aria-label]="'Editar transacción'">
+              <!-- Botones de Acción Táctiles en Móvil -->
+              <div class="mobile-card-actions">
+                <button type="button" class="mobile-action-btn btn-edit" (click)="openEditModal(tx)">
                   <span nz-icon nzType="edit" nzTheme="outline"></span>
+                  <span>Editar</span>
                 </button>
-                <button nz-button nzType="text" nzDanger nzSize="small" (click)="onDelete(tx)" class="action-btn delete" [attr.aria-label]="'Eliminar transacción'">
+                <div class="action-divider"></div>
+                <button type="button" class="mobile-action-btn btn-delete" (click)="onDelete(tx)">
                   <span nz-icon nzType="delete" nzTheme="outline"></span>
+                  <span>Eliminar</span>
                 </button>
               </div>
-            </td>
-          </tr>
-        }
-      </tbody>
-    </nz-table>
-  </div>
+            </div>
+          }
+        </div>
+
+        <!-- Paginación Móvil Centrada con holgura para el FAB -->
+        <div class="mobile-pagination-wrapper">
+          <nz-pagination
+            [nzPageIndex]="mobilePageIndex()"
+            [nzTotal]="filteredTransactions().length"
+            [nzPageSize]="mobilePageSize"
+            (nzPageIndexChange)="onMobilePageChange($event)"
+            nzSimple
+          ></nz-pagination>
+          <span class="mobile-pagination-counter">
+            Mostrando {{ mobileStartItem() }}-{{ mobileEndItem() }} de {{ filteredTransactions().length }} movimientos
+          </span>
+        </div>
+      }
+    </div>
+  }
 
   <!-- INTEGRACIÓN DEL MODAL COMPARTIDO -->
   <app-transaction-modal
