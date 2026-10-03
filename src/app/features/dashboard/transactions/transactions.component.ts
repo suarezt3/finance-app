@@ -376,6 +376,15 @@ export class TransactionsComponent implements OnInit {
       return;
     }
     this.exportService.exportTransactionsToCSV(currentData, 'Libro_Mayor_FinanceApp');
-    this.message.success('Archivo exportado correctamente.');
+    this.message.success('Archivo exportado correctamente para Excel / CSV.');
+  }
+
+  printReport(): void {
+    const currentData = this.filteredTransactions();
+    if (currentData.length === 0) {
+      this.message.warning('No hay datos para generar el reporte.');
+      return;
+    }
+    window.print();
   }
 }

@@ -557,6 +557,10 @@
         input.ant-input {
           font-size: 0.925rem;
           color: #0f172a;
+          border: none !important;
+          outline: none !important;
+          box-shadow: none !important;
+          background: transparent !important;
 
           &::placeholder {
             color: #94a3b8;

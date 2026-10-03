@@ -12,9 +12,14 @@
     </div>
 
     <div class="header-actions">
-      <button nz-button nzType="default" (click)="exportToCSV()" [disabled]="filteredTransactions().length === 0" class="btn-action-export">
-        <span nz-icon nzType="download"></span>
-        <span class="btn-text">Exportar CSV</span>
+      <button nz-button nzType="default" (click)="exportToCSV()" [disabled]="filteredTransactions().length === 0" class="btn-action-export" nz-tooltip nzTooltipTitle="Descargar archivo compatible con Microsoft Excel y hojas de cálculo">
+        <span nz-icon nzType="file-excel" nzTheme="outline"></span>
+        <span class="btn-text">Exportar Excel (CSV)</span>
+      </button>
+
+      <button nz-button nzType="default" (click)="printReport()" [disabled]="filteredTransactions().length === 0" class="btn-action-print" nz-tooltip nzTooltipTitle="Imprimir o exportar como reporte PDF">
+        <span nz-icon nzType="printer" nzTheme="outline"></span>
+        <span class="btn-text">Reporte PDF</span>
       </button>
 
       <button nz-button nzType="primary" (click)="openNewModal()" class="btn-action-new">

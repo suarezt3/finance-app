@@ -232,6 +232,68 @@
     }
   }
 
+  .month-navigator-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    padding: 3px 6px;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+    @media (max-width: 767px) {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .btn-month-step {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface-hover);
+      color: var(--color-navy);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.75rem;
+      transition: all 0.15s ease;
+
+      &:hover {
+        background: var(--color-blue-primary);
+        color: #ffffff;
+        border-color: var(--color-blue-primary);
+      }
+    }
+
+    .month-label-display {
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--color-navy);
+      padding: 0 6px;
+      min-width: 120px;
+      text-align: center;
+    }
+
+    .btn-month-today-pill {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 5px;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface-hover);
+      color: var(--color-slate-muted);
+      cursor: pointer;
+
+      &:hover {
+        color: var(--color-blue-primary);
+        border-color: var(--color-blue-primary);
+      }
+    }
+  }
+
   .btn-new-transaction {
     height: 38px;
     border-radius: 8px;
@@ -245,6 +307,139 @@
       display: flex;
       align-items: center;
       justify-content: center;
+    }
+  }
+}
+
+// ==========================================
+// SEMÁFORO DE SALUD FINANCIERA
+// ==========================================
+.financial-health-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+  transition: all 0.2s ease;
+
+  @media (max-width: 640px) {
+    align-items: flex-start;
+    padding: 12px 14px;
+    gap: 12px;
+  }
+
+  &.health-excellent {
+    border-color: rgba(16, 185, 129, 0.35);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(5, 150, 105, 0.02) 100%);
+
+    .health-icon-wrap {
+      background: #10b981;
+      color: #ffffff;
+    }
+
+    .health-rate-tag {
+      background: rgba(16, 185, 129, 0.15);
+      color: #059669;
+    }
+  }
+
+  &.health-moderate {
+    border-color: rgba(245, 158, 11, 0.35);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.06) 0%, rgba(217, 119, 6, 0.02) 100%);
+
+    .health-icon-wrap {
+      background: #f59e0b;
+      color: #ffffff;
+    }
+
+    .health-rate-tag {
+      background: rgba(245, 158, 11, 0.15);
+      color: #d97706;
+    }
+  }
+
+  &.health-deficit {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.06) 0%, rgba(220, 38, 38, 0.02) 100%);
+
+    .health-icon-wrap {
+      background: #ef4444;
+      color: #ffffff;
+    }
+
+    .health-rate-tag {
+      background: rgba(239, 68, 68, 0.15);
+      color: #dc2626;
+
+      &.negative {
+        color: #dc2626;
+      }
+    }
+  }
+
+  &.health-neutral {
+    border-color: var(--color-border);
+    background: var(--color-surface-muted);
+
+    .health-icon-wrap {
+      background: var(--color-slate-muted);
+      color: #ffffff;
+    }
+
+    .health-rate-tag {
+      background: rgba(148, 163, 184, 0.15);
+      color: var(--color-slate-muted);
+    }
+  }
+
+  .health-icon-wrap {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .health-content {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    flex: 1;
+
+    .health-title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+
+      h4 {
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: var(--color-navy);
+      }
+
+      .health-rate-tag {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 9999px;
+      }
+    }
+
+    .health-message {
+      margin: 0;
+      font-size: 0.8rem;
+      color: var(--color-slate-muted);
+      line-height: 1.4;
     }
   }
 }

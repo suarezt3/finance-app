@@ -1,6 +1,6 @@
 // src/app/features/dashboard/summary/summary.component.ts
 import { Component, inject, signal, computed, OnInit, DestroyRef } from '@angular/core';
-import { DecimalPipe, DatePipe } from '@angular/common';
+import { DecimalPipe, DatePipe, TitleCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BreakpointObserver } from '@angular/cdk/layout';
@@ -29,7 +29,7 @@ import { ThemeService } from '../../../core/services/theme.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { ScheduledPaymentService } from '../../../core/services/scheduled-payment.service';
 
-type Timeframe = '7d' | '30d' | '1y' | 'all' | 'custom-year';
+type Timeframe = 'month' | '7d' | '30d' | '1y' | 'all' | 'custom-year';
 
 // ==========================================
 // VIEW MODEL: Interfaz extendida para la UI
@@ -48,7 +48,7 @@ export interface TransactionView extends TransactionWithDetails {
   selector: 'app-summary',
   standalone: true,
   imports: [
-    DecimalPipe, DatePipe, FormsModule, RouterLink,
+    DecimalPipe, DatePipe, TitleCasePipe, FormsModule, RouterLink,
     NzGridModule, NzCardModule, NzStatisticModule,
     NzButtonModule, NzIconModule, NzRadioModule, NzDatePickerModule,
     NzSelectModule, NzTableModule, NzTagModule,
@@ -86,12 +86,30 @@ export class SummaryComponent implements OnInit {
   readonly paymentMethods = signal<PaymentMethod[]>([]);
 
   readonly isModalVisible = signal<boolean>(false);
-  readonly timeframe = signal<Timeframe>('30d');
+  readonly timeframe = signal<Timeframe>('month');
+  readonly selectedMonthDate = signal<Date>(new Date());
   readonly selectedYear = signal<Date | null>(null);
   readonly selectedPaymentMethod = signal<string | null>(null);
   readonly chartViewMode = signal<'balance' | 'income-expense'>('balance');
 
   readonly isMobileView = signal<boolean>(false);
+
+  // Navegación rápida de mes
+  onPrevMonth(): void {
+    const d = new Date(this.selectedMonthDate());
+    d.setMonth(d.getMonth() - 1);
+    this.selectedMonthDate.set(d);
+  }
+
+  onNextMonth(): void {
+    const d = new Date(this.selectedMonthDate());
+    d.setMonth(d.getMonth() + 1);
+    this.selectedMonthDate.set(d);
+  }
+
+  onCurrentMonth(): void {
+    this.selectedMonthDate.set(new Date());
+  }
 
   // ==========================================
   // LÓGICA DE DOMINIO: Aggregation & ViewModel
@@ -152,6 +170,15 @@ export class SummaryComponent implements OnInit {
 
     if (tf === 'all') return filtered;
 
+    if (tf === 'month') {
+      const targetYear = this.selectedMonthDate().getFullYear();
+      const targetMonth = this.selectedMonthDate().getMonth();
+      return filtered.filter(tx => {
+        const d = new Date(tx.date);
+        return d.getFullYear() === targetYear && d.getMonth() === targetMonth;
+      });
+    }
+
     if (tf === 'custom-year' && this.selectedYear()) {
       const year = this.selectedYear()!.getFullYear();
       return filtered.filter(tx => new Date(tx.date).getFullYear() === year);
@@ -204,6 +231,62 @@ export class SummaryComponent implements OnInit {
     };
   });
 
+  // -- SEMÁFORO DE SALUD FINANCIERA & AHORRO --
+  readonly financialHealth = computed(() => {
+    const s = this.summary();
+    const income = s.totalIncome;
+    const expenses = s.totalExpenses;
+
+    if (income === 0 && expenses === 0) {
+      return {
+        status: 'NEUTRAL',
+        icon: 'dashboard',
+        title: 'Sin Movimientos en el Período',
+        message: 'Registra tus ingresos y gastos para activar el análisis inteligente de salud financiera.',
+        savingsRate: null
+      };
+    }
+
+    if (income > 0) {
+      const netSavings = income - expenses;
+      const rate = Math.round((netSavings / income) * 100);
+
+      if (rate >= 20) {
+        return {
+          status: 'EXCELLENT',
+          icon: 'check-circle',
+          title: 'Excelente Salud Financiera',
+          message: `¡Felicitaciones! Estás ahorrando el ${rate}% de tus ingresos en este período.`,
+          savingsRate: rate
+        };
+      } else if (rate >= 0) {
+        return {
+          status: 'MODERATE',
+          icon: 'info-circle',
+          title: 'Presupuesto Equilibrado',
+          message: `Tus gastos representan el ${100 - rate}% de tus ingresos. Mantienes un margen de ahorro del ${rate}%.`,
+          savingsRate: rate
+        };
+      } else {
+        return {
+          status: 'DEFICIT',
+          icon: 'warning',
+          title: 'Déficit Financiero Detectado',
+          message: `Tus gastos superan tus ingresos en un ${Math.abs(rate)}% en este período. Te recomendamos moderar gastos variables.`,
+          savingsRate: rate
+        };
+      }
+    }
+
+    return {
+      status: 'DEFICIT',
+      icon: 'warning',
+      title: 'Gastos sin Ingresos Registrados',
+      message: 'Has registrado salidas de dinero pero ningún ingreso en este período.',
+      savingsRate: -100
+    };
+  });
+
   // -- INTELIGENCIA DE NEGOCIO: VARIACIONES --
   readonly kpiVariations = computed(() => {
     const tf = this.timeframe();
@@ -216,6 +299,35 @@ export class SummaryComponent implements OnInit {
     let filteredTxs = methodId
       ? txs.filter(tx => tx.payment_method_id === methodId || tx.destinationMethodId === methodId)
       : txs;
+
+    if (tf === 'month') {
+      const currentYear = this.selectedMonthDate().getFullYear();
+      const currentMonth = this.selectedMonthDate().getMonth();
+      const prevDate = new Date(currentYear, currentMonth - 1, 1);
+      const prevYear = prevDate.getFullYear();
+      const prevMonth = prevDate.getMonth();
+
+      let prevIncome = 0;
+      let prevExpense = 0;
+
+      filteredTxs.forEach(t => {
+        const d = new Date(t.date);
+        if (d.getFullYear() === prevYear && d.getMonth() === prevMonth) {
+          if (!t.isTransfer) {
+            if (t.type === 'INCOME') prevIncome += Number(t.amount);
+            if (t.type === 'EXPENSE') prevExpense += Number(t.amount);
+          }
+        }
+      });
+
+      const incomeDiff = prevIncome > 0 ? ((current.totalIncome - prevIncome) / prevIncome) * 100 : 0;
+      const expenseDiff = prevExpense > 0 ? ((current.totalExpenses - prevExpense) / prevExpense) * 100 : 0;
+
+      return {
+        incomePercentage: incomeDiff,
+        expensePercentage: expenseDiff
+      };
+    }
 
     const now = new Date();
     let prevStart = new Date();
@@ -405,6 +517,11 @@ export class SummaryComponent implements OnInit {
 
   readonly timeframeText = computed(() => {
     const tf = this.timeframe();
+    if (tf === 'month') {
+      const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+      const d = this.selectedMonthDate();
+      return `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+    }
     if (tf === '7d') return 'Últimos 7 días';
     if (tf === '30d') return 'Últimos 30 días';
     if (tf === '1y') return 'Último Año';

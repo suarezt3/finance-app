@@ -230,14 +230,14 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-// Selectores e Inputs Enterprise con borde resaltado de alta visibilidad
+// Selectores e Inputs Enterprise con borde único y nítido (Sin doble línea)
 .ant-select-selector,
-.ant-input,
 .ant-picker,
 .ant-input-number,
 textarea.ant-input,
-.ant-input-affix-wrapper {
-  border-radius: 10px !important;
+.ant-input-affix-wrapper,
+input.ant-input {
+  border-radius: 8px !important;
   border: 1.5px solid #cbd5e1 !important;
   font-family: var(--font-sans) !important;
   font-size: 0.875rem !important;
@@ -260,7 +260,10 @@ textarea.ant-input,
   }
 
   &:focus,
-  &-focused {
+  &.ant-select-focused,
+  &.ant-picker-focused,
+  &.ant-input-number-focused,
+  &.ant-input-affix-wrapper-focused {
     border-color: var(--color-blue-primary) !important;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
 
@@ -271,11 +274,19 @@ textarea.ant-input,
   }
 }
 
-// Borde nítido interno en input numbers y selectores
-.ant-input-number-input {
+// ELIMINACIÓN DE CUALQUIER BORDE ANIDADO O INTERNO EN WRAPPERS
+.ant-input-affix-wrapper > input.ant-input,
+.ant-input-affix-wrapper input,
+.ant-input-number-input-wrap input,
+.ant-input-number input,
+.ant-input-number .ant-input-number-input {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
   font-family: var(--font-sans) !important;
   color: var(--color-navy) !important;
-  height: 100% !important;
 
   html.dark & {
     color: #f8fafc !important;
@@ -778,6 +789,43 @@ html.dark {
     background-color: #020617 !important;
     color: #f8fafc !important;
     border: 1px solid #1e293b !important;
+  }
+}
+
+// ==========================================
+// ESTILOS PARA IMPRESIÓN Y REPORTE PDF
+// ==========================================
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  .enterprise-sidebar,
+  .mobile-bottom-nav,
+  .desktop-topbar,
+  .btn-action-export,
+  .btn-action-print,
+  .btn-action-new,
+  .btn-create-payment,
+  .floating-action-fab,
+  .filters-container,
+  .pagination-container,
+  .ant-pagination {
+    display: none !important;
+  }
+
+  .main-content,
+  .dashboard-content,
+  .transactions-container,
+  .summary-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  .ant-table {
+    border: 1px solid #cbd5e1 !important;
   }
 }
 

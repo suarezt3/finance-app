@@ -49,12 +49,31 @@
       <!-- Selector de Periodo Segmented Control Apple Style -->
       <div class="timeframe-scroll-container">
         <nz-radio-group [ngModel]="timeframe()" (ngModelChange)="timeframe.set($event)" nzButtonStyle="solid" class="apple-segmented-control">
+          <label nz-radio-button nzValue="month">Mes</label>
           <label nz-radio-button nzValue="7d">7D</label>
           <label nz-radio-button nzValue="30d">30D</label>
           <label nz-radio-button nzValue="1y">1A</label>
           <label nz-radio-button nzValue="all">Todo</label>
         </nz-radio-group>
       </div>
+
+      <!-- Navegador Rápido de Mes (Activo cuando timeframe es 'month') -->
+      @if (timeframe() === 'month') {
+        <div class="month-navigator-box">
+          <button type="button" class="btn-month-step" (click)="onPrevMonth()" nz-tooltip nzTooltipTitle="Mes anterior">
+            <span nz-icon nzType="left" nzTheme="outline"></span>
+          </button>
+          <span class="month-label-display">
+            {{ selectedMonthDate() | date:'MMMM yyyy':'':'es' | titlecase }}
+          </span>
+          <button type="button" class="btn-month-step" (click)="onNextMonth()" nz-tooltip nzTooltipTitle="Mes siguiente">
+            <span nz-icon nzType="right" nzTheme="outline"></span>
+          </button>
+          <button type="button" class="btn-month-today-pill" (click)="onCurrentMonth()" nz-tooltip nzTooltipTitle="Volver al mes actual">
+            Hoy
+          </button>
+        </div>
+      }
 
       <!-- Selector de Año -->
       <nz-date-picker
@@ -172,6 +191,25 @@
     </nz-col>
 
   </nz-row>
+
+  <!-- SEMÁFORO DE SALUD FINANCIERA & DIAGNÓSTICO DE AHORRO -->
+  @let health = financialHealth();
+  <div class="financial-health-card" [class]="'health-' + health.status.toLowerCase()">
+    <div class="health-icon-wrap">
+      <span nz-icon [nzType]="health.icon" nzTheme="outline"></span>
+    </div>
+    <div class="health-content">
+      <div class="health-title-row">
+        <h4>{{ health.title }}</h4>
+        @if (health.savingsRate !== null) {
+          <span class="health-rate-tag" [class.negative]="health.savingsRate < 0">
+            {{ health.savingsRate >= 0 ? '+' : '' }}{{ health.savingsRate }}% Tasa de Ahorro
+          </span>
+        }
+      </div>
+      <p class="health-message">{{ health.message }}</p>
+    </div>
+  </div>
 
   <!-- ÁREA DE GRÁFICOS ANALÍTICOS -->
   <nz-row [nzGutter]="{ xs: 12, sm: 16, md: 16, lg: 20 }" class="charts-row">
