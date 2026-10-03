@@ -688,5 +688,14 @@
     .ant-picker {
       border-radius: 9px !important;
     }
+
+    .amount-field {
+      .ant-input-number-input {
+        font-size: 1.35rem !important;
+        font-weight: 800 !important;
+        color: var(--color-navy) !important;
+        letter-spacing: -0.02em !important;
+      }
+    }
   }
 }

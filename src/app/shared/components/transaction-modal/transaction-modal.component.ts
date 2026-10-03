@@ -144,12 +144,12 @@ export class TransactionModalComponent implements OnInit {
   readonly formatterAmount = (value: number | string): string => {
     if (value == null || value === '') return '';
     const parts = value.toString().split('.');
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    return parts.join('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return parts.join(',');
   };
 
   readonly parserAmount = (value: string): number => {
-    const cleanString = value.replace(/,/g, '');
+    const cleanString = value.replace(/\./g, '').replace(',', '.');
     const parsedNumber = parseFloat(cleanString);
     return isNaN(parsedNumber) ? 0 : parsedNumber;
   };
