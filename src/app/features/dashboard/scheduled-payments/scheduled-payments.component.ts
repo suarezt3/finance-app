@@ -24,7 +24,7 @@ import { ScheduledPaymentService } from '../../../core/services/scheduled-paymen
 import { NotificationService } from '../../../core/services/notification.service';
 import { CatalogService, Category, PaymentMethod } from '../../../core/services/catalog.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
-import { ScheduledPayment, COMMON_PAYMENT_PORTALS, QuickPayPortal } from '../../../core/models/scheduled-payment.model';
+import { ScheduledPayment } from '../../../core/models/scheduled-payment.model';
 import { DecimalInputDirective } from '../../../shared/directives/decimal-input.directive';
 import { ConfirmPaymentModalComponent } from './confirm-payment-modal/confirm-payment-modal.component';
 
@@ -54,10 +54,23 @@ export class ScheduledPaymentsComponent implements OnInit {
 
   readonly categories = signal<Category[]>([]);
   readonly paymentMethods = signal<PaymentMethod[]>([]);
-  readonly quickPortals = COMMON_PAYMENT_PORTALS;
 
   // Filtro de pestañas
   readonly activeFilter = signal<'ALL' | 'UPCOMING' | 'PENDING' | 'PAID'>('ALL');
+
+  // Formatters para separador de miles con puntos (.) acorde a pesos colombianos
+  readonly formatterCurrency = (value: number | string): string => {
+    if (value == null || value === '') return '';
+    const parts = value.toString().split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return parts.join(',');
+  };
+
+  readonly parserCurrency = (value: string): number => {
+    const cleanString = value.replace(/\./g, '').replace(',', '.');
+    const parsedNumber = parseFloat(cleanString);
+    return isNaN(parsedNumber) ? 0 : parsedNumber;
+  };
 
   // Estados de modales
   readonly isCreateModalVisible = signal<boolean>(false);
@@ -242,17 +255,8 @@ export class ScheduledPaymentsComponent implements OnInit {
         target = 'https://' + target;
       }
       window.open(target, '_blank', 'noopener,noreferrer');
-      this.message.info(`Abriendo portal de pago para ${payment.title}. Al terminar, recuerda marcarlo como pagado.`);
-    } else {
-      // Si no tiene URL configurada, abrir PSE oficial
-      window.open('https://www.pse.com.co/persona-paga-aqui', '_blank', 'noopener,noreferrer');
-      this.message.info('Abriendo portal oficial de PSE Colombia.');
+      this.message.info(`Abriendo portal oficial de pago para ${payment.title}.`);
     }
-  }
-
-  openQuickPortal(portal: QuickPayPortal): void {
-    window.open(portal.url, '_blank', 'noopener,noreferrer');
-    this.message.info(`Abriendo portal oficial de ${portal.name}.`);
   }
 
   // ==========================================

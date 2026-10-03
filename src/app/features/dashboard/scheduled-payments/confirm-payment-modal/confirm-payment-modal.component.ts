@@ -48,6 +48,20 @@ export class ConfirmPaymentModalComponent {
     paymentMethodId: ['', [Validators.required]]
   });
 
+  // Formatters para separador de miles con puntos (.) acorde a pesos colombianos
+  readonly formatterCurrency = (value: number | string): string => {
+    if (value == null || value === '') return '';
+    const parts = value.toString().split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return parts.join(',');
+  };
+
+  readonly parserCurrency = (value: string): number => {
+    const cleanString = value.replace(/\./g, '').replace(',', '.');
+    const parsedNumber = parseFloat(cleanString);
+    return isNaN(parsedNumber) ? 0 : parsedNumber;
+  };
+
   constructor() {
     effect(() => {
       const p = this.payment();

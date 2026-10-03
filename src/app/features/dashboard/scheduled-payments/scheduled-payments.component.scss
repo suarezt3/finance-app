@@ -12,13 +12,15 @@
   padding-bottom: 96px; // Holgura para el FAB flotante en móviles
 }
 
-// 1. CABECERA
+// ==========================================
+// 1. CABECERA PRINCIPAL (MÓVIL Y DESKTOP)
+// ==========================================
 .payments-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 14px;
 
   .header-titles {
     display: flex;
@@ -28,30 +30,41 @@
     .title-row {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 10px;
 
       h2 {
         margin: 0;
-        font-size: 1.5rem;
+        font-size: 1.45rem;
         font-weight: 800;
         color: var(--color-navy);
         letter-spacing: -0.02em;
+        line-height: 1.2;
+
+        @media (max-width: 640px) {
+          font-size: 1.3rem;
+        }
       }
 
-      .count-badge {
+      .count-badge-inline {
+        display: inline-flex;
+        align-items: center;
         font-size: 0.725rem;
         font-weight: 700;
         background: rgba(37, 99, 235, 0.1);
         color: var(--color-blue-primary);
         padding: 3px 10px;
         border-radius: 9999px;
+        white-space: nowrap;
+        height: fit-content;
       }
     }
 
     .subtitle {
       margin: 0;
-      font-size: 0.85rem;
+      font-size: 0.825rem;
       color: var(--color-slate-muted);
+      line-height: 1.4;
     }
   }
 
@@ -60,223 +73,209 @@
     align-items: center;
     gap: 10px;
 
+    @media (max-width: 640px) {
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .btn-create-payment {
+      border-radius: 10px;
+      height: 42px;
+      font-weight: 700;
+      font-size: 0.875rem;
+      background: var(--color-blue-primary);
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+
+      @media (max-width: 640px) {
+        width: 100%;
+      }
+    }
+
     .btn-enable-notifications {
-      border-radius: 9px;
-      height: 40px;
+      border-radius: 10px;
+      height: 42px;
       font-weight: 600;
+      font-size: 0.85rem;
       color: #d97706;
-      border-color: rgba(217, 119, 6, 0.3);
+      border-color: rgba(217, 119, 6, 0.35);
       background: rgba(245, 158, 11, 0.08);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+
+      @media (max-width: 640px) {
+        width: 100%;
+      }
 
       &:hover {
         background: rgba(245, 158, 11, 0.15);
       }
     }
-
-    .btn-create-payment {
-      border-radius: 9px;
-      height: 40px;
-      font-weight: 600;
-      background: var(--color-blue-primary);
-      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
-    }
   }
 }
 
+// ==========================================
 // 2. RESUMEN DE COMPROMISOS (KPIs)
-.kpi-row {
-  margin-bottom: 4px;
-}
+// ==========================================
+.kpis-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
 
-.payment-kpi-card {
-  border-radius: 14px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-  padding: 8px 12px;
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr 1fr;
 
-  &.highlight {
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.04) 0%, rgba(59, 130, 246, 0.02) 100%);
-    border-color: rgba(37, 99, 235, 0.2);
-
-    html.dark & {
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.12) 0%, rgba(30, 58, 138, 0.08) 100%);
+    .paid-card {
+      grid-column: span 2;
     }
   }
 
-  &.urgent {
-    border-color: rgba(239, 68, 68, 0.3);
-    background: rgba(239, 68, 68, 0.03);
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+
+    .paid-card {
+      grid-column: span 1;
+    }
   }
 
-  .kpi-label {
-    font-size: 0.775rem;
-    font-weight: 600;
-    color: var(--color-slate-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.025em;
-  }
-
-  .kpi-value-group {
+  .kpi-card {
     display: flex;
-    align-items: baseline;
-    gap: 4px;
-    margin-top: 4px;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    transition: all 0.2s ease;
 
-    .currency {
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--color-navy);
+    &.highlight {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.05) 0%, rgba(59, 130, 246, 0.02) 100%);
+      border-color: rgba(37, 99, 235, 0.2);
+
+      html.dark & {
+        background: linear-gradient(135deg, rgba(37, 99, 235, 0.12) 0%, rgba(30, 58, 138, 0.08) 100%);
+      }
     }
 
-    .amount {
-      font-size: 1.5rem;
-      font-weight: 800;
-      color: var(--color-navy);
-      letter-spacing: -0.02em;
+    &.urgent {
+      border-color: rgba(239, 68, 68, 0.3);
+      background: rgba(239, 68, 68, 0.03);
+    }
 
-      &.urgent-amount {
+    .kpi-icon-wrap {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--color-blue-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      flex-shrink: 0;
+
+      &.urgent-icon {
+        background: rgba(239, 68, 68, 0.1);
         color: #ef4444;
       }
 
-      &.paid-amount {
+      &.paid-icon {
+        background: rgba(16, 185, 129, 0.1);
         color: #10b981;
       }
     }
 
-    .kpi-sub-label {
-      font-size: 0.775rem;
-      color: var(--color-slate-muted);
-      margin-left: 4px;
-    }
-  }
-}
-
-// 3. PASARELAS RÁPIDAS
-.quick-portals-section {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  padding: 14px 16px;
-
-  .portals-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
-
-    .portals-title-group {
+    .kpi-body {
       display: flex;
-      align-items: center;
-      gap: 6px;
+      flex-direction: column;
+      min-width: 0;
 
-      .portal-thunder-icon {
-        color: #f59e0b;
-        font-size: 1.1rem;
-      }
-
-      .portals-title {
-        font-size: 0.875rem;
+      .kpi-label {
+        font-size: 0.725rem;
         font-weight: 700;
-        color: var(--color-navy);
-      }
-    }
-
-    .portals-hint {
-      font-size: 0.725rem;
-      color: var(--color-slate-muted);
-    }
-  }
-
-  .portals-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 10px;
-
-    .portal-card-btn {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      background: var(--color-surface-muted);
-      border: 1px solid var(--color-border);
-      cursor: pointer;
-      text-align: left;
-      transition: all 0.2s ease;
-
-      &:hover {
-        background: var(--color-surface-hover);
-        border-color: var(--color-blue-primary);
-        transform: translateY(-1px);
+        color: var(--color-slate-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
       }
 
-      .portal-icon-box {
-        width: 34px;
-        height: 34px;
-        border-radius: 8px;
+      .kpi-value-group {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.1rem;
-        flex-shrink: 0;
-      }
+        align-items: baseline;
+        gap: 3px;
+        margin-top: 2px;
 
-      .portal-text-group {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        min-width: 0;
-
-        .portal-name {
-          font-size: 0.825rem;
-          font-weight: 700;
+        .currency {
+          font-size: 0.95rem;
+          font-weight: 800;
           color: var(--color-navy);
         }
 
-        .portal-desc {
-          font-size: 0.675rem;
-          color: var(--color-slate-muted);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-      }
+        .amount {
+          font-size: 1.35rem;
+          font-weight: 800;
+          color: var(--color-navy);
+          letter-spacing: -0.02em;
 
-      .portal-arrow {
-        color: var(--color-slate-muted);
-        font-size: 0.8rem;
+          &.urgent-amount {
+            color: #ef4444;
+          }
+
+          &.paid-amount {
+            color: #10b981;
+          }
+        }
+
+        .kpi-sub-label {
+          font-size: 0.725rem;
+          color: var(--color-slate-muted);
+          margin-left: 4px;
+        }
       }
     }
   }
 }
 
-// 4. PESTAÑAS DE FILTRO
-.payments-filter-tabs {
-  .segmented-filter-bar {
-    display: inline-flex;
-    background: var(--color-surface-muted);
-    padding: 3px;
-    border-radius: 10px;
-    border: 1px solid var(--color-border);
-    max-width: 100%;
-    overflow-x: auto;
+// ==========================================
+// 3. PESTAÑAS DE FILTRO (GRID 2x2 EN MÓVIL)
+// ==========================================
+.payments-filter-section {
+  width: 100%;
 
-    .filter-tab-btn {
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    background: var(--color-surface-muted);
+    padding: 6px;
+    border-radius: 12px;
+    border: 1px solid var(--color-border);
+
+    @media (max-width: 640px) {
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .filter-pill-btn {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: 7px;
-      border: none;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: 9px;
+      border: 1px solid transparent;
       background: transparent;
-      font-size: 0.8rem;
+      font-size: 0.8125rem;
       font-weight: 600;
       color: var(--color-slate-muted);
       cursor: pointer;
-      white-space: nowrap;
       transition: all 0.15s ease;
 
       &:hover {
@@ -286,12 +285,19 @@
       &.active {
         background: var(--color-surface);
         color: var(--color-navy);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        font-weight: 700;
+        border-color: var(--color-border);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
       }
 
-      .filter-count {
+      .btn-text {
+        white-space: nowrap;
+      }
+
+      .filter-badge {
         font-size: 0.7rem;
-        padding: 1px 6px;
+        font-weight: 700;
+        padding: 1px 7px;
         border-radius: 9999px;
         background: rgba(148, 163, 184, 0.18);
         color: var(--color-slate-text);
@@ -299,14 +305,15 @@
         &.urgent {
           background: rgba(239, 68, 68, 0.15);
           color: #ef4444;
-          font-weight: 700;
         }
       }
     }
   }
 }
 
-// 5. CARDS FEED
+// ==========================================
+// 4. FEED DE TARJETAS DE PAGOS
+// ==========================================
 .payments-cards-feed {
   width: 100%;
 
@@ -315,37 +322,37 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 48px 16px;
+    padding: 44px 16px;
     background: var(--color-surface);
     border: 1px dashed var(--color-border);
     border-radius: 16px;
     text-align: center;
 
     .empty-icon-wrap {
-      width: 56px;
-      height: 56px;
+      width: 52px;
+      height: 52px;
       border-radius: 50%;
       background: var(--color-surface-muted);
       color: var(--color-slate-muted);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.75rem;
-      margin-bottom: 14px;
+      font-size: 1.6rem;
+      margin-bottom: 12px;
     }
 
     h4 {
       margin: 0 0 6px 0;
-      font-size: 1.1rem;
-      font-weight: 700;
+      font-size: 1.05rem;
+      font-weight: 800;
       color: var(--color-navy);
     }
 
     p {
-      margin: 0 0 20px 0;
-      font-size: 0.85rem;
+      margin: 0 0 18px 0;
+      font-size: 0.825rem;
       color: var(--color-slate-muted);
-      max-width: 360px;
+      max-width: 340px;
     }
   }
 
@@ -363,7 +370,7 @@
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: 14px;
-    padding: 14px 16px;
+    padding: 16px;
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
     display: flex;
     flex-direction: column;
@@ -389,26 +396,27 @@
 
     &.urgency-paid {
       border-left: 4px solid #10b981;
-      opacity: 0.85;
+      opacity: 0.9;
     }
 
-    .card-main-header {
+    // Cabecera de la tarjeta
+    .card-header-row {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
 
-      .card-identity {
+      .identity-group {
         display: flex;
         align-items: flex-start;
         gap: 10px;
         min-width: 0;
 
-        .card-category-avatar {
+        .category-icon-box {
           width: 36px;
           height: 36px;
-          border-radius: 10px;
-          background: rgba(37, 99, 235, 0.1);
+          border-radius: 9px;
+          background: rgba(37, 99, 235, 0.08);
           color: var(--color-blue-primary);
           display: flex;
           align-items: center;
@@ -417,13 +425,12 @@
           flex-shrink: 0;
         }
 
-        .card-titles {
+        .titles-column {
           display: flex;
           flex-direction: column;
-          gap: 2px;
           min-width: 0;
 
-          .title-with-recurrence {
+          .title-badge-flex {
             display: flex;
             align-items: center;
             gap: 6px;
@@ -432,7 +439,7 @@
             .payment-title {
               margin: 0;
               font-size: 0.95rem;
-              font-weight: 700;
+              font-weight: 800;
               color: var(--color-navy);
               word-break: break-word;
             }
@@ -449,76 +456,95 @@
             }
           }
 
-          .card-sub-meta {
-            display: flex;
-            align-items: center;
-            gap: 4px;
+          .category-subtitle {
             font-size: 0.725rem;
+            font-weight: 600;
             color: var(--color-slate-muted);
-
-            .category-tag {
-              font-weight: 600;
-              color: var(--color-slate-text);
-            }
-
-            .meta-dot {
-              color: #94a3b8;
-            }
-
-            .due-date-text strong {
-              color: var(--color-navy);
-            }
+            margin-top: 2px;
           }
         }
       }
 
-      .card-amount-box {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
+      .urgency-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.6875rem;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 9999px;
+        white-space: nowrap;
         flex-shrink: 0;
 
-        .amount-value {
-          font-size: 1.15rem;
-          font-weight: 800;
-          color: var(--color-navy);
-          letter-spacing: -0.015em;
+        &.badge-overdue {
+          background: rgba(239, 68, 68, 0.12);
+          color: #ef4444;
         }
 
-        .urgency-status-badge {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 0.675rem;
+        &.badge-today {
+          background: rgba(245, 158, 11, 0.15);
+          color: #d97706;
+        }
+
+        &.badge-upcoming {
+          background: rgba(59, 130, 246, 0.12);
+          color: #2563eb;
+        }
+
+        &.badge-normal {
+          background: var(--color-surface-muted);
+          color: var(--color-slate-muted);
+        }
+
+        &.badge-paid {
+          background: rgba(16, 185, 129, 0.12);
+          color: #10b981;
+        }
+      }
+    }
+
+    // Cuerpo de la tarjeta
+    .card-body-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--color-surface-muted);
+
+      .amount-container {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+
+        .amount-prefix {
+          font-size: 1rem;
+          font-weight: 800;
+          color: var(--color-navy);
+        }
+
+        .amount-number {
+          font-size: 1.35rem;
+          font-weight: 900;
+          color: var(--color-navy);
+          letter-spacing: -0.02em;
+        }
+      }
+
+      .date-container {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.75rem;
+
+        .date-label {
+          color: var(--color-slate-muted);
+        }
+
+        .date-value {
           font-weight: 700;
-          padding: 2px 7px;
-          border-radius: 9999px;
-          margin-top: 3px;
-
-          &.badge-overdue {
-            background: rgba(239, 68, 68, 0.12);
-            color: #ef4444;
-          }
-
-          &.badge-today {
-            background: rgba(245, 158, 11, 0.14);
-            color: #d97706;
-          }
-
-          &.badge-upcoming {
-            background: rgba(59, 130, 246, 0.12);
-            color: #2563eb;
-          }
-
-          &.badge-normal {
-            background: var(--color-surface-muted);
-            color: var(--color-slate-muted);
-          }
-
-          &.badge-paid {
-            background: rgba(16, 185, 129, 0.12);
-            color: #10b981;
-          }
+          color: var(--color-navy);
         }
       }
     }
@@ -529,9 +555,11 @@
       gap: 6px;
       font-size: 0.75rem;
       color: var(--color-slate-muted);
-      background: var(--color-surface-muted);
-      padding: 6px 10px;
-      border-radius: 6px;
+
+      .note-icon {
+        color: var(--color-blue-primary);
+        font-size: 0.85rem;
+      }
 
       .notes-text {
         white-space: nowrap;
@@ -540,43 +568,51 @@
       }
     }
 
+    // Barra de acciones
     .card-actions-bar {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-top: auto;
       padding-top: 10px;
       border-top: 1px solid var(--color-border);
 
-      .btn-card-action {
+      .btn-mark-paid {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 6px 12px;
+        padding: 7px 14px;
         border-radius: 8px;
-        font-size: 0.775rem;
+        font-size: 0.8125rem;
         font-weight: 700;
         cursor: pointer;
         border: none;
+        background: #10b981;
+        color: #ffffff;
+        box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
         transition: all 0.15s ease;
 
-        &.pay-link-btn {
-          background: rgba(37, 99, 235, 0.1);
-          color: var(--color-blue-primary);
-
-          &:hover {
-            background: rgba(37, 99, 235, 0.2);
-          }
+        &:hover {
+          background: #059669;
         }
+      }
 
-        &.confirm-paid-btn {
-          background: #10b981;
-          color: #ffffff;
-          box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
+      .btn-portal-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 7px 12px;
+        border-radius: 8px;
+        font-size: 0.775rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
+        color: var(--color-navy);
+        transition: all 0.15s ease;
 
-          &:hover {
-            background: #059669;
-          }
+        &:hover {
+          border-color: var(--color-blue-primary);
+          color: var(--color-blue-primary);
         }
       }
 
@@ -584,8 +620,8 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        font-size: 0.75rem;
-        font-weight: 600;
+        font-size: 0.775rem;
+        font-weight: 700;
         color: #10b981;
       }
 
@@ -599,9 +635,9 @@
         gap: 2px;
 
         .btn-icon-action {
-          width: 30px;
-          height: 30px;
-          border-radius: 6px;
+          width: 32px;
+          height: 32px;
+          border-radius: 7px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -617,7 +653,9 @@
   }
 }
 
-// 6. MODAL DE CREACIÓN
+// ==========================================
+// 5. MODAL DE CREACIÓN / EDICIÓN
+// ==========================================
 .create-payment-form {
   .full-width {
     width: 100%;
@@ -638,11 +676,17 @@
       margin-bottom: 14px;
     }
 
+    .ant-form-item-label > label {
+      font-weight: 700 !important;
+      font-size: 0.825rem !important;
+      color: var(--color-navy) !important;
+    }
+
     .ant-input,
     .ant-input-number,
     .ant-select-selector,
     .ant-picker {
-      border-radius: 8px !important;
+      border-radius: 9px !important;
     }
   }
 }

@@ -39,6 +39,8 @@
               id="amount"
               [nzMin]="0.01"
               [nzStep]="1000"
+              [nzFormatter]="formatterCurrency"
+              [nzParser]="parserCurrency"
               appDecimalInput
               nzSize="large"
               class="full-width"

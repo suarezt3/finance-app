@@ -87,10 +87,16 @@
       margin-bottom: 16px;
     }
 
+    .ant-form-item-label > label {
+      font-weight: 700 !important;
+      font-size: 0.825rem !important;
+      color: var(--color-navy) !important;
+    }
+
     .ant-input-number,
     .ant-select-selector,
     .ant-picker {
-      border-radius: 8px !important;
+      border-radius: 9px !important;
     }
   }
 }

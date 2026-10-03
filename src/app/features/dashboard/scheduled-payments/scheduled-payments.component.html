@@ -1,148 +1,133 @@
 <!-- src/app/features/dashboard/scheduled-payments/scheduled-payments.component.html -->
 <div class="scheduled-payments-container">
 
-  <!-- 1. CABECERA PRINCIPAL -->
+  <!-- 1. CABECERA PRINCIPAL (OPTIMIZADA PARA MÓVIL Y DESKTOP) -->
   <header class="payments-header">
     <div class="header-titles">
       <div class="title-row">
         <h2>Pagos Programados & Servicios</h2>
-        <span class="count-badge">{{ paymentService.pendingPayments().length }} pendientes</span>
+        <span class="count-badge-inline">{{ paymentService.pendingPayments().length }} pendientes</span>
       </div>
       <p class="subtitle">Recordatorios con alertas al celular y control de pago con debitado verificado.</p>
     </div>
 
     <div class="header-actions">
+      <button nz-button nzType="primary" (click)="openCreateModal()" class="btn-create-payment">
+        <span nz-icon nzType="plus"></span>
+        <span>Programar Pago</span>
+      </button>
+
       @if (notificationService.permissionStatus() !== 'granted' && notificationService.isSupported()) {
         <button nz-button nzType="default" (click)="onRequestNotificationPermission()" class="btn-enable-notifications">
           <span nz-icon nzType="bell" nzTheme="outline"></span>
           <span>Activar Alertas Celular</span>
         </button>
       }
-
-      <button nz-button nzType="primary" (click)="openCreateModal()" class="btn-create-payment">
-        <span nz-icon nzType="plus"></span>
-        <span>Programar Pago</span>
-      </button>
     </div>
   </header>
 
-  <!-- 2. RESUMEN DE COMPROMISOS (KPIs) -->
-  <nz-row [nzGutter]="{ xs: 10, sm: 14, md: 16 }" class="kpi-row">
+  <!-- 2. RESUMEN DE COMPROMISOS (KPIs EQUILIBRADOS) -->
+  <div class="kpis-grid">
     <!-- Total Pendiente -->
-    <nz-col [nzXs]="12" [nzMd]="8">
-      <nz-card nzSize="small" class="payment-kpi-card highlight" [nzBordered]="false">
+    <div class="kpi-card highlight">
+      <div class="kpi-icon-wrap">
+        <span nz-icon nzType="dollar-circle" nzTheme="outline"></span>
+      </div>
+      <div class="kpi-body">
         <span class="kpi-label">Total por Pagar</span>
         <div class="kpi-value-group">
           <span class="currency">{{ userPreferences.currencySymbol() }}</span>
           <span class="amount tabular-nums">{{ paymentService.totalPendingAmount() | number:'1.0-0':'es' }}</span>
         </div>
-      </nz-card>
-    </nz-col>
+      </div>
+    </div>
 
     <!-- Próximos o Urgentes -->
-    <nz-col [nzXs]="12" [nzMd]="8">
-      <nz-card nzSize="small" class="payment-kpi-card" [class.urgent]="paymentService.urgentCount() > 0" [nzBordered]="false">
+    <div class="kpi-card" [class.urgent]="paymentService.urgentCount() > 0">
+      <div class="kpi-icon-wrap urgent-icon">
+        <span nz-icon nzType="clock-circle" nzTheme="outline"></span>
+      </div>
+      <div class="kpi-body">
         <span class="kpi-label">Urgentes / Vencen Pronto</span>
         <div class="kpi-value-group">
           <span class="amount urgent-amount tabular-nums">{{ paymentService.urgentCount() }}</span>
           <span class="kpi-sub-label">compromisos</span>
         </div>
-      </nz-card>
-    </nz-col>
+      </div>
+    </div>
 
     <!-- Facturas Pagadas -->
-    <nz-col [nzXs]="24" [nzMd]="8">
-      <nz-card nzSize="small" class="payment-kpi-card" [nzBordered]="false">
+    <div class="kpi-card paid-card">
+      <div class="kpi-icon-wrap paid-icon">
+        <span nz-icon nzType="check-circle" nzTheme="outline"></span>
+      </div>
+      <div class="kpi-body">
         <span class="kpi-label">Historial Pagadas</span>
         <div class="kpi-value-group">
           <span class="amount paid-amount tabular-nums">{{ paymentService.paidPayments().length }}</span>
-          <span class="kpi-sub-label">registradas al día</span>
+          <span class="kpi-sub-label">al día</span>
         </div>
-      </nz-card>
-    </nz-col>
-  </nz-row>
-
-  <!-- 3. BARRA DE PASARELAS RÁPIDAS ("Ir a Pagar por PSE / Bancos") -->
-  <div class="quick-portals-section">
-    <div class="portals-header">
-      <div class="portals-title-group">
-        <span nz-icon nzType="thunderbolt" nzTheme="fill" class="portal-thunder-icon"></span>
-        <span class="portals-title">Pasarelas y Portales de Pago Directo</span>
       </div>
-      <span class="portals-hint">Paga directamente en la plataforma oficial sin comisiones de intermediarios</span>
-    </div>
-
-    <div class="portals-grid">
-      @for (portal of quickPortals; track portal.id) {
-        <button type="button" class="portal-card-btn" (click)="openQuickPortal(portal)">
-          <div class="portal-icon-box" [style.background-color]="portal.color + '1a'" [style.color]="portal.color">
-            <span nz-icon [nzType]="portal.icon" nzTheme="outline"></span>
-          </div>
-          <div class="portal-text-group">
-            <span class="portal-name">{{ portal.name }}</span>
-            <span class="portal-desc">{{ portal.description }}</span>
-          </div>
-          <span nz-icon nzType="export" nzTheme="outline" class="portal-arrow"></span>
-        </button>
-      }
     </div>
   </div>
 
-  <!-- 4. PESTAÑAS DE FILTRO -->
-  <div class="payments-filter-tabs">
-    <div class="segmented-filter-bar">
+  <!-- 3. PESTAÑAS DE FILTRO (GRID 2x2 EN MÓVIL, SIN SCROLL HORIZONTAL INCÓMODO) -->
+  <div class="payments-filter-section">
+    <div class="filters-grid">
       <button
         type="button"
-        class="filter-tab-btn"
+        class="filter-pill-btn"
         [class.active]="activeFilter() === 'ALL'"
         (click)="activeFilter.set('ALL')"
       >
-        <span>Todos</span>
-        <span class="filter-count">{{ paymentService.payments().length }}</span>
+        <span class="btn-text">Todos</span>
+        <span class="filter-badge">{{ paymentService.payments().length }}</span>
       </button>
 
       <button
         type="button"
-        class="filter-tab-btn"
+        class="filter-pill-btn"
         [class.active]="activeFilter() === 'UPCOMING'"
         (click)="activeFilter.set('UPCOMING')"
       >
-        <span>Por Vencer</span>
+        <span class="btn-text">Por Vencer</span>
         @if (paymentService.urgentCount() > 0) {
-          <span class="filter-count urgent">{{ paymentService.urgentCount() }}</span>
+          <span class="filter-badge urgent">{{ paymentService.urgentCount() }}</span>
+        } @else {
+          <span class="filter-badge">0</span>
         }
       </button>
 
       <button
         type="button"
-        class="filter-tab-btn"
+        class="filter-pill-btn"
         [class.active]="activeFilter() === 'PENDING'"
         (click)="activeFilter.set('PENDING')"
       >
-        <span>Pendientes</span>
-        <span class="filter-count">{{ paymentService.pendingPayments().length }}</span>
+        <span class="btn-text">Pendientes</span>
+        <span class="filter-badge">{{ paymentService.pendingPayments().length }}</span>
       </button>
 
       <button
         type="button"
-        class="filter-tab-btn"
+        class="filter-pill-btn"
         [class.active]="activeFilter() === 'PAID'"
         (click)="activeFilter.set('PAID')"
       >
-        <span>Pagadas</span>
-        <span class="filter-count">{{ paymentService.paidPayments().length }}</span>
+        <span class="btn-text">Pagadas</span>
+        <span class="filter-badge">{{ paymentService.paidPayments().length }}</span>
       </button>
     </div>
   </div>
 
-  <!-- 5. FEED RESPONSIVO DE TARJETAS DE PAGOS -->
+  <!-- 4. FEED RESPONSIVO DE TARJETAS DE PAGOS -->
   <div class="payments-cards-feed">
     @if (filteredPayments().length === 0) {
       <div class="empty-payments-card">
         <div class="empty-icon-wrap">
           <span nz-icon nzType="schedule" nzTheme="outline"></span>
         </div>
-        <h4>No hay pagos programados</h4>
+        <h4>No hay pagos en esta vista</h4>
         <p>Registra tus servicios públicos, facturas de telefonía o arriendo para recibir recordatorios.</p>
         <button nz-button nzType="primary" (click)="openCreateModal()">
           <span nz-icon nzType="plus"></span> Programar Primer Pago
@@ -160,13 +145,13 @@
             [class.urgency-paid]="urgency === 'PAID'"
           >
             <!-- Cabecera de la Tarjeta -->
-            <div class="card-main-header">
-              <div class="card-identity">
-                <div class="card-category-avatar">
+            <div class="card-header-row">
+              <div class="identity-group">
+                <div class="category-icon-box">
                   <span nz-icon nzType="file-text" nzTheme="outline"></span>
                 </div>
-                <div class="card-titles">
-                  <div class="title-with-recurrence">
+                <div class="titles-column">
+                  <div class="title-badge-flex">
                     <h3 class="payment-title">{{ payment.title }}</h3>
                     @if (payment.recurrence !== 'ONCE') {
                       <span class="recurrence-pill">
@@ -178,67 +163,53 @@
                       </span>
                     }
                   </div>
-                  <div class="card-sub-meta">
-                    @if (payment.categoryName) {
-                      <span class="category-tag">{{ payment.categoryName }}</span>
-                      <span class="meta-dot">·</span>
-                    }
-                    <span class="due-date-text">
-                      Vence: <strong>{{ payment.dueDate | date:'dd/MM/yyyy' }}</strong>
-                    </span>
+                  <div class="category-subtitle">
+                    {{ payment.categoryName || 'Servicios & Facturas' }}
                   </div>
                 </div>
               </div>
 
-              <!-- Monto -->
-              <div class="card-amount-box">
-                <span class="amount-value tabular-nums">
-                  {{ userPreferences.currencySymbol() }}{{ payment.amount | number:'1.0-0':'es' }}
-                </span>
-                <!-- Badge de Urgencia -->
-                <div class="urgency-status-badge" [class]="'badge-' + urgency.toLowerCase()">
-                  @if (urgency === 'PAID') {
-                    <span nz-icon nzType="check-circle" nzTheme="fill"></span> Pagado
-                  } @else {
-                    <span nz-icon nzType="clock-circle" nzTheme="outline"></span>
-                    {{ paymentService.getUrgencyDaysText(payment.dueDate) }}
-                  }
-                </div>
+              <!-- Badge de Urgencia -->
+              <div class="urgency-status-badge" [class]="'badge-' + urgency.toLowerCase()">
+                @if (urgency === 'PAID') {
+                  <span nz-icon nzType="check-circle" nzTheme="fill"></span> Pagado
+                } @else {
+                  <span nz-icon nzType="clock-circle" nzTheme="outline"></span>
+                  {{ paymentService.getUrgencyDaysText(payment.dueDate) }}
+                }
               </div>
             </div>
 
-            <!-- Notas o detalles si existen -->
+            <!-- Cuerpo de la Tarjeta: Monto y Fecha -->
+            <div class="card-body-row">
+              <div class="amount-container">
+                <span class="amount-prefix">{{ userPreferences.currencySymbol() }}</span>
+                <span class="amount-number tabular-nums">{{ payment.amount | number:'1.0-0':'es' }}</span>
+              </div>
+
+              <div class="date-container">
+                <span class="date-label">Fecha Límite:</span>
+                <span class="date-value">{{ payment.dueDate | date:'dd/MM/yyyy' }}</span>
+              </div>
+            </div>
+
+            <!-- Notas o referencia si existen -->
             @if (payment.notes) {
               <div class="card-notes-row">
-                <span nz-icon nzType="file" nzTheme="outline"></span>
+                <span nz-icon nzType="info-circle" nzTheme="outline" class="note-icon"></span>
                 <span class="notes-text">{{ payment.notes }}</span>
               </div>
             }
 
             <!-- Barra de Acciones de la Tarjeta -->
             <div class="card-actions-bar">
-              <!-- Botón Ir a Pagar -->
               @if (payment.status === 'PENDING') {
                 <button
                   type="button"
-                  class="btn-card-action pay-link-btn"
-                  (click)="openPaymentPortal(payment)"
-                  nz-tooltip
-                  nzTooltipTitle="Abrir portal oficial de pago (PSE o web del proveedor)"
-                >
-                  <span nz-icon nzType="export" nzTheme="outline"></span>
-                  <span>{{ payment.paymentUrl ? 'Ir a Pagar' : 'Pagar con PSE' }}</span>
-                </button>
-              }
-
-              <!-- Botón Marcar como Pagado (Check) -->
-              @if (payment.status === 'PENDING') {
-                <button
-                  type="button"
-                  class="btn-card-action confirm-paid-btn"
+                  class="btn-mark-paid"
                   (click)="openConfirmPaymentModal(payment)"
                 >
-                  <span nz-icon nzType="check-circle" nzTheme="outline"></span>
+                  <span nz-icon nzType="check-circle" nzTheme="fill"></span>
                   <span>Marcar Pagado</span>
                 </button>
               } @else {
@@ -246,6 +217,20 @@
                   <span nz-icon nzType="check-circle" nzTheme="fill"></span>
                   <span>Pagado el {{ payment.lastPaidDate | date:'dd/MM/yyyy' }}</span>
                 </div>
+              }
+
+              <!-- Enlace a Portal Oficial (solo si el usuario ingresó URL propia) -->
+              @if (payment.status === 'PENDING' && payment.paymentUrl) {
+                <button
+                  type="button"
+                  class="btn-portal-link"
+                  (click)="openPaymentPortal(payment)"
+                  nz-tooltip
+                  nzTooltipTitle="Abrir portal de pago del proveedor"
+                >
+                  <span nz-icon nzType="export" nzTheme="outline"></span>
+                  <span>Portal</span>
+                </button>
               }
 
               <div class="spacer"></div>
@@ -284,7 +269,7 @@
     }
   </div>
 
-  <!-- 6. MODAL DE CREACIÓN / EDICIÓN DE PAGO PROGRAMADO -->
+  <!-- 5. MODAL DE CREACIÓN / EDICIÓN DE PAGO PROGRAMADO (DISEÑO IDÉNTICO A NUEVO MOVIMIENTO) -->
   <nz-modal
     [nzVisible]="isCreateModalVisible()"
     [nzTitle]="editingPayment() ? 'Editar Pago Programado' : 'Programar Nuevo Pago o Factura'"
@@ -311,19 +296,21 @@
         </nz-form-item>
 
         <div class="form-row-two">
-          <!-- 2. Monto a Pagar -->
-          <nz-form-item>
+          <!-- 2. Monto a Pagar (Formateado con puntos para miles: 85.000) -->
+          <nz-form-item class="amount-field">
             <nz-form-label nzRequired nzFor="amount">Monto Estimado</nz-form-label>
-            <nz-form-control nzErrorTip="Monto válido requerido">
+            <nz-form-control nzErrorTip="Monto válido requerido mayor a 0">
               <nz-input-number
                 formControlName="amount"
                 id="amount"
                 [nzMin]="0.01"
                 [nzStep]="10000"
+                [nzFormatter]="formatterCurrency"
+                [nzParser]="parserCurrency"
                 appDecimalInput
                 nzSize="large"
                 class="full-width"
-                placeholder="Ej. 85.000"
+                placeholder="0"
               ></nz-input-number>
             </nz-form-control>
           </nz-form-item>
@@ -346,9 +333,9 @@
         <div class="form-row-two">
           <!-- 4. Categoría -->
           <nz-form-item>
-            <nz-form-label nzFor="categoryId">Categoría</nz-form-label>
+            <nz-form-label nzFor="categoryId">Categoría Financiera</nz-form-label>
             <nz-form-control>
-              <nz-select formControlName="categoryId" id="categoryId" nzPlaceHolder="Seleccionar..." nzSize="large" class="full-width">
+              <nz-select formControlName="categoryId" id="categoryId" nzPlaceHolder="Seleccionar categoría..." nzSize="large" class="full-width">
                 @for (cat of categories(); track cat.id) {
                   <nz-option [nzValue]="cat.id" [nzLabel]="cat.name"></nz-option>
                 }
@@ -358,7 +345,7 @@
 
           <!-- 5. Frecuencia / Recurrencia -->
           <nz-form-item>
-            <nz-form-label nzRequired nzFor="recurrence">Frecuencia</nz-form-label>
+            <nz-form-label nzRequired nzFor="recurrence">Frecuencia de Pago</nz-form-label>
             <nz-form-control>
               <nz-select formControlName="recurrence" id="recurrence" nzSize="large" class="full-width">
                 <nz-option nzValue="MONTHLY" nzLabel="Mensual (Cada mes)"></nz-option>
@@ -386,7 +373,7 @@
 
           <!-- 7. Enlace Web de Pago (Opcional) -->
           <nz-form-item>
-            <nz-form-label nzFor="paymentUrl">Enlace de Pago Oficial (Opcional)</nz-form-label>
+            <nz-form-label nzFor="paymentUrl">Portal Oficial de Pago (Opcional)</nz-form-label>
             <nz-form-control>
               <nz-input-wrapper class="full-width">
                 <span nz-icon nzType="link" nzInputPrefix class="prefix-icon"></span>
@@ -400,7 +387,7 @@
         <nz-form-item>
           <nz-form-label nzFor="notes">Notas o Referencia de Pago (Opcional)</nz-form-label>
           <nz-form-control>
-            <textarea nz-input formControlName="notes" id="notes" rows="2" placeholder="Ej. Número de convenio o código de usuario..."></textarea>
+            <textarea nz-input formControlName="notes" id="notes" rows="2" placeholder="Ej. Número de cuenta, convenio o código de usuario..."></textarea>
           </nz-form-control>
         </nz-form-item>
 
@@ -408,7 +395,7 @@
     </ng-container>
   </nz-modal>
 
-  <!-- 7. POP-UP DE VALIDACIÓN DE PAGO -->
+  <!-- 6. POP-UP DE VALIDACIÓN DE PAGO -->
   <app-confirm-payment-modal
     [isVisible]="isConfirmModalVisible()"
     [payment]="paymentToConfirm()"
