@@ -47,22 +47,22 @@
   </header>
 
   <!-- BARRA DE CONTROL UNIFICADA Y STICKY (Flota y permanece accesible durante el scroll) -->
-  <div class="sticky-control-bar">
+  <div class="sticky-control-bar" [class.has-stepper]="timeframe() === 'month' || timeframe() === 'custom-year'">
     <div class="control-bar-inner">
 
-      <!-- 1. NAVEGADOR DE PERÍODO ERGONÓMICO -->
-      <div class="period-navigator-unified">
+      <!-- 1. GRUPO DE PERÍODO (Selector de modo + Stepper) -->
+      <div class="controls-left-group">
         <!-- Selector Rápido de Modo de Período -->
         <nz-select
           [ngModel]="timeframe()"
           (ngModelChange)="onTimeframeSelect($event)"
           class="timeframe-mode-select"
           [nzDropdownMatchSelectWidth]="false">
+          <nz-option nzValue="all" nzLabel="Histórico"></nz-option>
           <nz-option nzValue="month" nzLabel="Mensual"></nz-option>
           <nz-option nzValue="custom-year" nzLabel="Anual"></nz-option>
           <nz-option nzValue="30d" nzLabel="30 Días"></nz-option>
           <nz-option nzValue="7d" nzLabel="7 Días"></nz-option>
-          <nz-option nzValue="all" nzLabel="Histórico"></nz-option>
         </nz-select>
 
         <!-- Stepper interactivo (< Período >) para Mes y Año (Cero teclado virtual) -->
@@ -108,7 +108,7 @@
         }
       </div>
 
-      <!-- 2. SELECTOR DE CUENTAS / BILLETERA (Compacto) -->
+      <!-- 2. SELECTOR DE CUENTAS / BILLETERA -->
       <div class="wallet-filter-unified">
         <nz-select
           [ngModel]="selectedPaymentMethod()"

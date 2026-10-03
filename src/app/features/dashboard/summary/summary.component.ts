@@ -87,7 +87,7 @@ export class SummaryComponent implements OnInit {
   readonly paymentMethods = signal<PaymentMethod[]>([]);
 
   readonly isModalVisible = signal<boolean>(false);
-  readonly timeframe = signal<Timeframe>('month');
+  readonly timeframe = signal<Timeframe>('all');
   readonly selectedMonthDate = signal<Date>(new Date());
   readonly selectedYear = signal<Date | null>(new Date());
   readonly selectedPaymentMethod = signal<string | null>(null);

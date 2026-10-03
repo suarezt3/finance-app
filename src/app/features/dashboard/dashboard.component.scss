@@ -517,7 +517,7 @@
   margin: 0 auto;
   padding: 24px 28px;
   box-sizing: border-box;
-  overflow-x: hidden;
+  overflow-x: clip;
 
   @media (max-width: 767px) {
     padding: 14px 12px;
