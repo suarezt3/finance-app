@@ -283,6 +283,8 @@ export class SummaryComponent implements OnInit {
     };
   });
 
+
+
   // -- SEMÁFORO DE SALUD FINANCIERA & AHORRO --
   readonly financialHealth = computed(() => {
     const s = this.summary();

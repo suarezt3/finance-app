@@ -139,7 +139,8 @@
 // 1. CABECERA Y TÍTULO
 // ==========================================
 .summary-header {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 4px;
 }
 
 .summary-title {
@@ -168,14 +169,15 @@
       background: var(--color-blue-subtle);
       border: 1px solid var(--color-border);
       padding: 2px 8px;
-      border-radius: 9999px;
+      border-radius: 6px;
     }
   }
 
   .update-subline {
-    margin: 4px 0 0 0;
+    margin: 6px 0 0 0;
     color: var(--color-slate-muted);
     font-size: 0.8125rem;
+    line-height: 1.3;
   }
 }
 
@@ -187,7 +189,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  margin: -14px -12px 18px -12px;
+  margin: 0 -12px 18px -12px;
   padding: 10px 12px;
   background: rgba(248, 250, 252, 0.94);
   backdrop-filter: blur(16px);
@@ -204,7 +206,7 @@
 
   @media (min-width: 768px) {
     top: 0;
-    margin: -24px -28px 24px -28px;
+    margin: 0 -28px 22px -28px;
     padding: 12px 28px;
   }
 
@@ -281,7 +283,7 @@
     background: var(--color-surface);
     border: 1.5px solid var(--color-border);
     padding: 2px 4px;
-    border-radius: 8px;
+    border-radius: 6px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
     flex: 1;
     justify-content: space-between;
@@ -289,7 +291,7 @@
     .btn-step {
       width: 30px;
       height: 30px;
-      border-radius: 6px;
+      border-radius: 4px;
       border: 1px solid var(--color-border);
       background: var(--color-surface-hover);
       color: var(--color-navy);
@@ -327,7 +329,7 @@
       font-size: 0.6875rem;
       font-weight: 700;
       padding: 2px 8px;
-      border-radius: 5px;
+      border-radius: 4px;
       border: 1px solid var(--color-border);
       background: var(--color-surface-hover);
       color: var(--color-slate-muted);
@@ -361,12 +363,12 @@
   margin-left: auto;
 
   @media (max-width: 767px) {
-    display: none !important; // En móvil se prioriza el FAB inferior para dejar el 100% de la cabecera limpia
+    display: none !important;
   }
 
   .btn-new-tx-compact {
     height: 36px;
-    border-radius: 8px;
+    border-radius: 6px;
     font-weight: 600;
     font-size: 0.8125rem;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
@@ -377,137 +379,135 @@
 }
 
 // ==========================================
-// SEMÁFORO DE SALUD FINANCIERA
+// 3. TARJETA DE FLUJO NETO Y DIAGNÓSTICO INTEGRADO
 // ==========================================
-.financial-health-card {
+.flow-net-card {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 18px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+  flex-direction: column;
   transition: all 0.2s ease;
 
-  @media (max-width: 640px) {
-    align-items: flex-start;
-    padding: 12px 14px;
-    gap: 12px;
+  &.has-alert {
+    border-color: rgba(245, 158, 11, 0.4) !important;
   }
 
-  &.health-excellent {
-    border-color: rgba(16, 185, 129, 0.35);
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(5, 150, 105, 0.02) 100%);
-
-    .health-icon-wrap {
-      background: #10b981;
-      color: #ffffff;
+  .kpi-icon-wrap {
+    &.positive {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
     }
-
-    .health-rate-tag {
-      background: rgba(16, 185, 129, 0.15);
-      color: #059669;
+    &.negative {
+      background: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
     }
   }
 
-  &.health-moderate {
-    border-color: rgba(245, 158, 11, 0.35);
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.06) 0%, rgba(217, 119, 6, 0.02) 100%);
-
-    .health-icon-wrap {
-      background: #f59e0b;
-      color: #ffffff;
-    }
-
-    .health-rate-tag {
-      background: rgba(245, 158, 11, 0.15);
-      color: #d97706;
-    }
-  }
-
-  &.health-deficit {
-    border-color: rgba(239, 68, 68, 0.35);
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.06) 0%, rgba(220, 38, 38, 0.02) 100%);
-
-    .health-icon-wrap {
-      background: #ef4444;
-      color: #ffffff;
-    }
-
-    .health-rate-tag {
-      background: rgba(239, 68, 68, 0.15);
-      color: #dc2626;
-
-      &.negative {
-        color: #dc2626;
-      }
-    }
-  }
-
-  &.health-neutral {
-    border-color: var(--color-border);
-    background: var(--color-surface-muted);
-
-    .health-icon-wrap {
-      background: var(--color-slate-muted);
-      color: #ffffff;
-    }
-
-    .health-rate-tag {
-      background: rgba(148, 163, 184, 0.15);
-      color: var(--color-slate-muted);
-    }
-  }
-
-  .health-icon-wrap {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-    flex-shrink: 0;
-  }
-
-  .health-content {
+  .flow-diagnostic-box {
+    margin-top: 14px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-hover);
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    min-width: 0;
-    flex: 1;
+    gap: 6px;
+    transition: all 0.2s ease;
 
-    .health-title-row {
+    &.status-healthy {
+      background: rgba(16, 185, 129, 0.06);
+      border-color: rgba(16, 185, 129, 0.25);
+
+      .status-icon {
+        color: #10b981;
+      }
+      .rate-badge {
+        background: #10b981;
+        color: #ffffff;
+      }
+    }
+
+    &.status-warning {
+      background: rgba(245, 158, 11, 0.08);
+      border-color: rgba(245, 158, 11, 0.3);
+
+      .status-icon {
+        color: #f59e0b;
+      }
+      .rate-badge {
+        background: #f59e0b;
+        color: #ffffff;
+      }
+    }
+
+    &.status-deficit {
+      background: rgba(239, 68, 68, 0.08);
+      border-color: rgba(239, 68, 68, 0.3);
+
+      .status-icon {
+        color: #ef4444;
+      }
+      .rate-badge {
+        background: #ef4444;
+        color: #ffffff;
+      }
+    }
+
+    .diagnostic-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      width: fit-content;
+
+      &.warning {
+        background: rgba(245, 158, 11, 0.18);
+        color: #b45309;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+
+        html.dark & {
+          color: #fbbf24;
+          border-color: rgba(245, 158, 11, 0.45);
+        }
+      }
+    }
+
+    .diagnostic-main-line {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
 
-      h4 {
-        margin: 0;
+      .status-icon {
         font-size: 0.95rem;
-        font-weight: 800;
+        flex-shrink: 0;
+      }
+
+      .status-title {
+        font-size: 0.8125rem;
+        font-weight: 700;
         color: var(--color-navy);
       }
 
-      .health-rate-tag {
-        font-size: 0.7rem;
+      .rate-badge {
+        font-size: 0.6875rem;
         font-weight: 700;
-        padding: 2px 8px;
-        border-radius: 9999px;
+        padding: 1px 6px;
+        border-radius: 4px;
+        line-height: 1.4;
       }
     }
 
-    .health-message {
+    .diagnostic-detail {
       margin: 0;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: var(--color-slate-muted);
-      line-height: 1.4;
+      line-height: 1.35;
     }
   }
 }
+
 
 .timeframe-scroll-container {
   overflow-x: auto;

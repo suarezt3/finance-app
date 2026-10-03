@@ -1,20 +1,7 @@
 <!-- src/app/features/dashboard/summary/summary.component.html -->
 <div class="summary-container">
 
-  <!-- BANNER DE ADVERTENCIA DE PRESUPUESTO (SI SE EXCEDE EL % CONFIGURADO) -->
-  @if (budgetAlert(); as alert) {
-    <div class="budget-alert-banner">
-      <div class="alert-icon-box">
-        <span nz-icon nzType="warning" nzTheme="fill"></span>
-      </div>
-      <div class="alert-text-box">
-        <h4>¡Alerta de Límite de Presupuesto!</h4>
-        <p>
-          Tus gastos actuales representan el <strong>{{ alert.ratio }}%</strong> de tus ingresos en este período, superando tu umbral de alerta configurado de <strong>{{ alert.threshold }}%</strong>.
-        </p>
-      </div>
-    </div>
-  }
+
 
   <!-- BANNER DE PAGOS PROGRAMADOS POR VENCER -->
   @if (scheduledPaymentService.urgentCount() > 0) {
@@ -137,12 +124,14 @@
   <!-- TARJETAS DE KPIs (Grid Responsivo Inteligente) -->
   <nz-row [nzGutter]="{ xs: 12, sm: 16, md: 16, lg: 20 }" class="kpi-grid-row">
 
-    <!-- 1. FLUJO NETO -->
+    <!-- 1. FLUJO NETO (CON DIAGNÓSTICO INTEGRADO) -->
     <nz-col [nzXs]="24" [nzMd]="8">
-      <nz-card class="dashboard-kpi-card" [nzBordered]="false">
+      @let health = financialHealth();
+      @let alert = budgetAlert();
+      <nz-card class="dashboard-kpi-card flow-net-card" [class.has-alert]="alert !== null || health.status === 'DEFICIT'" [nzBordered]="false">
         <div class="kpi-card-header">
           <span class="kpi-label">Flujo Neto ({{ timeframeText() }})</span>
-          <div class="kpi-icon-wrap neutral">
+          <div class="kpi-icon-wrap" [class.negative]="summary().totalBalance < 0" [class.positive]="summary().totalBalance >= 0">
             <span nz-icon nzType="wallet" nzTheme="outline"></span>
           </div>
         </div>
@@ -154,8 +143,26 @@
           </span>
         </div>
 
-        <div class="kpi-footer-status">
-          <span class="kpi-meta-sub">Balance acumulado del periodo</span>
+        <!-- DIAGNÓSTICO FINANCIERO Y ALERTAS CONSOLIDADAS -->
+        <div class="flow-diagnostic-box" [class]="'status-' + health.status.toLowerCase()">
+          @if (alert; as bAlert) {
+            <div class="diagnostic-pill warning">
+              <span nz-icon nzType="warning" nzTheme="fill"></span>
+              <span>Límite de Presupuesto: <strong>{{ bAlert.ratio }}% gastado</strong> (umbral {{ bAlert.threshold }}%)</span>
+            </div>
+          }
+
+          <div class="diagnostic-main-line">
+            <span nz-icon [nzType]="health.icon" class="status-icon"></span>
+            <span class="status-title">{{ health.title }}</span>
+            @if (health.savingsRate !== null) {
+              <span class="rate-badge" [class.negative]="health.savingsRate < 0">
+                {{ health.savingsRate >= 0 ? '+' : '' }}{{ health.savingsRate }}% Ahorro
+              </span>
+            }
+          </div>
+
+          <p class="diagnostic-detail">{{ health.message }}</p>
         </div>
       </nz-card>
     </nz-col>
@@ -222,24 +229,7 @@
 
   </nz-row>
 
-  <!-- SEMÁFORO DE SALUD FINANCIERA & DIAGNÓSTICO DE AHORRO -->
-  @let health = financialHealth();
-  <div class="financial-health-card" [class]="'health-' + health.status.toLowerCase()">
-    <div class="health-icon-wrap">
-      <span nz-icon [nzType]="health.icon" nzTheme="outline"></span>
-    </div>
-    <div class="health-content">
-      <div class="health-title-row">
-        <h4>{{ health.title }}</h4>
-        @if (health.savingsRate !== null) {
-          <span class="health-rate-tag" [class.negative]="health.savingsRate < 0">
-            {{ health.savingsRate >= 0 ? '+' : '' }}{{ health.savingsRate }}% Tasa de Ahorro
-          </span>
-        }
-      </div>
-      <p class="health-message">{{ health.message }}</p>
-    </div>
-  </div>
+
 
   <!-- ÁREA DE GRÁFICOS ANALÍTICOS -->
   <nz-row [nzGutter]="{ xs: 12, sm: 16, md: 16, lg: 20 }" class="charts-row">
