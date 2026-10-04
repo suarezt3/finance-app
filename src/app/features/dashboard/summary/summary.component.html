@@ -7,7 +7,7 @@
   @if (scheduledPaymentService.urgentCount() > 0) {
     <div class="scheduled-payment-alert-banner">
       <div class="alert-icon-box">
-        <span nz-icon nzType="clock-circle" nzTheme="outline"></span>
+        <hugeicons-icon [icon]="ClockIcon" [size]="18" [strokeWidth]="1.8"></hugeicons-icon>
       </div>
       <div class="alert-text-box">
         <h4>Compromisos de Pago Próximos</h4>
@@ -17,7 +17,7 @@
       </div>
       <a routerLink="/dashboard/pagos-programados" class="btn-banner-link">
         <span>Ir a Pagar</span>
-        <span nz-icon nzType="arrow-right"></span>
+        <hugeicons-icon [icon]="ArrowRightIcon" [size]="14" [strokeWidth]="1.8"></hugeicons-icon>
       </a>
     </div>
   }
@@ -61,7 +61,7 @@
               (click)="onPrevPeriod()"
               nz-tooltip
               [nzTooltipTitle]="timeframe() === 'month' ? 'Mes anterior' : 'Año anterior'">
-              <span nz-icon nzType="left" nzTheme="outline"></span>
+              <hugeicons-icon [icon]="ArrowLeftIcon" [size]="14" [strokeWidth]="1.8"></hugeicons-icon>
             </button>
 
             <span class="period-display-label">
@@ -78,7 +78,7 @@
               (click)="onNextPeriod()"
               nz-tooltip
               [nzTooltipTitle]="timeframe() === 'month' ? 'Mes siguiente' : 'Año siguiente'">
-              <span nz-icon nzType="right" nzTheme="outline"></span>
+              <hugeicons-icon [icon]="ArrowRightIcon" [size]="14" [strokeWidth]="1.8"></hugeicons-icon>
             </button>
 
             @if (!isCurrentPeriod()) {
@@ -113,7 +113,7 @@
       <!-- 3. ACCIÓN NUEVO MOVIMIENTO (Visible en Desktop, en móvil se utiliza el FAB) -->
       <div class="desktop-action-wrap">
         <button nz-button nzType="primary" (click)="openModal()" class="btn-new-tx-compact">
-          <span nz-icon nzType="plus"></span>
+          <hugeicons-icon [icon]="PlusIcon" [size]="15" [strokeWidth]="2"></hugeicons-icon>
           <span>Nuevo Movimiento</span>
         </button>
       </div>
@@ -132,7 +132,7 @@
         <div class="kpi-card-header">
           <span class="kpi-label">Flujo Neto ({{ timeframeText() }})</span>
           <div class="kpi-icon-wrap" [class.negative]="summary().totalBalance < 0" [class.positive]="summary().totalBalance >= 0">
-            <span nz-icon nzType="wallet" nzTheme="outline"></span>
+            <hugeicons-icon [icon]="WalletIcon" [size]="18" [strokeWidth]="1.8"></hugeicons-icon>
           </div>
         </div>
 
@@ -147,13 +147,13 @@
         <div class="flow-diagnostic-box" [class]="'status-' + health.status.toLowerCase()">
           @if (alert; as bAlert) {
             <div class="diagnostic-pill warning">
-              <span nz-icon nzType="warning" nzTheme="fill"></span>
+              <hugeicons-icon [icon]="AlertIcon" [size]="13" [strokeWidth]="1.8"></hugeicons-icon>
               <span>Límite de Presupuesto: <strong>{{ bAlert.ratio }}% gastado</strong> (umbral {{ bAlert.threshold }}%)</span>
             </div>
           }
 
           <div class="diagnostic-main-line">
-            <span nz-icon [nzType]="health.icon" class="status-icon"></span>
+            <hugeicons-icon [icon]="health.status === 'EXCELLENT' ? CheckCircleIcon : (health.status === 'NEUTRAL' ? WalletIcon : AlertIcon)" [size]="15" [strokeWidth]="1.8" class="status-icon"></hugeicons-icon>
             <span class="status-title">{{ health.title }}</span>
             @if (health.savingsRate !== null) {
               <span class="rate-badge" [class.negative]="health.savingsRate < 0">
@@ -173,7 +173,7 @@
         <div class="kpi-card-header">
           <span class="kpi-label">Ingresos ({{ timeframeText() }})</span>
           <div class="kpi-icon-wrap income">
-            <span nz-icon nzType="arrow-up" nzTheme="outline"></span>
+            <hugeicons-icon [icon]="ArrowUpIcon" [size]="18" [strokeWidth]="1.8"></hugeicons-icon>
           </div>
         </div>
 
@@ -186,7 +186,7 @@
 
         @if (kpiVariations(); as variations) {
           <div class="variation-badge" [class.success]="variations.incomePercentage >= 0" [class.danger]="variations.incomePercentage < 0">
-            <span nz-icon [nzType]="variations.incomePercentage >= 0 ? 'caret-up' : 'caret-down'"></span>
+            <hugeicons-icon [icon]="variations.incomePercentage >= 0 ? ArrowUpIcon : ArrowDownIcon" [size]="12" [strokeWidth]="2.2"></hugeicons-icon>
             <span>{{ (variations.incomePercentage > 0 ? variations.incomePercentage : variations.incomePercentage * -1) | number:'1.0-1':'es' }}% vs periodo anterior</span>
           </div>
         } @else {
@@ -203,7 +203,7 @@
         <div class="kpi-card-header">
           <span class="kpi-label">Gastos ({{ timeframeText() }})</span>
           <div class="kpi-icon-wrap expense">
-            <span nz-icon nzType="arrow-down" nzTheme="outline"></span>
+            <hugeicons-icon [icon]="ArrowDownIcon" [size]="18" [strokeWidth]="1.8"></hugeicons-icon>
           </div>
         </div>
 
@@ -216,7 +216,7 @@
 
         @if (kpiVariations(); as variations) {
           <div class="variation-badge" [class.danger]="variations.expensePercentage > 0" [class.success]="variations.expensePercentage <= 0">
-            <span nz-icon [nzType]="variations.expensePercentage > 0 ? 'caret-up' : 'caret-down'"></span>
+            <hugeicons-icon [icon]="variations.expensePercentage > 0 ? ArrowUpIcon : ArrowDownIcon" [size]="12" [strokeWidth]="2.2"></hugeicons-icon>
             <span>{{ (variations.expensePercentage > 0 ? variations.expensePercentage : variations.expensePercentage * -1) | number:'1.0-1':'es' }}% vs periodo anterior</span>
           </div>
         } @else {
@@ -301,19 +301,20 @@
       </div>
       <a routerLink="/dashboard/transacciones" class="btn-view-all-link">
         <span>Ver todas las transacciones</span>
-        <span nz-icon nzType="arrow-right" class="arrow-icon"></span>
+        <hugeicons-icon [icon]="ArrowRightIcon" [size]="14" [strokeWidth]="1.8" class="arrow-icon"></hugeicons-icon>
       </a>
     </div>
 
     @if (latestTransactions().length === 0) {
       <div class="empty-transactions-card">
         <div class="empty-icon-wrap">
-          <span nz-icon nzType="inbox" nzTheme="outline"></span>
+          <hugeicons-icon [icon]="EmptyIcon" [size]="32" [strokeWidth]="1.5"></hugeicons-icon>
         </div>
         <h4>No hay movimientos recientes</h4>
         <p>Registra tu primer movimiento usando el botón "+ Nuevo Movimiento".</p>
         <button nz-button nzType="primary" (click)="openModal()">
-          <span nz-icon nzType="plus"></span> Nuevo Movimiento
+          <hugeicons-icon [icon]="PlusIcon" [size]="14" [strokeWidth]="2"></hugeicons-icon>
+          <span>Nuevo Movimiento</span>
         </button>
       </div>
     } @else {
@@ -334,11 +335,11 @@
                 [class.transfer]="tx.isTransfer"
               >
                 @if (tx.isTransfer) {
-                  <span nz-icon nzType="swap" nzTheme="outline"></span>
+                  <hugeicons-icon [icon]="TransferIcon" [size]="16" [strokeWidth]="1.8"></hugeicons-icon>
                 } @else if (tx.type === 'INCOME') {
-                  <span nz-icon nzType="arrow-down" nzTheme="outline"></span>
+                  <hugeicons-icon [icon]="ArrowDownIcon" [size]="16" [strokeWidth]="1.8"></hugeicons-icon>
                 } @else {
-                  <span nz-icon nzType="arrow-up" nzTheme="outline"></span>
+                  <hugeicons-icon [icon]="ArrowUpIcon" [size]="16" [strokeWidth]="1.8"></hugeicons-icon>
                 }
               </div>
 
@@ -355,7 +356,7 @@
                   <span class="meta-separator">·</span>
 
                   <span class="movement-account-badge">
-                    <span nz-icon nzType="wallet" class="wallet-icon"></span>
+                    <hugeicons-icon [icon]="WalletIcon" [size]="12" [strokeWidth]="1.8" class="wallet-icon"></hugeicons-icon>
                     @if (tx.isMergedTransfer) {
                       {{ tx.sourceMethodName }} → {{ tx.destinationMethodName }}
                     } @else {

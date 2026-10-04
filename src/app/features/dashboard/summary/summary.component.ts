@@ -30,6 +30,21 @@ import { ThemeService } from '../../../core/services/theme.service';
 import { UserPreferencesService } from '../../../core/services/user-preferences.service';
 import { ScheduledPaymentService } from '../../../core/services/scheduled-payment.service';
 
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import {
+  Wallet01Icon,
+  ArrowUp01Icon,
+  ArrowDown01Icon,
+  ArrowRight01Icon,
+  ArrowLeft01Icon,
+  ArrowLeftRightIcon,
+  PlusSignIcon,
+  Clock01Icon,
+  AlertCircleIcon,
+  CheckmarkCircle01Icon,
+  InboxIcon
+} from '@hugeicons/core-free-icons';
+
 type Timeframe = 'month' | '7d' | '30d' | '1y' | 'all' | 'custom-year';
 
 // ==========================================
@@ -50,6 +65,7 @@ export interface TransactionView extends TransactionWithDetails {
   standalone: true,
   imports: [
     DecimalPipe, DatePipe, TitleCasePipe, FormsModule, RouterLink,
+    HugeiconsIconComponent,
     NzGridModule, NzCardModule, NzStatisticModule,
     NzButtonModule, NzIconModule, NzRadioModule, NzDatePickerModule,
     NzSelectModule, NzTableModule, NzTagModule, NzTooltipModule,
@@ -59,6 +75,19 @@ export interface TransactionView extends TransactionWithDetails {
   styleUrl: './summary.component.scss'
 })
 export class SummaryComponent implements OnInit {
+  // Hugeicons para KPIs, filtros y transacciones
+  readonly WalletIcon = Wallet01Icon;
+  readonly ArrowUpIcon = ArrowUp01Icon;
+  readonly ArrowDownIcon = ArrowDown01Icon;
+  readonly ArrowRightIcon = ArrowRight01Icon;
+  readonly ArrowLeftIcon = ArrowLeft01Icon;
+  readonly TransferIcon = ArrowLeftRightIcon;
+  readonly PlusIcon = PlusSignIcon;
+  readonly ClockIcon = Clock01Icon;
+  readonly AlertIcon = AlertCircleIcon;
+  readonly CheckCircleIcon = CheckmarkCircle01Icon;
+  readonly EmptyIcon = InboxIcon;
+
   private readonly transactionService = inject(TransactionService);
   private readonly catalogService = inject(CatalogService);
   readonly themeService = inject(ThemeService);

@@ -17,7 +17,7 @@
       <div class="total-balance-display-card">
         <div class="balance-card-info">
           <div class="balance-icon-pill">
-            <span nz-icon nzType="wallet" nzTheme="outline"></span>
+            <hugeicons-icon [icon]="WalletIcon" [size]="18" [strokeWidth]="1.8"></hugeicons-icon>
           </div>
           <div class="balance-labels">
             <span class="balance-title">Saldo Total Disponible</span>
@@ -46,7 +46,8 @@
                   <span class="ai-scan-subtitle">Completa el formulario en 1 segundo</span>
                 </div>
                 <span class="ai-btn-badge">
-                  <span nz-icon nzType="thunderbolt" nzTheme="fill"></span> Gemini AI
+                  <hugeicons-icon [icon]="AiIcon" [size]="13" [strokeWidth]="2"></hugeicons-icon>
+                  <span>Gemini AI</span>
                 </span>
               </div>
               <div class="ai-scan-actions">
@@ -56,7 +57,7 @@
                   [disabled]="isCapturingImage()"
                   (click)="onCapturePhoto()"
                 >
-                  <span nz-icon nzType="camera" nzTheme="outline" class="btn-icon"></span>
+                  <hugeicons-icon [icon]="CameraIcon" [size]="20" [strokeWidth]="1.8" class="btn-icon"></hugeicons-icon>
                   <div class="btn-label-group">
                     <span class="btn-label-primary">Tomar Foto</span>
                     <span class="btn-label-sub">Abrir cámara directa</span>
@@ -69,7 +70,7 @@
                   [disabled]="isCapturingImage()"
                   (click)="onPickFile()"
                 >
-                  <span nz-icon nzType="file-image" nzTheme="outline" class="btn-icon"></span>
+                  <hugeicons-icon [icon]="ImageIcon" [size]="20" [strokeWidth]="1.8" class="btn-icon"></hugeicons-icon>
                   <div class="btn-label-group">
                     <span class="btn-label-primary">Subir Archivo</span>
                     <span class="btn-label-sub">Galería o fotos</span>
@@ -92,7 +93,7 @@
                   @if (scannedReceiptThumbnail()) {
                     <img [src]="scannedReceiptThumbnail()" class="ai-result-thumb" alt="Factura escaneada" />
                   } @else {
-                    <span nz-icon nzType="check-circle" nzTheme="fill" class="ai-success-icon"></span>
+                    <hugeicons-icon [icon]="CheckCircleIcon" [size]="18" [strokeWidth]="1.8" class="ai-success-icon"></hugeicons-icon>
                   }
                   <div class="ai-result-titles">
                     <strong>{{ info.merchant }}</strong>
@@ -100,7 +101,7 @@
                   </div>
                 </div>
                 <button type="button" class="ai-clear-btn" (click)="clearScannedReceipt()" title="Descartar">
-                  <span nz-icon nzType="close" nzTheme="outline"></span>
+                  <hugeicons-icon [icon]="CloseIcon" [size]="16" [strokeWidth]="2"></hugeicons-icon>
                 </button>
               </div>
               <div class="ai-result-chips">
@@ -127,13 +128,16 @@
             [class.theme-transfer]="selectedType() === 'TRANSFER'"
           >
             <label nz-radio-button nzValue="EXPENSE">
-              <span nz-icon nzType="fall" nzTheme="outline"></span> Gasto
+              <hugeicons-icon [icon]="ExpenseIcon" [size]="15" [strokeWidth]="2"></hugeicons-icon>
+              <span>Gasto</span>
             </label>
             <label nz-radio-button nzValue="INCOME">
-              <span nz-icon nzType="rise" nzTheme="outline"></span> Ingreso
+              <hugeicons-icon [icon]="IncomeIcon" [size]="15" [strokeWidth]="2"></hugeicons-icon>
+              <span>Ingreso</span>
             </label>
             <label nz-radio-button nzValue="TRANSFER">
-              <span nz-icon nzType="swap" nzTheme="outline"></span> Transferencia
+              <hugeicons-icon [icon]="TransferIcon" [size]="15" [strokeWidth]="2"></hugeicons-icon>
+              <span>Transferencia</span>
             </label>
           </nz-radio-group>
         </nz-form-control>
@@ -166,7 +170,7 @@
           }
           @if (control.errors?.['max']) {
             <span class="insufficient-balance-alert">
-              <span nz-icon nzType="warning" nzTheme="outline"></span>
+              <hugeicons-icon [icon]="AlertIcon" [size]="14" [strokeWidth]="1.8"></hugeicons-icon>
               Saldo insuficiente. Máximo disponible: $ {{ availableBalance() | number:'1.0-2':'es' }}
             </span>
           }
@@ -233,11 +237,11 @@
               <!-- Indicador Inteligente de Saldo Disponible -->
               @if (isCheckingBalance()) {
                 <div class="balance-indicator checking">
-                  <span nz-icon nzType="loading"></span> Verificando saldo...
+                  <nz-spin nzSimple></nz-spin> Verificando saldo...
                 </div>
               } @else if (availableBalance() !== null) {
                 <div class="balance-indicator" [class.alert]="availableBalance()! <= 0">
-                  <span nz-icon [nzType]="availableBalance()! <= 0 ? 'close-circle' : 'info-circle'"></span>
+                  <hugeicons-icon [icon]="availableBalance()! <= 0 ? AlertIcon : InfoIcon" [size]="14" [strokeWidth]="1.8"></hugeicons-icon>
                   Saldo disponible: $ {{ availableBalance() | number:'1.0-2':'es' }}
                 </div>
               }
@@ -272,7 +276,7 @@
         <nz-form-label>Descripción (Opcional)</nz-form-label>
         <nz-form-control>
           <nz-input-wrapper class="custom-desc-wrapper">
-            <span nz-icon nzType="edit" nzInputPrefix class="desc-prefix-icon"></span>
+            <hugeicons-icon [icon]="EditIcon" [size]="16" [strokeWidth]="1.8" class="desc-prefix-icon" nzInputPrefix></hugeicons-icon>
             <input nz-input formControlName="description" placeholder="Ej. Pago servicios cloud, suscripción, honorarios..." nzSize="large" />
           </nz-input-wrapper>
         </nz-form-control>

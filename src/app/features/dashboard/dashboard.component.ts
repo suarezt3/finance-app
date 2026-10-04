@@ -28,6 +28,23 @@ import { ScheduledPaymentService } from '../../core/services/scheduled-payment.s
 // Importamos la librería de Onboarding y su tipado estricto
 import { driver, DriveStep } from 'driver.js';
 
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import {
+  DashboardSquare01Icon,
+  TableIcon,
+  Calendar03Icon,
+  Settings02Icon,
+  Menu01Icon,
+  SidebarLeftIcon,
+  SecurityLockIcon,
+  Sun01Icon,
+  Moon01Icon,
+  UserIcon,
+  Logout01Icon,
+  ArrowDown01Icon,
+  PlusSignIcon
+} from '@hugeicons/core-free-icons';
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -35,6 +52,7 @@ import { driver, DriveStep } from 'driver.js';
     CommonModule,
     RouterOutlet,
     RouterLink,
+    HugeiconsIconComponent,
     NzLayoutModule,
     NzMenuModule,
     NzIconModule,
@@ -50,6 +68,20 @@ import { driver, DriveStep } from 'driver.js';
   styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent implements OnInit, AfterViewInit {
+  // Hugeicons para la navegación y barra superior
+  readonly DashboardIcon = DashboardSquare01Icon;
+  readonly TableIcon = TableIcon;
+  readonly CalendarIcon = Calendar03Icon;
+  readonly SettingsIcon = Settings02Icon;
+  readonly MenuIcon = Menu01Icon;
+  readonly SidebarIcon = SidebarLeftIcon;
+  readonly LockIcon = SecurityLockIcon;
+  readonly SunIcon = Sun01Icon;
+  readonly MoonIcon = Moon01Icon;
+  readonly UserIcon = UserIcon;
+  readonly LogoutIcon = Logout01Icon;
+  readonly ChevronDownIcon = ArrowDown01Icon;
+  readonly PlusIcon = PlusSignIcon;
   private readonly authService = inject(AuthService);
   private readonly transactionService = inject(TransactionService);
   private readonly router = inject(Router);

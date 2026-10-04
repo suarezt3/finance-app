@@ -266,10 +266,8 @@
   width: 100%;
 
   ::ng-deep {
-    .ant-table-thead > tr > th,
-    .ant-table-tbody > tr > td {
+    .ant-table-thead > tr > th {
       white-space: nowrap !important;
-      word-break: keep-all !important;
     }
   }
 
@@ -277,19 +275,30 @@
     font-size: 0.8125rem;
     color: var(--color-slate-muted);
     font-weight: 500;
+    white-space: nowrap;
   }
 
   .cell-desc {
     font-weight: 600;
     color: var(--color-navy);
     font-size: 0.875rem;
+    white-space: normal !important;
+    word-break: break-word !important;
+    line-height: 1.35;
+    max-width: 260px;
   }
 
   .cell-category {
+    white-space: normal !important;
+    word-break: break-word !important;
+    max-width: 160px;
+
     .category-name {
       font-size: 0.8125rem;
       font-weight: 500;
       color: var(--color-slate-text);
+      word-break: break-word;
+      line-height: 1.3;
     }
   }
 

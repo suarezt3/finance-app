@@ -9,21 +9,21 @@
   <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isDesktopCollapsed()" class="enterprise-nav-menu">
     <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()" [id]="prefix + '-resumen'">
       <a routerLink="/dashboard/resumen">
-        <span nz-icon nzType="dashboard" nzTheme="outline"></span>
+        <hugeicons-icon [icon]="DashboardIcon" [size]="18" [strokeWidth]="1.8" class="nav-icon"></hugeicons-icon>
         <span>Resumen Ejecutivo</span>
       </a>
     </li>
 
     <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()" [id]="prefix + '-transacciones'">
       <a routerLink="/dashboard/transacciones">
-        <span nz-icon nzType="table" nzTheme="outline"></span>
+        <hugeicons-icon [icon]="TableIcon" [size]="18" [strokeWidth]="1.8" class="nav-icon"></hugeicons-icon>
         <span>Libro de Transacciones</span>
       </a>
     </li>
 
     <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()" [id]="prefix + '-pagos'">
       <a routerLink="/dashboard/pagos-programados">
-        <span nz-icon nzType="calendar" nzTheme="outline"></span>
+        <hugeicons-icon [icon]="CalendarIcon" [size]="18" [strokeWidth]="1.8" class="nav-icon"></hugeicons-icon>
         <span>Pagos Programados</span>
         @if (scheduledPaymentService.urgentCount() > 0) {
           <span class="nav-urgent-badge">{{ scheduledPaymentService.urgentCount() }}</span>
@@ -37,7 +37,7 @@
 
     <li nz-menu-item nzMatchRouter (click)="closeMobileMenu()" [id]="prefix + '-config'">
       <a routerLink="/dashboard/configuracion">
-        <span nz-icon nzType="setting" nzTheme="outline"></span>
+        <hugeicons-icon [icon]="SettingsIcon" [size]="18" [strokeWidth]="1.8" class="nav-icon"></hugeicons-icon>
         <span>Configuración</span>
       </a>
     </li>
@@ -127,7 +127,7 @@
             (click)="toggleMenu()"
             id="tour-hamburger-btn"
             [attr.aria-label]="isDesktopCollapsed() ? 'Expandir barra lateral' : 'Colapsar barra lateral'">
-            <span nz-icon [nzType]="getMenuIcon()" class="toggle-icon"></span>
+            <hugeicons-icon [icon]="isDesktopCollapsed() ? SidebarIcon : MenuIcon" [size]="20" [strokeWidth]="1.8" class="toggle-icon"></hugeicons-icon>
           </button>
 
           <div class="header-context-title">
@@ -142,7 +142,7 @@
 
           <div class="security-lock-badge hide-on-mobile">
             <span class="ssl-live-dot"></span>
-            <span nz-icon nzType="lock" class="lock-icon"></span>
+            <hugeicons-icon [icon]="LockIcon" [size]="14" [strokeWidth]="1.8" class="lock-icon"></hugeicons-icon>
             <span class="ssl-label">SSL 256-BIT</span>
           </div>
 
@@ -157,9 +157,9 @@
             [attr.aria-label]="themeService.isDarkMode() ? 'Activar modo claro' : 'Activar modo oscuro'"
             id="tour-theme-toggle">
             @if (themeService.isDarkMode()) {
-              <span nz-icon nzType="sun" class="theme-icon sun-icon"></span>
+              <hugeicons-icon [icon]="SunIcon" [size]="18" [strokeWidth]="1.8" class="theme-icon sun-icon"></hugeicons-icon>
             } @else {
-              <span nz-icon nzType="moon" class="theme-icon moon-icon"></span>
+              <hugeicons-icon [icon]="MoonIcon" [size]="18" [strokeWidth]="1.8" class="theme-icon moon-icon"></hugeicons-icon>
             }
           </button>
 
@@ -172,7 +172,7 @@
                 <span class="user-name">{{ userName() }}</span>
                 <span class="user-role">Titular de Cuenta</span>
               </div>
-              <span nz-icon nzType="down" class="dropdown-chevron"></span>
+              <hugeicons-icon [icon]="ChevronDownIcon" [size]="14" [strokeWidth]="2" class="dropdown-chevron"></hugeicons-icon>
             </a>
 
             <nz-dropdown-menu #userMenu="nzDropdownMenu">
@@ -182,11 +182,13 @@
                 </li>
                 <li nz-menu-divider></li>
                 <li nz-menu-item (click)="openProfile()">
-                  <span nz-icon nzType="user"></span> Mi Perfil y Cuenta
+                  <hugeicons-icon [icon]="UserIcon" [size]="16" [strokeWidth]="1.8"></hugeicons-icon>
+                  <span>Mi Perfil y Cuenta</span>
                 </li>
                 <li nz-menu-divider></li>
                 <li nz-menu-item nzDanger (click)="onLogout()">
-                  <span nz-icon nzType="logout"></span> Cerrar Sesión Segura
+                  <hugeicons-icon [icon]="LogoutIcon" [size]="16" [strokeWidth]="1.8"></hugeicons-icon>
+                  <span>Cerrar Sesión Segura</span>
                 </li>
               </ul>
             </nz-dropdown-menu>
@@ -214,7 +216,7 @@
     aria-label="Registrar nuevo movimiento"
   >
     <div class="fab-icon-wrap">
-      <span nz-icon nzType="plus" class="fab-icon"></span>
+      <hugeicons-icon [icon]="PlusIcon" [size]="20" [strokeWidth]="2.2" class="fab-icon"></hugeicons-icon>
     </div>
     <span class="fab-text">Nuevo Movimiento</span>
   </button>

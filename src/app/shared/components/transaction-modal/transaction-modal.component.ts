@@ -31,6 +31,22 @@ import { UserPreferencesService } from '../../../core/services/user-preferences.
 // NUEVO: Importamos la directiva que acabamos de crear
 import { DecimalInputDirective } from '../../directives/decimal-input.directive';
 
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import {
+  Wallet01Icon,
+  FlashIcon,
+  Camera01Icon,
+  Image01Icon,
+  CheckmarkCircle01Icon,
+  Cancel01Icon,
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  ArrowLeftRightIcon,
+  AlertCircleIcon,
+  InformationCircleIcon,
+  Edit02Icon
+} from '@hugeicons/core-free-icons';
+
 @Component({
   selector: 'app-transaction-modal',
   standalone: true,
@@ -42,12 +58,25 @@ import { DecimalInputDirective } from '../../directives/decimal-input.directive'
     ReactiveFormsModule, DecimalPipe, NzIconModule,
     NzModalModule, NzFormModule, NzInputModule, NzInputNumberModule,
     NzSelectModule, NzDatePickerModule, NzButtonModule,
-    DecimalInputDirective
+    DecimalInputDirective, HugeiconsIconComponent
   ],
   templateUrl: './transaction-modal.component.html',
   styleUrl: './transaction-modal.component.scss'
 })
 export class TransactionModalComponent implements OnInit {
+  // Hugeicons para el modal de movimientos
+  readonly WalletIcon = Wallet01Icon;
+  readonly AiIcon = FlashIcon;
+  readonly CameraIcon = Camera01Icon;
+  readonly ImageIcon = Image01Icon;
+  readonly CheckCircleIcon = CheckmarkCircle01Icon;
+  readonly CloseIcon = Cancel01Icon;
+  readonly ExpenseIcon = ArrowDown01Icon;
+  readonly IncomeIcon = ArrowUp01Icon;
+  readonly TransferIcon = ArrowLeftRightIcon;
+  readonly AlertIcon = AlertCircleIcon;
+  readonly InfoIcon = InformationCircleIcon;
+  readonly EditIcon = Edit02Icon;
   private readonly fb = inject(FormBuilder);
   private readonly catalogService = inject(CatalogService);
   private readonly transactionService = inject(TransactionService);
