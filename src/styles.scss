@@ -517,6 +517,36 @@ html.dark {
     color: var(--color-slate-muted) !important;
   }
 
+  // Active Category Filters in Dark Mode (Configuración -> Categorías)
+  .filter-chips .chip-btn {
+    background-color: #1e293b !important;
+    color: #94a3b8 !important;
+    border-color: #334155 !important;
+
+    &:hover {
+      border-color: #38bdf8 !important;
+      color: #ffffff !important;
+    }
+
+    &.active {
+      background-color: #2563eb !important;
+      color: #ffffff !important;
+      border-color: #3b82f6 !important;
+
+      &.expense {
+        background-color: #dc2626 !important;
+        border-color: #dc2626 !important;
+        color: #ffffff !important;
+      }
+
+      &.income {
+        background-color: #059669 !important;
+        border-color: #059669 !important;
+        color: #ffffff !important;
+      }
+    }
+  }
+
   // Form Labels & Required Marks
   .ant-form-item-label > label {
     color: #cbd5e1 !important;

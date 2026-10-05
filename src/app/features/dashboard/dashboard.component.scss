@@ -135,6 +135,41 @@
       font-size: 0.875rem;
       transition: all 0.15s ease;
 
+      a {
+        display: flex !important;
+        align-items: center !important;
+        gap: 12px;
+        height: 100%;
+        color: inherit !important;
+        text-decoration: none;
+        line-height: normal !important;
+
+        hugeicons-icon,
+        .nav-icon {
+          display: inline-flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          line-height: 1 !important;
+          color: #94a3b8;
+          transition: color 0.15s ease;
+          flex-shrink: 0;
+          position: relative;
+          top: 1.5px; // Corrección óptica precisa para alinear exactamente con el centro del texto
+
+          svg {
+            display: block;
+            margin: auto;
+          }
+        }
+
+        > span:not(.nav-urgent-badge) {
+          display: inline-flex;
+          align-items: center;
+          line-height: 1.2;
+          font-size: 0.875rem;
+        }
+      }
+
       span[nz-icon] {
         font-size: 1rem;
         color: #94a3b8;
@@ -145,8 +180,10 @@
         color: #ffffff !important;
         background-color: rgba(255, 255, 255, 0.05) !important;
 
-        span[nz-icon] {
-          color: #ffffff;
+        span[nz-icon],
+        hugeicons-icon,
+        .nav-icon {
+          color: #ffffff !important;
         }
       }
 
@@ -156,7 +193,9 @@
         font-weight: 600;
         box-shadow: inset 3px 0 0 #3b82f6;
 
-        span[nz-icon] {
+        span[nz-icon],
+        hugeicons-icon,
+        .nav-icon {
           color: #60a5fa !important;
         }
       }

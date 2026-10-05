@@ -54,7 +54,7 @@
                 <button
                   type="button"
                   class="ai-action-btn btn-camera"
-                  [disabled]="isCapturingImage()"
+                  [disabled]="isCapturingImage() || isRecordingVoice() || isProcessingVoice()"
                   (click)="onCapturePhoto()"
                 >
                   <hugeicons-icon [icon]="CameraIcon" [size]="20" [strokeWidth]="1.8" class="btn-icon"></hugeicons-icon>
@@ -67,7 +67,7 @@
                 <button
                   type="button"
                   class="ai-action-btn btn-file"
-                  [disabled]="isCapturingImage()"
+                  [disabled]="isCapturingImage() || isRecordingVoice() || isProcessingVoice()"
                   (click)="onPickFile()"
                 >
                   <hugeicons-icon [icon]="ImageIcon" [size]="20" [strokeWidth]="1.8" class="btn-icon"></hugeicons-icon>
@@ -76,7 +76,56 @@
                     <span class="btn-label-sub">Galería o fotos</span>
                   </div>
                 </button>
+
+                <button
+                  type="button"
+                  class="ai-action-btn btn-voice"
+                  [class.recording]="isRecordingVoice()"
+                  [disabled]="isCapturingImage() || isScanningReceipt() || isProcessingVoice()"
+                  (click)="toggleVoiceRecording()"
+                >
+                  <hugeicons-icon [icon]="MicIcon" [size]="20" [strokeWidth]="1.8" class="btn-icon"></hugeicons-icon>
+                  <div class="btn-label-group">
+                    <span class="btn-label-primary">{{ isRecordingVoice() ? 'Detener' : 'Dictar por Voz' }}</span>
+                    <span class="btn-label-sub">{{ isRecordingVoice() ? 'Escuchando...' : 'Habla con Gemini' }}</span>
+                  </div>
+                </button>
               </div>
+
+              @if (isRecordingVoice()) {
+                <div class="voice-listening-card">
+                  <div class="voice-wave-container">
+                    <div class="voice-wave-bar wave-1"></div>
+                    <div class="voice-wave-bar wave-2"></div>
+                    <div class="voice-wave-bar wave-3"></div>
+                    <div class="voice-wave-bar wave-4"></div>
+                    <div class="voice-wave-bar wave-5"></div>
+                  </div>
+                  <div class="voice-listening-content">
+                    <div class="voice-status-line">
+                      <span class="recording-badge-pulse"></span>
+                      <strong>Escuchando tu dictado...</strong>
+                    </div>
+                    <span class="voice-hint-text">Ejemplo: "Gasté 50 mil pesos en supermercado con Nequi"</span>
+                    @if (voiceLiveTranscript()) {
+                      <div class="voice-transcript-bubble">
+                        "{{ voiceLiveTranscript() }}"
+                      </div>
+                    }
+                  </div>
+                  <button type="button" class="voice-stop-btn" (click)="stopVoiceRecording()">
+                    Listo
+                  </button>
+                </div>
+              } @else if (isProcessingVoice()) {
+                <div class="ai-scanning-card voice-processing">
+                  <nz-spin nzSimple></nz-spin>
+                  <div class="ai-scanning-text">
+                    <strong>Gemini AI interpretando tu voz...</strong>
+                    <span>Extrayendo monto, categoría y cuenta</span>
+                  </div>
+                </div>
+              }
             </div>
           } @else if (isScanningReceipt()) {
             <div class="ai-scanning-card">
@@ -143,23 +192,24 @@
         </nz-form-control>
       </nz-form-item>
 
-      <!-- 2. MONTO (Jerarquía Visual Primaria) -->
+      <!-- 2. MONTO (Jerarquía Visual Primaria con Formato de Miles en Vivo) -->
       <nz-form-item class="amount-field">
         <nz-form-label nzRequired>Monto a Registrar</nz-form-label>
         <nz-form-control [nzErrorTip]="amountErrorTpl">
-          <nz-input-number
-            appDecimalInput
-            formControlName="amount"
-            [nzMin]="0.01"
-            [nzStep]="1000"
-            style="width: 100%;"
-            [nzPrecision]="2"
-            [nzFormatter]="formatterAmount"
-            [nzParser]="parserAmount"
-            nzSize="large"
-            nzPlaceHolder="0.00"
-            class="enterprise-amount-input"
-          ></nz-input-number>
+          <div class="enterprise-amount-input-group">
+            <span class="currency-symbol-label">{{ userPreferences.currencySymbol() }}</span>
+            <input
+              nz-input
+              type="text"
+              inputmode="decimal"
+              [value]="displayAmount()"
+              (input)="onAmountInputChange($event)"
+              (blur)="onAmountInputBlur()"
+              placeholder="0"
+              class="enterprise-amount-input"
+              autocomplete="off"
+            />
+          </div>
         </nz-form-control>
         <ng-template #amountErrorTpl let-control>
           @if (control.errors?.['required']) {
@@ -171,7 +221,7 @@
           @if (control.errors?.['max']) {
             <span class="insufficient-balance-alert">
               <hugeicons-icon [icon]="AlertIcon" [size]="14" [strokeWidth]="1.8"></hugeicons-icon>
-              Saldo insuficiente. Máximo disponible: $ {{ availableBalance() | number:'1.0-2':'es' }}
+              Saldo insuficiente. Máximo disponible: {{ userPreferences.currencySymbol() }}{{ availableBalance() | number:'1.0-2':'es' }}
             </span>
           }
         </ng-template>

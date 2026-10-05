@@ -232,8 +232,8 @@
     flex-wrap: wrap;
 
     .chip-btn {
-      padding: 6px 12px;
-      border-radius: 8px;
+      padding: 6px 14px;
+      border-radius: 6px;
       border: 1px solid var(--color-border);
       background: var(--color-surface);
       color: var(--color-slate-muted);
@@ -243,23 +243,25 @@
       transition: all 0.15s ease;
 
       &:hover {
-        border-color: var(--color-navy);
-        color: var(--color-navy);
+        border-color: #3b82f6;
+        color: var(--color-blue-primary);
       }
 
       &.active {
-        background: var(--color-navy);
-        color: #ffffff;
-        border-color: var(--color-navy);
+        background: #0f172a;
+        color: #ffffff !important;
+        border-color: #0f172a;
 
         &.expense {
-          background: #dc2626;
-          border-color: #dc2626;
+          background: #dc2626 !important;
+          border-color: #dc2626 !important;
+          color: #ffffff !important;
         }
 
         &.income {
-          background: #059669;
-          border-color: #059669;
+          background: #059669 !important;
+          border-color: #059669 !important;
+          color: #ffffff !important;
         }
       }
     }

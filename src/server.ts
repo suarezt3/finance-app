@@ -171,6 +171,136 @@ Devuelve EXCLUSIVAMENTE un objeto JSON válido con los campos exactos:
   }
 });
 
+// API endpoint to parse audio or voice transcript into structured transaction data
+app.post('/api/parse-voice-expense', async (req, res) => {
+  try {
+    const { transcript, audioBase64, mimeType = 'audio/webm', categories = [], paymentMethods = [] } = req.body;
+
+    if (!transcript && !audioBase64) {
+      return res.status(400).json({ success: false, error: 'No se recibió transcripción ni audio.' });
+    }
+
+    const customApiKey = req.headers['x-gemini-api-key'] as string;
+    const apiKey = getEffectiveApiKey(customApiKey);
+
+    const activeAiClient = new GoogleGenAI({
+      apiKey,
+      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+    });
+
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    const categoryList = Array.isArray(categories) && categories.length > 0 
+      ? `Categorías disponibles en la app del usuario: ${categories.join(', ')}.` 
+      : 'Categorías sugeridas: Alimentación, Supermercado, Transporte, Hogar, Servicios, Salud, Entretenimiento, Educación, Compras, Salario, Otros.';
+
+    const methodsList = Array.isArray(paymentMethods) && paymentMethods.length > 0
+      ? `Cuentas/Billeteras disponibles en la app del usuario: ${paymentMethods.join(', ')}.`
+      : 'Cuentas sugeridas: Efectivo, Nequi, Daviplata, Tarjeta de Débito, Tarjeta de Crédito, Cuenta Corriente, Bancolombia.';
+
+    const systemPrompt = `Eres un asistente financiero inteligente. Tu tarea es interpretar una instrucción dictada por voz de un usuario en español latinoamericano (principalmente Colombia) sobre un movimiento de dinero.
+
+Fecha de referencia de hoy: ${todayStr}.
+${categoryList}
+${methodsList}
+
+Instrucciones de interpretación:
+1. amount: Monto numérico positivo limpio (ej: "cincuenta mil pesos" -> 50000; "un millón" -> 1000000; "quince mil quinientos" -> 15500; "veinte dólares" -> 20; "cien mil" -> 100000). Si no dice monto, pon 0.
+2. type: 'EXPENSE' si es un gasto/pago/compra/salida; 'INCOME' si es un ingreso/salario/cobro/venta/recibí; 'TRANSFER' si es transferencia entre cuentas propias.
+3. category_hint: Elige la categoría que MEJOR coincida de la lista del usuario (o una adecuada si no coincide).
+4. payment_method_hint: Elige la cuenta o billetera origen que MEJOR coincida de la lista del usuario (ej: "Nequi", "Efectivo").
+5. destination_method_hint: Si es transferencia, la cuenta receptora (o null).
+6. description: Una descripción breve y natural de la transacción (máximo 80 caracteres, ej: "Almuerzo de trabajo", "Compras en supermercado").
+7. date: Fecha ISO YYYY-MM-DD. Si dice "ayer", réstale 1 día a ${todayStr}. Si no dice fecha, usa ${todayStr}.
+
+Devuelve EXCLUSIVAMENTE un JSON válido con este formato:
+{
+  "amount": number,
+  "type": "EXPENSE" | "INCOME" | "TRANSFER",
+  "category_hint": string,
+  "payment_method_hint": string,
+  "destination_method_hint": string | null,
+  "description": string,
+  "date": string
+}`;
+
+    const contents: any[] = [];
+    if (audioBase64) {
+      const cleanBase64 = audioBase64.replace(/^data:audio\/[a-zA-Z0-9+.-]+;base64,/, '');
+      contents.push({
+        role: 'user',
+        parts: [
+          { text: systemPrompt + '\n\nEscucha el siguiente audio y extrae la información:' },
+          {
+            inlineData: {
+              data: cleanBase64,
+              mimeType: mimeType || 'audio/webm',
+            }
+          }
+        ]
+      });
+    } else {
+      contents.push({
+        role: 'user',
+        parts: [
+          { text: systemPrompt + `\n\nMensaje dictado por el usuario:\n"${transcript}"` }
+        ]
+      });
+    }
+
+    let response;
+    const modelsToTry = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+    let lastError: any = null;
+
+    for (const modelName of modelsToTry) {
+      try {
+        response = await activeAiClient.models.generateContent({
+          model: modelName,
+          contents,
+          config: {
+            responseMimeType: 'application/json',
+          },
+        });
+        if (response && response.text) {
+          break;
+        }
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`Modelo ${modelName} para voz falló:`, err?.message || err);
+      }
+    }
+
+    if (!response || !response.text) {
+      throw lastError || new Error('No se pudo procesar la instrucción de voz.');
+    }
+
+    const text = response.text?.trim() || '{}';
+    let parsedData: any = {};
+    try {
+      parsedData = JSON.parse(text);
+    } catch {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) {
+        parsedData = JSON.parse(match[0]);
+      } else {
+        throw new Error('Respuesta inválida del modelo.');
+      }
+    }
+
+    return res.json({
+      success: true,
+      data: parsedData,
+    });
+  } catch (error: any) {
+    console.error('Error al procesar audio/voz con Gemini:', error);
+    return res.status(500).json({
+      success: false,
+      error: error?.message || 'Error interno al procesar el audio con IA.',
+    });
+  }
+});
+
 // Serve static files from /browser
 app.use(
   express.static(browserDistFolder, {

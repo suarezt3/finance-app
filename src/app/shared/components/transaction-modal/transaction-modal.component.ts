@@ -44,7 +44,8 @@ import {
   ArrowLeftRightIcon,
   AlertCircleIcon,
   InformationCircleIcon,
-  Edit02Icon
+  Edit02Icon,
+  Mic01Icon
 } from '@hugeicons/core-free-icons';
 
 @Component({
@@ -58,7 +59,7 @@ import {
     ReactiveFormsModule, DecimalPipe, NzIconModule,
     NzModalModule, NzFormModule, NzInputModule, NzInputNumberModule,
     NzSelectModule, NzDatePickerModule, NzButtonModule,
-    DecimalInputDirective, HugeiconsIconComponent
+    HugeiconsIconComponent
   ],
   templateUrl: './transaction-modal.component.html',
   styleUrl: './transaction-modal.component.scss'
@@ -69,6 +70,7 @@ export class TransactionModalComponent implements OnInit {
   readonly AiIcon = FlashIcon;
   readonly CameraIcon = Camera01Icon;
   readonly ImageIcon = Image01Icon;
+  readonly MicIcon = Mic01Icon;
   readonly CheckCircleIcon = CheckmarkCircle01Icon;
   readonly CloseIcon = Cancel01Icon;
   readonly ExpenseIcon = ArrowDown01Icon;
@@ -77,6 +79,7 @@ export class TransactionModalComponent implements OnInit {
   readonly AlertIcon = AlertCircleIcon;
   readonly InfoIcon = InformationCircleIcon;
   readonly EditIcon = Edit02Icon;
+
   private readonly fb = inject(FormBuilder);
   private readonly catalogService = inject(CatalogService);
   private readonly transactionService = inject(TransactionService);
@@ -102,6 +105,17 @@ export class TransactionModalComponent implements OnInit {
   readonly scannedReceiptInfo = signal<ScannedReceiptData | null>(null);
   readonly scannedReceiptThumbnail = signal<string | null>(null);
 
+  // Estados de dictado por voz inteligente con Gemini AI
+  readonly isRecordingVoice = signal<boolean>(false);
+  readonly isProcessingVoice = signal<boolean>(false);
+  readonly voiceLiveTranscript = signal<string>('');
+  private speechRecognition: any = null;
+  private mediaRecorder: MediaRecorder | null = null;
+  private audioChunks: Blob[] = [];
+
+  // Formato y máscara en vivo de monto a registrar
+  readonly displayAmount = signal<string>('');
+
   readonly availableBalance = signal<number | null>(null);
   readonly isCheckingBalance = signal<boolean>(false);
 
@@ -114,6 +128,10 @@ export class TransactionModalComponent implements OnInit {
       const visible = this.isVisible();
       if (visible) {
         this.loadTotalBalance();
+        const editTx = this.transactionToEdit();
+        if (editTx) {
+          this.openForEdit(editTx);
+        }
         // Al abrir el modal, si los catálogos aún no están en memoria, refrescar de inmediato
         if (this.categories().length === 0 || this.paymentMethods().length === 0) {
           this.loadCatalogs();
@@ -167,21 +185,312 @@ export class TransactionModalComponent implements OnInit {
   });
 
   // ==========================================
-  // FORMATTERS PARA UX VISUAL
+  // FORMATO EN VIVO DE MONTO (Separador de miles)
   // ==========================================
 
-  readonly formatterAmount = (value: number | string): string => {
-    if (value == null || value === '') return '';
-    const parts = value.toString().split('.');
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    return parts.join(',');
-  };
+  onAmountInputChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value;
+    const prevCursor = input.selectionEnd || raw.length;
+    const prevLength = raw.length;
 
-  readonly parserAmount = (value: string): number => {
-    const cleanString = value.replace(/\./g, '').replace(',', '.');
-    const parsedNumber = parseFloat(cleanString);
-    return isNaN(parsedNumber) ? 0 : parsedNumber;
-  };
+    // Permitir sólo números y coma decimal opcional
+    const clean = raw.replace(/[^0-9,]/g, '');
+    const [intPart = '', ...decParts] = clean.split(',');
+
+    // Quitar ceros a la izquierda innecesarios
+    const trimmedInt = intPart.replace(/^0+(?=\d)/, '');
+
+    // Formatear parte entera con puntos de miles
+    const formattedInt = trimmedInt.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+    const hasComma = clean.includes(',');
+    const decPart = decParts.join('').slice(0, 2);
+    const formatted = hasComma ? (formattedInt || '0') + ',' + decPart : formattedInt;
+
+    // Número limpio para el formulario reactivo
+    const numVal = parseFloat(formatted.replace(/\./g, '').replace(',', '.')) || 0;
+
+    this.displayAmount.set(formatted);
+    input.value = formatted;
+
+    // Preservar la posición del cursor de forma natural
+    const lengthDiff = formatted.length - prevLength;
+    const newCursor = Math.max(0, prevCursor + lengthDiff);
+    setTimeout(() => {
+      try {
+        input.setSelectionRange(newCursor, newCursor);
+      } catch {}
+    }, 0);
+
+    this.transactionForm.controls['amount'].setValue(numVal, { emitEvent: false });
+    this.transactionForm.controls['amount'].markAsDirty();
+  }
+
+  onAmountInputBlur(): void {
+    const currentNum = this.transactionForm.controls['amount'].value;
+    if (!currentNum || currentNum === 0) {
+      this.displayAmount.set('');
+    } else {
+      this.displayAmount.set(this.formatNumberToThousands(currentNum));
+    }
+  }
+
+  public formatNumberToThousands(num: number | null | undefined): string {
+    if (num == null || isNaN(num) || num === 0) return '';
+    const parts = num.toString().split('.');
+    const intFormatted = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return parts.length > 1 ? `${intFormatted},${parts[1].slice(0, 2)}` : intFormatted;
+  }
+
+  public parseFormattedStringToNumber(str: string): number {
+    if (!str) return 0;
+    const clean = str.replace(/\./g, '').replace(',', '.');
+    return parseFloat(clean) || 0;
+  }
+
+  // ==========================================
+  // DICTADO DE GASTOS POR VOZ CON GEMINI AI
+  // ==========================================
+
+  public async toggleVoiceRecording(): Promise<void> {
+    if (this.isRecordingVoice()) {
+      this.stopVoiceRecording();
+    } else {
+      await this.startVoiceRecording();
+    }
+  }
+
+  private async startVoiceRecording(): Promise<void> {
+    this.voiceLiveTranscript.set('');
+    await this.nativeDeviceService.triggerHaptic('light');
+
+    // Intentar SpeechRecognition nativo primero (Chrome, Edge, Safari, Android)
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      try {
+        this.speechRecognition = new SpeechRecognition();
+        this.speechRecognition.lang = 'es-CO';
+        this.speechRecognition.continuous = false;
+        this.speechRecognition.interimResults = true;
+
+        this.speechRecognition.onstart = () => {
+          this.isRecordingVoice.set(true);
+        };
+
+        this.speechRecognition.onresult = (event: any) => {
+          let currentTranscript = '';
+          for (let i = 0; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript;
+          }
+          this.voiceLiveTranscript.set(currentTranscript);
+        };
+
+        this.speechRecognition.onend = () => {
+          this.isRecordingVoice.set(false);
+          const finalTranscript = this.voiceLiveTranscript().trim();
+          if (finalTranscript) {
+            this.processVoiceTranscript(finalTranscript);
+          }
+        };
+
+        this.speechRecognition.onerror = (err: any) => {
+          console.warn('SpeechRecognition error:', err);
+          this.isRecordingVoice.set(false);
+          if (!this.voiceLiveTranscript()) {
+            this.startMediaRecorderFallback();
+          }
+        };
+
+        this.speechRecognition.start();
+        return;
+      } catch (e) {
+        console.warn('SpeechRecognition no pudo iniciar, pasando a MediaRecorder:', e);
+      }
+    }
+
+    // Fallback con MediaRecorder y audio a Gemini
+    await this.startMediaRecorderFallback();
+  }
+
+  private async startMediaRecorderFallback(): Promise<void> {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.audioChunks = [];
+      this.mediaRecorder = new MediaRecorder(stream);
+
+      this.mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          this.audioChunks.push(event.data);
+        }
+      };
+
+      this.mediaRecorder.onstop = async () => {
+        this.isRecordingVoice.set(false);
+        stream.getTracks().forEach(t => t.stop());
+        const audioBlob = new Blob(this.audioChunks, { type: this.mediaRecorder?.mimeType || 'audio/webm' });
+        if (audioBlob.size > 0) {
+          await this.processVoiceAudioBlob(audioBlob);
+        }
+      };
+
+      this.mediaRecorder.start();
+      this.isRecordingVoice.set(true);
+    } catch (err: any) {
+      console.error('Error accediendo al micrófono:', err);
+      this.message.error('No se pudo acceder al micrófono. Por favor verifica los permisos en tu navegador.');
+      this.isRecordingVoice.set(false);
+    }
+  }
+
+  public stopVoiceRecording(): void {
+    if (this.speechRecognition) {
+      try {
+        this.speechRecognition.stop();
+      } catch {}
+    }
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      try {
+        this.mediaRecorder.stop();
+      } catch {}
+    }
+    this.isRecordingVoice.set(false);
+  }
+
+  private async processVoiceTranscript(transcript: string): Promise<void> {
+    this.isProcessingVoice.set(true);
+    try {
+      const catNames = this.categories().map(c => c.name);
+      const methodNames = this.paymentMethods().map(m => m.name);
+
+      const res = await fetch('/api/parse-voice-expense', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcript,
+          categories: catNames,
+          paymentMethods: methodNames
+        })
+      });
+
+      const result = await res.json();
+      if (result.success && result.data) {
+        this.applyParsedVoiceData(result.data);
+      } else {
+        this.message.warning(result.error || 'No se pudo interpretar el mensaje de voz.');
+      }
+    } catch (e: any) {
+      console.error('Error enviando dictado a Gemini:', e);
+      this.message.error('Error al procesar el dictado con Gemini AI.');
+    } finally {
+      this.isProcessingVoice.set(false);
+    }
+  }
+
+  private async processVoiceAudioBlob(blob: Blob): Promise<void> {
+    this.isProcessingVoice.set(true);
+    try {
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(blob);
+      const base64 = await base64Promise;
+
+      const catNames = this.categories().map(c => c.name);
+      const methodNames = this.paymentMethods().map(m => m.name);
+
+      const res = await fetch('/api/parse-voice-expense', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          audioBase64: base64,
+          mimeType: blob.type || 'audio/webm',
+          categories: catNames,
+          paymentMethods: methodNames
+        })
+      });
+
+      const result = await res.json();
+      if (result.success && result.data) {
+        this.applyParsedVoiceData(result.data);
+      } else {
+        this.message.warning(result.error || 'No se pudo interpretar el audio.');
+      }
+    } catch (e: any) {
+      console.error('Error enviando audio a Gemini:', e);
+      this.message.error('Error al procesar el audio con Gemini AI.');
+    } finally {
+      this.isProcessingVoice.set(false);
+    }
+  }
+
+  private applyParsedVoiceData(data: any): void {
+    const patchObj: Record<string, any> = {};
+
+    // 1. Tipo
+    if (data.type && ['EXPENSE', 'INCOME', 'TRANSFER'].includes(data.type)) {
+      patchObj['type'] = data.type;
+    }
+
+    // 2. Monto
+    if (data.amount && Number(data.amount) > 0) {
+      const num = Number(data.amount);
+      patchObj['amount'] = num;
+      this.displayAmount.set(this.formatNumberToThousands(num));
+    }
+
+    // 3. Descripción
+    if (data.description) {
+      patchObj['description'] = data.description;
+    }
+
+    // 4. Fecha
+    if (data.date) {
+      const parsedDate = new Date(data.date + 'T12:00:00');
+      if (!isNaN(parsedDate.getTime())) {
+        patchObj['date'] = parsedDate;
+      }
+    }
+
+    // 5. Categoría coincidente
+    if (data.category_hint) {
+      const hint = data.category_hint.toLowerCase().trim();
+      const matched = this.categories().find(c => 
+        c.name.toLowerCase().includes(hint) || hint.includes(c.name.toLowerCase())
+      );
+      if (matched) {
+        patchObj['category_id'] = matched.id;
+      }
+    }
+
+    // 6. Cuenta o billetera origen
+    if (data.payment_method_hint) {
+      const hint = data.payment_method_hint.toLowerCase().trim();
+      const matched = this.paymentMethods().find(m => 
+        m.name.toLowerCase().includes(hint) || hint.includes(m.name.toLowerCase())
+      );
+      if (matched) {
+        patchObj['payment_method_id'] = matched.id;
+      }
+    }
+
+    // 7. Cuenta destino si es transferencia
+    if (data.destination_method_hint && data.type === 'TRANSFER') {
+      const hint = data.destination_method_hint.toLowerCase().trim();
+      const matched = this.paymentMethods().find(m => 
+        m.name.toLowerCase().includes(hint) || hint.includes(m.name.toLowerCase())
+      );
+      if (matched) {
+        patchObj['destination_method_id'] = matched.id;
+      }
+    }
+
+    this.transactionForm.patchValue(patchObj);
+    this.nativeDeviceService.triggerHaptic('success');
+    this.message.success('¡Gasto interpretado por Gemini AI! Revisa los campos y guarda cuando desees.');
+  }
 
   // ==========================================
   // CICLO DE VIDA Y LÓGICA DE NEGOCIO
@@ -279,14 +588,16 @@ export class TransactionModalComponent implements OnInit {
   }
 
   public openForEdit(tx: TransactionWithDetails): void {
+    const numAmount = Number(tx.amount);
     this.transactionForm.patchValue({
       type: tx.type,
-      amount: Number(tx.amount),
+      amount: numAmount,
       date: new Date(tx.date),
       description: tx.description || '',
       category_id: tx.category_id || null,
       payment_method_id: tx.payment_method_id || null
     });
+    this.displayAmount.set(this.formatNumberToThousands(numAmount));
   }
 
   public async onCapturePhoto(): Promise<void> {
@@ -338,6 +649,10 @@ export class TransactionModalComponent implements OnInit {
         amount: data.amount > 0 ? data.amount : this.transactionForm.value.amount,
         description: data.description || (data.merchant ? `Compra en ${data.merchant}` : ''),
       };
+
+      if (data.amount > 0) {
+        this.displayAmount.set(this.formatNumberToThousands(data.amount));
+      }
 
       if (data.date) {
         try {
@@ -397,6 +712,8 @@ export class TransactionModalComponent implements OnInit {
     this.transactionForm.reset({
       type: 'EXPENSE', amount: 0, date: new Date(), description: '', category_id: null, payment_method_id: null, destination_method_id: null
     });
+    this.displayAmount.set('');
+    this.stopVoiceRecording();
     this.availableBalance.set(null);
     this.clearScannedReceipt();
   }

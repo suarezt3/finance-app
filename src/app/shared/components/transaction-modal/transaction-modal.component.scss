@@ -192,15 +192,42 @@
 
 // 2. MONTO
 .amount-field {
-  .enterprise-amount-input {
+  .enterprise-amount-input-group {
+    display: flex;
+    align-items: center;
     border-radius: 8px;
+    border: 1.5px solid var(--color-border);
+    transition: all 0.2s ease;
+    background: var(--color-surface);
+    padding: 0 12px;
 
-    ::ng-deep .ant-input-number-input {
-      font-size: 1.4rem;
+    &:focus-within {
+      border-color: var(--color-blue-primary);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+
+    .currency-symbol-label {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--color-slate-muted);
+      margin-right: 8px;
+      user-select: none;
+      line-height: 1;
+    }
+
+    .enterprise-amount-input {
+      flex: 1;
+      font-size: 1.45rem;
       font-weight: 800;
       color: var(--color-navy);
       letter-spacing: -0.02em;
       font-variant-numeric: tabular-nums;
+      border: none !important;
+      box-shadow: none !important;
+      background: transparent !important;
+      height: 48px;
+      padding: 0;
+      outline: none !important;
     }
   }
 }
@@ -295,9 +322,13 @@
 
   .ai-scan-actions {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 8px;
     width: 100%;
+
+    @media (max-width: 440px) {
+      grid-template-columns: 1fr;
+    }
 
     .ai-action-btn {
       display: flex;
@@ -313,11 +344,21 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
       min-width: 0;
 
+      html.dark & {
+        background: #1e293b;
+        border-color: #334155;
+      }
+
       &:hover:not(:disabled) {
         border-color: #6366f1;
         background: #faf5ff;
         transform: translateY(-1px);
         box-shadow: 0 3px 8px rgba(99, 102, 241, 0.12);
+
+        html.dark & {
+          background: #27354f;
+          border-color: #818cf8;
+        }
       }
 
       &:active:not(:disabled) {
@@ -342,11 +383,52 @@
       &.btn-camera .btn-icon {
         color: #4338ca;
         background: #eef2ff;
+
+        html.dark & {
+          color: #a5b4fc;
+          background: rgba(99, 102, 241, 0.2);
+        }
       }
 
       &.btn-file .btn-icon {
         color: #0d9488;
         background: #f0fdfa;
+
+        html.dark & {
+          color: #5eead4;
+          background: rgba(13, 148, 136, 0.2);
+        }
+      }
+
+      &.btn-voice {
+        .btn-icon {
+          color: #dc2626;
+          background: #fef2f2;
+
+          html.dark & {
+            color: #f87171;
+            background: rgba(220, 38, 38, 0.2);
+          }
+        }
+
+        &.recording {
+          border-color: #ef4444 !important;
+          background: #fef2f2 !important;
+          animation: pulseBorder 1.5s infinite;
+
+          html.dark & {
+            background: rgba(239, 68, 68, 0.15) !important;
+          }
+
+          .btn-icon {
+            background: #ef4444;
+            color: #ffffff;
+          }
+
+          .btn-label-primary {
+            color: #dc2626 !important;
+          }
+        }
       }
 
       .btn-label-group {
@@ -359,6 +441,10 @@
           font-weight: 700;
           color: #1e293b;
           white-space: nowrap;
+
+          html.dark & {
+            color: #f1f5f9;
+          }
         }
 
         .btn-label-sub {
@@ -367,10 +453,142 @@
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+
+          html.dark & {
+            color: #94a3b8;
+          }
         }
       }
     }
   }
+
+  .voice-listening-card {
+    margin-top: 10px;
+    padding: 12px 14px;
+    background: #fef2f2;
+    border: 1.5px solid #fecaca;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    html.dark & {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .voice-wave-container {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      height: 24px;
+      flex-shrink: 0;
+
+      .voice-wave-bar {
+        width: 3px;
+        height: 100%;
+        background: #ef4444;
+        border-radius: 2px;
+        animation: soundWave 0.8s ease-in-out infinite alternate;
+
+        &.wave-1 { animation-delay: 0.1s; height: 35%; }
+        &.wave-2 { animation-delay: 0.3s; height: 75%; }
+        &.wave-3 { animation-delay: 0.5s; height: 100%; }
+        &.wave-4 { animation-delay: 0.2s; height: 60%; }
+        &.wave-5 { animation-delay: 0.4s; height: 40%; }
+      }
+    }
+
+    .voice-listening-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+
+      .voice-status-line {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8rem;
+        color: #991b1b;
+
+        html.dark & {
+          color: #fca5a5;
+        }
+
+        .recording-badge-pulse {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background-color: #ef4444;
+          animation: pingDot 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+      }
+
+      .voice-hint-text {
+        font-size: 0.72rem;
+        color: #b91c1c;
+        opacity: 0.9;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        html.dark & {
+          color: #f87171;
+        }
+      }
+
+      .voice-transcript-bubble {
+        margin-top: 4px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #1e293b;
+        background: rgba(255, 255, 255, 0.85);
+        padding: 4px 8px;
+        border-radius: 6px;
+        border: 1px solid rgba(239, 68, 68, 0.2);
+
+        html.dark & {
+          background: rgba(15, 23, 42, 0.7);
+          color: #f1f5f9;
+        }
+      }
+    }
+
+    .voice-stop-btn {
+      padding: 6px 14px;
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 0.775rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s ease;
+
+      &:hover {
+        background: #dc2626;
+      }
+    }
+  }
+}
+
+@keyframes soundWave {
+  0% { transform: scaleY(0.3); }
+  100% { transform: scaleY(1); }
+}
+
+@keyframes pingDot {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+@keyframes pulseBorder {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
 .ai-scanning-card {
