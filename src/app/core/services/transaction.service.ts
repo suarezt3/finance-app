@@ -55,28 +55,72 @@ export class TransactionService {
   }
 
   /**
+  /**
+   * Ejecuta una consulta a Supabase manejando posibles desfases de reloj (clock skew).
+   * Si PostgREST responde "JWT issued at future", realiza una breve pausa de sincronización
+   * y reintenta la consulta automáticamente.
+   */
+  private async executeWithClockSkewRetry<T>(
+    queryFn: () => PromiseLike<{ data: any; error: any }>,
+    maxAttempts = 4
+  ): Promise<T> {
+    await this.ensureSession();
+    let lastError: any = null;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const { data, error } = await queryFn();
+        if (!error) {
+          return (data as T);
+        }
+
+        lastError = error;
+        const msg = (error.message || '').toLowerCase();
+        const isSkew = msg.includes('jwt') || msg.includes('future') || msg.includes('clock') || error.code === 'PGRST301';
+
+        if (isSkew && attempt < maxAttempts) {
+          const waitMs = attempt === 1 ? 1500 : 2000 * attempt;
+          console.warn(`[Supabase Transactions Sync] Desfase temporal detectado (${error.message}). Sincronizando reloj (intento ${attempt}/${maxAttempts})...`);
+          await new Promise(r => setTimeout(r, waitMs));
+          continue;
+        }
+      } catch (err: any) {
+        lastError = err;
+        const msg = (err?.message || '').toLowerCase();
+        const isSkew = msg.includes('jwt') || msg.includes('future') || msg.includes('clock');
+        if (isSkew && attempt < maxAttempts) {
+          const waitMs = attempt === 1 ? 1500 : 2000 * attempt;
+          console.warn(`[Supabase Transactions Sync] Desfase en excepción (${err?.message}). Sincronizando...`);
+          await new Promise(r => setTimeout(r, waitMs));
+          continue;
+        }
+      }
+
+      break;
+    }
+
+    console.error('Error en Supabase fetching data:', lastError?.message || lastError);
+    throw new Error(lastError?.message || 'Error en consulta Supabase');
+  }
+
+  /**
    * Obtiene las transacciones del usuario logueado.
    * Utiliza la sintaxis select() de Supabase para hacer un JOIN automático
    * con las tablas 'categories' y 'payment_methods'.
    */
   async getTransactions(): Promise<TransactionWithDetails[]> {
-    await this.ensureSession();
+    const data = await this.executeWithClockSkewRetry<TransactionWithDetails[]>(() =>
+      this.supabase
+        .from('transactions')
+        .select(`
+          *,
+          categories (name, color, icon),
+          payment_methods (name)
+        `)
+        .order('date', { ascending: false })
+    );
 
-    const { data, error } = await this.supabase
-      .from('transactions')
-      .select(`
-        *,
-        categories (name, color, icon),
-        payment_methods (name)
-      `)
-      .order('date', { ascending: false });
-
-    if (error) {
-      console.error('Error en Supabase fetching transactions:', error.message);
-      throw new Error(error.message);
-    }
-
-    return (data as TransactionWithDetails[]) || [];
+    return data || [];
   }
 
   /**
@@ -84,15 +128,12 @@ export class TransactionService {
    * Consulta directamente la BD para ignorar filtros locales y evitar sobregiros.
    */
   async getBalanceByPaymentMethod(methodId: string): Promise<number> {
-    const { data, error } = await this.supabase
-      .from('transactions')
-      .select('type, amount')
-      .eq('payment_method_id', methodId);
-
-    if (error) {
-      console.error('Error calculando saldo por método de pago:', error.message);
-      throw new Error(error.message);
-    }
+    const data = await this.executeWithClockSkewRetry<{ type: string; amount: number }[]>(() =>
+      this.supabase
+        .from('transactions')
+        .select('type, amount')
+        .eq('payment_method_id', methodId)
+    );
 
     // Calculamos el saldo neto: Ingresos - Gastos
     return (data || []).reduce((acc, tx) => {
@@ -105,19 +146,21 @@ export class TransactionService {
    * Obtiene el saldo total disponible global (acumulado de todas las cuentas).
    */
   async getTotalBalance(): Promise<number> {
-    const { data, error } = await this.supabase
-      .from('transactions')
-      .select('type, amount');
+    try {
+      const data = await this.executeWithClockSkewRetry<{ type: string; amount: number }[]>(() =>
+        this.supabase
+          .from('transactions')
+          .select('type, amount')
+      );
 
-    if (error) {
-      console.error('Error calculando saldo total:', error.message);
+      return (data || []).reduce((acc, tx) => {
+        const amount = Number(tx.amount);
+        return tx.type === 'INCOME' ? acc + amount : acc - amount;
+      }, 0);
+    } catch (e: any) {
+      console.warn('Error calculando saldo total:', e?.message);
       return 0;
     }
-
-    return (data || []).reduce((acc, tx) => {
-      const amount = Number(tx.amount);
-      return tx.type === 'INCOME' ? acc + amount : acc - amount;
-    }, 0);
   }
 
   /**

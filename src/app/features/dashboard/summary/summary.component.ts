@@ -624,31 +624,35 @@ export class SummaryComponent implements OnInit {
       .subscribe(result => { this.isMobileView.set(result.matches); });
   }
 
-  async loadRealTransactions(retries = 2): Promise<void> {
+  async loadRealTransactions(retries = 3): Promise<void> {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         const data = await this.transactionService.getTransactions();
         this.transactions.set(data);
         return;
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Error al cargar transacciones (intento ${attempt + 1}):`, error);
         if (attempt < retries) {
-          await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+          const isSkew = error?.message?.includes('JWT') || error?.message?.includes('future');
+          const delay = isSkew ? 1200 * (attempt + 1) : 400 * (attempt + 1);
+          await new Promise(r => setTimeout(r, delay));
         }
       }
     }
   }
 
-  async loadCatalogs(retries = 2): Promise<void> {
+  async loadCatalogs(retries = 3): Promise<void> {
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         const methods = await this.catalogService.getPaymentMethods();
         this.paymentMethods.set(methods);
         return;
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Error al cargar métodos de pago (intento ${attempt + 1}):`, error);
         if (attempt < retries) {
-          await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+          const isSkew = error?.message?.includes('JWT') || error?.message?.includes('future');
+          const delay = isSkew ? 1200 * (attempt + 1) : 400 * (attempt + 1);
+          await new Promise(r => setTimeout(r, delay));
         }
       }
     }

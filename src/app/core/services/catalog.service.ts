@@ -59,6 +59,14 @@ export class CatalogService {
           .maybeSingle();
 
         if (error) {
+          const isSkew = (error.message || '').toLowerCase().includes('jwt') ||
+                         (error.message || '').toLowerCase().includes('future') ||
+                         (error.message || '').toLowerCase().includes('clock');
+          if (isSkew && attempt < maxAttempts - 1) {
+            console.warn(`[Supabase Workspace Sync] Desfase temporal (${error.message}). Reintentando...`);
+            await new Promise(resolve => setTimeout(resolve, 1500 * (attempt + 1)));
+            continue;
+          }
           throw new Error(error.message);
         }
 
@@ -68,10 +76,13 @@ export class CatalogService {
         }
 
         throw new Error('El perfil de usuario aún no tiene workspace_id asignado');
-      } catch (err) {
+      } catch (err: any) {
         lastError = err;
+        const msg = (err?.message || '').toLowerCase();
+        const isSkew = msg.includes('jwt') || msg.includes('future') || msg.includes('clock');
+        const waitTime = isSkew ? 1500 * (attempt + 1) : delayMs * (attempt + 1);
         if (attempt < maxAttempts - 1) {
-          await new Promise(resolve => setTimeout(resolve, delayMs * (attempt + 1)));
+          await new Promise(resolve => setTimeout(resolve, waitTime));
         }
       }
     }
@@ -80,42 +91,86 @@ export class CatalogService {
     throw new Error('No se pudo resolver tu espacio personal');
   }
 
+  /**
+   * Ejecuta una consulta a Supabase manejando posibles desfases de reloj (clock skew).
+   */
+  private async executeWithClockSkewRetry<T>(
+    queryFn: () => PromiseLike<{ data: any; error: any }>,
+    maxAttempts = 4
+  ): Promise<T> {
+    let lastError: any = null;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const { data, error } = await queryFn();
+        if (!error) {
+          return (data as T);
+        }
+
+        lastError = error;
+        const msg = (error.message || '').toLowerCase();
+        const isSkew = msg.includes('jwt') || msg.includes('future') || msg.includes('clock') || error.code === 'PGRST301';
+
+        if (isSkew && attempt < maxAttempts) {
+          const waitMs = attempt === 1 ? 1500 : 2000 * attempt;
+          console.warn(`[Supabase Catalogs Sync] Desfase temporal detectado (${error.message}). Sincronizando (intento ${attempt}/${maxAttempts})...`);
+          await new Promise(r => setTimeout(r, waitMs));
+          continue;
+        }
+      } catch (err: any) {
+        lastError = err;
+        const msg = (err?.message || '').toLowerCase();
+        const isSkew = msg.includes('jwt') || msg.includes('future') || msg.includes('clock');
+        if (isSkew && attempt < maxAttempts) {
+          const waitMs = attempt === 1 ? 1500 : 2000 * attempt;
+          console.warn(`[Supabase Catalogs Sync] Desfase en excepción (${err?.message}). Sincronizando...`);
+          await new Promise(r => setTimeout(r, waitMs));
+          continue;
+        }
+      }
+
+      break;
+    }
+
+    console.error('Error en catálogo Supabase:', lastError?.message || lastError);
+    throw new Error(lastError?.message || 'Error en consulta de catálogos');
+  }
+
   // ==========================================
   // OPERACIONES DE LECTURA (READ)
   // ==========================================
 
   async getCategories(): Promise<Category[]> {
     const workspaceId = await this.getWorkspaceId();
-    const { data, error } = await this.supabase
-      .from('categories')
-      .select('id, name, type, icon, color')
-      .eq('workspace_id', workspaceId)
-      .order('name');
-
-    if (error) throw new Error(error.message);
+    const data = await this.executeWithClockSkewRetry<Category[]>(() =>
+      this.supabase
+        .from('categories')
+        .select('id, name, type, icon, color')
+        .eq('workspace_id', workspaceId)
+        .order('name')
+    );
 
     if (data && data.length === 0) {
       return this.seedDefaultCategories(workspaceId);
     }
 
-    return data as Category[];
+    return data || [];
   }
 
   async getPaymentMethods(): Promise<PaymentMethod[]> {
     const workspaceId = await this.getWorkspaceId();
-    const { data, error } = await this.supabase
-      .from('payment_methods')
-      .select('id, name')
-      .eq('workspace_id', workspaceId)
-      .order('name');
-
-    if (error) throw new Error(error.message);
+    const data = await this.executeWithClockSkewRetry<PaymentMethod[]>(() =>
+      this.supabase
+        .from('payment_methods')
+        .select('id, name')
+        .eq('workspace_id', workspaceId)
+        .order('name')
+    );
 
     if (data && data.length === 0) {
       return this.seedDefaultPaymentMethods(workspaceId);
     }
 
-    return data as PaymentMethod[];
+    return data || [];
   }
 
   // ==========================================

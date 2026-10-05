@@ -56,6 +56,8 @@
                   class="ai-action-btn btn-camera"
                   [disabled]="isCapturingImage() || isRecordingVoice() || isProcessingVoice()"
                   (click)="onCapturePhoto()"
+                  title="Tomar Foto"
+                  aria-label="Tomar Foto"
                 >
                   <hugeicons-icon [icon]="CameraIcon" [size]="20" [strokeWidth]="1.8" class="btn-icon"></hugeicons-icon>
                   <div class="btn-label-group">
@@ -69,6 +71,8 @@
                   class="ai-action-btn btn-file"
                   [disabled]="isCapturingImage() || isRecordingVoice() || isProcessingVoice()"
                   (click)="onPickFile()"
+                  title="Subir Archivo"
+                  aria-label="Subir Archivo"
                 >
                   <hugeicons-icon [icon]="ImageIcon" [size]="20" [strokeWidth]="1.8" class="btn-icon"></hugeicons-icon>
                   <div class="btn-label-group">
@@ -83,6 +87,8 @@
                   [class.recording]="isRecordingVoice()"
                   [disabled]="isCapturingImage() || isScanningReceipt() || isProcessingVoice()"
                   (click)="toggleVoiceRecording()"
+                  [title]="isRecordingVoice() ? 'Detener Dictado' : 'Dictar por Voz'"
+                  [attr.aria-label]="isRecordingVoice() ? 'Detener Dictado' : 'Dictar por Voz'"
                 >
                   <hugeicons-icon [icon]="MicIcon" [size]="20" [strokeWidth]="1.8" class="btn-icon"></hugeicons-icon>
                   <div class="btn-label-group">
@@ -199,7 +205,6 @@
           <div class="enterprise-amount-input-group">
             <span class="currency-symbol-label">{{ userPreferences.currencySymbol() }}</span>
             <input
-              nz-input
               type="text"
               inputmode="decimal"
               [value]="displayAmount()"

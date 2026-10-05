@@ -207,9 +207,10 @@
     }
 
     .currency-symbol-label {
-      font-size: 1.35rem;
-      font-weight: 800;
-      color: var(--color-slate-muted);
+      font-family: var(--font-sans) !important;
+      font-size: 2.25rem !important;
+      font-weight: 800 !important;
+      color: var(--color-slate-muted) !important;
       margin-right: 8px;
       user-select: none;
       line-height: 1;
@@ -217,17 +218,19 @@
 
     .enterprise-amount-input {
       flex: 1;
-      font-size: 1.45rem;
-      font-weight: 800;
-      color: var(--color-navy);
-      letter-spacing: -0.02em;
-      font-variant-numeric: tabular-nums;
+      font-family: var(--font-sans) !important;
+      font-size: 2.35rem !important;
+      font-weight: 800 !important;
+      color: var(--color-navy) !important;
+      letter-spacing: -0.03em !important;
+      font-variant-numeric: tabular-nums !important;
       border: none !important;
       box-shadow: none !important;
       background: transparent !important;
-      height: 48px;
-      padding: 0;
+      height: 58px !important;
+      padding: 0 !important;
       outline: none !important;
+      width: 100%;
     }
   }
 }
@@ -322,13 +325,9 @@
 
   .ai-scan-actions {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, 1fr) !important;
     gap: 8px;
     width: 100%;
-
-    @media (max-width: 440px) {
-      grid-template-columns: 1fr;
-    }
 
     .ai-action-btn {
       display: flex;
@@ -343,6 +342,25 @@
       transition: all 0.2s ease;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
       min-width: 0;
+
+      // En móviles (<= 640px): mantener estrictamente los 3 botones en 1 sola fila horizontal,
+      // ocultando los textos y dejando SOLO los iconos centrados para que no se apilen ni alarguen el formulario
+      @media (max-width: 640px) {
+        justify-content: center !important;
+        padding: 8px 0 !important;
+        height: 48px !important;
+        min-height: 48px !important;
+
+        .btn-label-group {
+          display: none !important;
+        }
+
+        .btn-icon {
+          margin: 0 !important;
+          padding: 6px !important;
+          font-size: 1.35rem !important;
+        }
+      }
 
       html.dark & {
         background: #1e293b;
