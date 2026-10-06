@@ -200,6 +200,7 @@
     transition: all 0.2s ease;
     background: var(--color-surface);
     padding: 0 12px;
+    height: 44px;
 
     &:focus-within {
       border-color: var(--color-blue-primary);
@@ -208,10 +209,10 @@
 
     .currency-symbol-label {
       font-family: var(--font-sans) !important;
-      font-size: 2.25rem !important;
-      font-weight: 800 !important;
+      font-size: 1.35rem !important;
+      font-weight: 700 !important;
       color: var(--color-slate-muted) !important;
-      margin-right: 8px;
+      margin-right: 6px;
       user-select: none;
       line-height: 1;
     }
@@ -219,15 +220,15 @@
     .enterprise-amount-input {
       flex: 1;
       font-family: var(--font-sans) !important;
-      font-size: 2.35rem !important;
-      font-weight: 800 !important;
+      font-size: 1.4rem !important;
+      font-weight: 700 !important;
       color: var(--color-navy) !important;
-      letter-spacing: -0.03em !important;
+      letter-spacing: -0.02em !important;
       font-variant-numeric: tabular-nums !important;
       border: none !important;
       box-shadow: none !important;
       background: transparent !important;
-      height: 58px !important;
+      height: 38px !important;
       padding: 0 !important;
       outline: none !important;
       width: 100%;
