@@ -272,6 +272,13 @@ Devuelve EXCLUSIVAMENTE un JSON válido con este formato:
     }
 
     if (!response || !response.text) {
+      if (transcript) {
+        console.warn('Gemini no devolvió texto estructurado. Usando analizador semántico de respaldo.');
+        return res.json({
+          success: true,
+          data: fallbackParseVoiceTranscript(transcript, categories, paymentMethods),
+        });
+      }
       throw lastError || new Error('No se pudo procesar la instrucción de voz.');
     }
 
@@ -283,6 +290,8 @@ Devuelve EXCLUSIVAMENTE un JSON válido con este formato:
       const match = text.match(/\{[\s\S]*\}/);
       if (match) {
         parsedData = JSON.parse(match[0]);
+      } else if (transcript) {
+        parsedData = fallbackParseVoiceTranscript(transcript, categories, paymentMethods);
       } else {
         throw new Error('Respuesta inválida del modelo.');
       }
@@ -294,12 +303,131 @@ Devuelve EXCLUSIVAMENTE un JSON válido con este formato:
     });
   } catch (error: any) {
     console.error('Error al procesar audio/voz con Gemini:', error);
+    const { transcript, categories = [], paymentMethods = [] } = req.body || {};
+    if (transcript && typeof transcript === 'string' && transcript.trim().length > 0) {
+      console.warn('Recuperando datos mediante analizador de contingencia ante error del servicio de IA');
+      return res.json({
+        success: true,
+        data: fallbackParseVoiceTranscript(transcript, categories, paymentMethods),
+      });
+    }
+
     return res.status(500).json({
       success: false,
       error: error?.message || 'Error interno al procesar el audio con IA.',
     });
   }
 });
+
+function fallbackParseVoiceTranscript(transcript: string, categories: string[] = [], paymentMethods: string[] = []): any {
+  const norm = transcript.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  // 1. Tipo
+  let type = 'EXPENSE';
+  if (/transfer|pase|transferi|envie/.test(norm)) {
+    type = 'TRANSFER';
+  } else if (/ingreso|salario|sueldo|recibi|gane|honorarios|me pagaron|consignacion/.test(norm)) {
+    type = 'INCOME';
+  }
+
+  // 2. Monto
+  let amount = 0;
+  const textNumberMap: Record<string, number> = {
+    'un millon': 1000000,
+    'dos millones': 2000000,
+    'tres millones': 3000000,
+    'quinientos mil': 500000,
+    'cuatrocientos mil': 400000,
+    'trescientos mil': 300000,
+    'doscientos mil': 200000,
+    'cien mil': 100000,
+    'noventa mil': 90000,
+    'ochenta mil': 80000,
+    'setenta mil': 70000,
+    'sesenta mil': 60000,
+    'cincuenta mil': 50000,
+    'cuarenta mil': 40000,
+    'treinta mil': 30000,
+    'veinticinco mil': 25000,
+    'veinte mil': 20000,
+    'quince mil': 15000,
+    'diez mil': 10000,
+    'cinco mil': 5000,
+    'dos mil': 2000,
+    'mil': 1000
+  };
+
+  for (const [phrase, val] of Object.entries(textNumberMap)) {
+    if (norm.includes(phrase)) {
+      amount = val;
+      break;
+    }
+  }
+
+  if (!amount) {
+    const milMatch = norm.match(/(\d+(?:[.,]\d+)?)\s*(?:mil|k)\b/);
+    if (milMatch) {
+      amount = parseFloat(milMatch[1].replace(',', '.')) * 1000;
+    } else {
+      const numMatch = norm.match(/(\d{1,3}(?:\.\d{3})+|\d+)/);
+      if (numMatch) {
+        amount = parseFloat(numMatch[1].replace(/\./g, ''));
+      }
+    }
+  }
+
+  // 3. Categoría coincidente
+  let category_hint = '';
+  for (const cat of categories) {
+    const cleanCat = cat.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (norm.includes(cleanCat)) {
+      category_hint = cat;
+      break;
+    }
+  }
+  if (!category_hint) {
+    if (/comida|almuerzo|cena|restaurante|cafe|panaderia|hamburguesa|pizza/.test(norm)) category_hint = 'Alimentación';
+    else if (/mercado|supermercado|exito|d1|ara|jumbo/.test(norm)) category_hint = 'Supermercado';
+    else if (/taxi|uber|gasolina|bus|transporte|peaje/.test(norm)) category_hint = 'Transporte';
+    else if (/luz|agua|gas|internet|celular|servicios/.test(norm)) category_hint = 'Servicios';
+    else if (/farmacia|droga|medico|salud|medicina/.test(norm)) category_hint = 'Salud';
+    else if (categories.length > 0) category_hint = categories[0];
+  }
+
+  // 4. Método de pago coincidente
+  let payment_method_hint = '';
+  for (const m of paymentMethods) {
+    const cleanM = m.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    if (norm.includes(cleanM)) {
+      payment_method_hint = m;
+      break;
+    }
+  }
+  if (!payment_method_hint) {
+    if (/nequi/.test(norm)) payment_method_hint = 'Nequi';
+    else if (/daviplata/.test(norm)) payment_method_hint = 'Daviplata';
+    else if (/efectivo/.test(norm)) payment_method_hint = 'Efectivo';
+    else if (/tarjeta/.test(norm)) payment_method_hint = 'Tarjeta';
+    else if (/bancolombia/.test(norm)) payment_method_hint = 'Bancolombia';
+    else if (paymentMethods.length > 0) payment_method_hint = paymentMethods[0];
+  }
+
+  let description = transcript.trim();
+  if (description.length > 60) {
+    description = description.slice(0, 57) + '...';
+  }
+
+  return {
+    amount,
+    type,
+    category_hint,
+    payment_method_hint,
+    destination_method_hint: null,
+    description: description.charAt(0).toUpperCase() + description.slice(1),
+    date: todayStr
+  };
+}
 
 // Serve static files from /browser
 app.use(

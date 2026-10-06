@@ -112,6 +112,7 @@ export class TransactionModalComponent implements OnInit {
   private speechRecognition: any = null;
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
+  private voiceSilenceTimer: any = null;
 
   // Formato y máscara en vivo de monto a registrar
   readonly displayAmount = signal<string>('');
@@ -271,7 +272,7 @@ export class TransactionModalComponent implements OnInit {
       try {
         this.speechRecognition = new SpeechRecognition();
         this.speechRecognition.lang = 'es-CO';
-        this.speechRecognition.continuous = false;
+        this.speechRecognition.continuous = true; // Escucha continua sin corte prematuro a los 5 segundos
         this.speechRecognition.interimResults = true;
 
         this.speechRecognition.onstart = () => {
@@ -284,21 +285,37 @@ export class TransactionModalComponent implements OnInit {
             currentTranscript += event.results[i][0].transcript;
           }
           this.voiceLiveTranscript.set(currentTranscript);
+
+          // Pausa inteligente: si el usuario deja de hablar por 3.5 segundos, finaliza de forma natural
+          if (this.voiceSilenceTimer) {
+            clearTimeout(this.voiceSilenceTimer);
+          }
+          this.voiceSilenceTimer = setTimeout(() => {
+            if (this.isRecordingVoice() && this.voiceLiveTranscript().trim()) {
+              this.stopVoiceRecording();
+            }
+          }, 3500);
         };
 
         this.speechRecognition.onend = () => {
           this.isRecordingVoice.set(false);
+          if (this.voiceSilenceTimer) {
+            clearTimeout(this.voiceSilenceTimer);
+            this.voiceSilenceTimer = null;
+          }
           const finalTranscript = this.voiceLiveTranscript().trim();
-          if (finalTranscript) {
+          if (finalTranscript && !this.isProcessingVoice()) {
             this.processVoiceTranscript(finalTranscript);
           }
         };
 
         this.speechRecognition.onerror = (err: any) => {
           console.warn('SpeechRecognition error:', err);
-          this.isRecordingVoice.set(false);
-          if (!this.voiceLiveTranscript()) {
-            this.startMediaRecorderFallback();
+          if (err.error !== 'no-speech') {
+            this.isRecordingVoice.set(false);
+            if (!this.voiceLiveTranscript()) {
+              this.startMediaRecorderFallback();
+            }
           }
         };
 
@@ -344,6 +361,10 @@ export class TransactionModalComponent implements OnInit {
   }
 
   public stopVoiceRecording(): void {
+    if (this.voiceSilenceTimer) {
+      clearTimeout(this.voiceSilenceTimer);
+      this.voiceSilenceTimer = null;
+    }
     if (this.speechRecognition) {
       try {
         this.speechRecognition.stop();
@@ -363,9 +384,19 @@ export class TransactionModalComponent implements OnInit {
       const catNames = this.categories().map(c => c.name);
       const methodNames = this.paymentMethods().map(m => m.name);
 
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      if (typeof window !== 'undefined') {
+        const customApiKey = localStorage.getItem('custom_gemini_api_key') || '';
+        if (customApiKey && customApiKey.trim().length > 10) {
+          headers['x-gemini-api-key'] = customApiKey.trim();
+        }
+      }
+
       const res = await fetch('/api/parse-voice-expense', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           transcript,
           categories: catNames,
@@ -377,14 +408,96 @@ export class TransactionModalComponent implements OnInit {
       if (result.success && result.data) {
         this.applyParsedVoiceData(result.data);
       } else {
-        this.message.warning(result.error || 'No se pudo interpretar el mensaje de voz.');
+        this.applyLocalFallbackTranscript(transcript);
       }
     } catch (e: any) {
-      console.error('Error enviando dictado a Gemini:', e);
-      this.message.error('Error al procesar el dictado con Gemini AI.');
+      console.warn('Fallo en comunicación remota, usando extractor semántico directo:', e);
+      this.applyLocalFallbackTranscript(transcript);
     } finally {
       this.isProcessingVoice.set(false);
     }
+  }
+
+  private applyLocalFallbackTranscript(transcript: string): void {
+    const norm = transcript.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    let type = 'EXPENSE';
+    if (/transfer|pase|transferi|envie/.test(norm)) {
+      type = 'TRANSFER';
+    } else if (/ingreso|salario|sueldo|recibi|gane|honorarios|me pagaron|consignacion/.test(norm)) {
+      type = 'INCOME';
+    }
+
+    let amount = 0;
+    const textNumberMap: Record<string, number> = {
+      'un millon': 1000000,
+      'dos millones': 2000000,
+      'tres millones': 3000000,
+      'quinientos mil': 500000,
+      'cuatrocientos mil': 400000,
+      'trescientos mil': 300000,
+      'doscientos mil': 200000,
+      'cien mil': 100000,
+      'noventa mil': 90000,
+      'ochenta mil': 80000,
+      'setenta mil': 70000,
+      'sesenta mil': 60000,
+      'cincuenta mil': 50000,
+      'cuarenta mil': 40000,
+      'treinta mil': 30000,
+      'veinticinco mil': 25000,
+      'veinte mil': 20000,
+      'quince mil': 15000,
+      'diez mil': 10000,
+      'cinco mil': 5000,
+      'dos mil': 2000,
+      'mil': 1000
+    };
+
+    for (const [phrase, val] of Object.entries(textNumberMap)) {
+      if (norm.includes(phrase)) {
+        amount = val;
+        break;
+      }
+    }
+
+    if (!amount) {
+      const milMatch = norm.match(/(\d+(?:[.,]\d+)?)\s*(?:mil|k)\b/);
+      if (milMatch) {
+        amount = parseFloat(milMatch[1].replace(',', '.')) * 1000;
+      } else {
+        const numMatch = norm.match(/(\d{1,3}(?:\.\d{3})+|\d+)/);
+        if (numMatch) {
+          amount = parseFloat(numMatch[1].replace(/\./g, ''));
+        }
+      }
+    }
+
+    const matchedCat = this.categories().find(c => {
+      const clean = c.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return norm.includes(clean);
+    });
+
+    const matchedMethod = this.paymentMethods().find(m => {
+      const clean = m.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      return norm.includes(clean);
+    });
+
+    let description = transcript.trim();
+    if (description.length > 60) {
+      description = description.slice(0, 57) + '...';
+    }
+
+    const fallbackData = {
+      amount,
+      type,
+      category_hint: matchedCat?.name || '',
+      payment_method_hint: matchedMethod?.name || '',
+      destination_method_hint: null,
+      description: description.charAt(0).toUpperCase() + description.slice(1),
+      date: new Date().toISOString().split('T')[0]
+    };
+
+    this.applyParsedVoiceData(fallbackData);
   }
 
   private async processVoiceAudioBlob(blob: Blob): Promise<void> {
