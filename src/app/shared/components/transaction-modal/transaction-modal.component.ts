@@ -775,10 +775,40 @@ export class TransactionModalComponent implements OnInit {
       payment_method_hint: matchedMethod?.name || '',
       destination_method_hint: null,
       description: description.charAt(0).toUpperCase() + description.slice(1),
-      date: new Date().toISOString().split('T')[0]
+      date: this.formatLocalDateISO(new Date())
     };
 
     this.applyParsedVoiceData(fallbackData);
+  }
+
+  public formatLocalDateISO(dateInput: Date | string | null | undefined): string {
+    if (!dateInput) {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+    if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput.trim())) {
+      return dateInput.trim();
+    }
+    const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    if (isNaN(d.getTime())) {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  public parseLocalDate(dateStr: string | Date | null | undefined): Date {
+    if (!dateStr) return new Date();
+    if (dateStr instanceof Date) return dateStr;
+    const clean = String(dateStr).split('T')[0];
+    const parts = clean.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      return new Date(year, month, day, 12, 0, 0);
+    }
+    return new Date(dateStr);
   }
 
   private async processVoiceAudioBlob(blob: Blob): Promise<void> {
@@ -1014,7 +1044,7 @@ export class TransactionModalComponent implements OnInit {
     this.transactionForm.patchValue({
       type: tx.type,
       amount: numAmount,
-      date: new Date(tx.date),
+      date: this.parseLocalDate(tx.date),
       description: tx.description || '',
       category_id: tx.category_id || null,
       payment_method_id: tx.payment_method_id || null
@@ -1160,7 +1190,7 @@ export class TransactionModalComponent implements OnInit {
       this.isSubmitting.set(true);
       try {
         const rawValues = this.transactionForm.getRawValue();
-        const formattedDate = (rawValues.date as Date).toISOString().split('T')[0];
+        const formattedDate = this.formatLocalDateISO(rawValues.date);
 
         if (rawValues.type === 'TRANSFER') {
           await this.transactionService.createTransfer({

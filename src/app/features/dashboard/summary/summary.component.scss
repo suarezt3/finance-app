@@ -379,6 +379,170 @@
 }
 
 // ==========================================
+// 2.5 CARRUSEL HORIZONTAL COMPACTO DE BILLETERAS
+// ==========================================
+.wallet-carousel-section {
+  margin-bottom: 18px;
+
+  .wallet-carousel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 0 2px;
+
+    .carousel-section-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--color-slate-muted);
+    }
+
+    .carousel-section-hint {
+      font-size: 0.72rem;
+      color: var(--color-slate-muted);
+      opacity: 0.85;
+    }
+
+    .clear-wallet-filter-btn {
+      background: none;
+      border: none;
+      padding: 2px 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--color-blue-primary);
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background 0.15s ease;
+
+      &:hover {
+        background: var(--color-blue-subtle);
+      }
+    }
+  }
+
+  .wallet-carousel-track {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 2px 2px 6px 2px;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.35);
+      border-radius: 4px;
+    }
+  }
+
+  .wallet-balance-card {
+    scroll-snap-align: start;
+    flex: 0 0 auto;
+    min-width: 158px;
+    max-width: 210px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: var(--color-surface);
+    border: 1.5px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.18s ease;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+
+    &:hover {
+      border-color: rgba(37, 99, 235, 0.45);
+      transform: translateY(-1px);
+    }
+
+    &.is-active {
+      border-color: var(--color-blue-primary);
+      background: rgba(37, 99, 235, 0.05);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+
+      html.dark & {
+        background: rgba(37, 99, 235, 0.16);
+        border-color: #3b82f6;
+      }
+    }
+
+    .wallet-card-top {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      width: 100%;
+
+      .wallet-card-icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        background: rgba(37, 99, 235, 0.1);
+        color: var(--color-blue-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        &.master {
+          background: var(--color-navy);
+          color: #ffffff;
+
+          html.dark & {
+            background: #2563eb;
+          }
+        }
+
+        &.negative {
+          background: rgba(220, 38, 38, 0.12);
+          color: #dc2626;
+        }
+      }
+
+      .wallet-card-name {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--color-navy);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .wallet-card-amount {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--color-navy);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-top: 2px;
+
+      &.negative {
+        color: #dc2626;
+      }
+
+      &.zero {
+        color: var(--color-slate-muted);
+      }
+    }
+
+    .wallet-card-meta {
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: var(--color-slate-muted);
+      white-space: nowrap;
+    }
+  }
+}
+
+// ==========================================
 // 3. TARJETA DE FLUJO NETO Y DIAGNÓSTICO INTEGRADO
 // ==========================================
 .flow-net-card {

@@ -110,7 +110,7 @@
         </nz-select>
       </div>
 
-      <!-- 3. ACCIÓN NUEVO MOVIMIENTO (Visible en Desktop, en móvil se utiliza el FAB) -->
+      <!-- 3. ACCIÓN NUEVO MOVIMIENTO (Visible en Desktop, en móvil se utiliza la barra inferior) -->
       <div class="desktop-action-wrap">
         <button nz-button nzType="primary" (click)="openModal()" class="btn-new-tx-compact">
           <hugeicons-icon [icon]="PlusIcon" [size]="15" [strokeWidth]="2"></hugeicons-icon>
@@ -120,6 +120,67 @@
 
     </div>
   </div>
+
+  <!-- CARRUSEL HORIZONTAL COMPACTO DE SALDOS POR BILLETERA -->
+  @if (walletCardsSummary().length > 0) {
+    <section class="wallet-carousel-section" aria-label="Saldos disponibles por billetera">
+      <div class="wallet-carousel-header">
+        <span class="carousel-section-label">Liquidez por Billetera / Cuenta</span>
+        @if (selectedPaymentMethod()) {
+          <button type="button" class="clear-wallet-filter-btn" (click)="onSelectWalletCard(null)">
+            Ver todas las cuentas
+          </button>
+        } @else {
+          <span class="carousel-section-hint">Toca una cuenta para filtrar</span>
+        }
+      </div>
+
+      <div class="wallet-carousel-track">
+        <!-- Tarjeta Maestra: Todas las Cuentas -->
+        <button
+          type="button"
+          class="wallet-balance-card master-wallet-card"
+          [class.is-active]="selectedPaymentMethod() === null"
+          (click)="onSelectWalletCard(null)"
+        >
+          <div class="wallet-card-top">
+            <div class="wallet-card-icon master">
+              <hugeicons-icon [icon]="WalletIcon" [size]="16" [strokeWidth]="1.9"></hugeicons-icon>
+            </div>
+            <span class="wallet-card-name">Todas las Cuentas</span>
+          </div>
+          <div class="wallet-card-amount tabular-nums" [class.negative]="totalLiquidityBalance() < 0">
+            {{ currencySymbol() }}{{ totalLiquidityBalance() | number:'1.0-2':'es' }}
+          </div>
+          <span class="wallet-card-meta">Saldo total disponible</span>
+        </button>
+
+        <!-- Tarjetas Individuales por Billetera -->
+        @for (wallet of walletCardsSummary(); track wallet.id) {
+          <button
+            type="button"
+            class="wallet-balance-card"
+            [class.is-active]="selectedPaymentMethod() === wallet.id"
+            [class.is-empty]="wallet.balance <= 0"
+            (click)="onSelectWalletCard(wallet.id)"
+          >
+            <div class="wallet-card-top">
+              <div class="wallet-card-icon" [class.negative]="wallet.balance < 0">
+                <hugeicons-icon [icon]="WalletIcon" [size]="15" [strokeWidth]="1.8"></hugeicons-icon>
+              </div>
+              <span class="wallet-card-name" [title]="wallet.name">{{ wallet.name }}</span>
+            </div>
+            <div class="wallet-card-amount tabular-nums" [class.negative]="wallet.balance < 0" [class.zero]="wallet.balance === 0">
+              {{ currencySymbol() }}{{ wallet.balance | number:'1.0-2':'es' }}
+            </div>
+            <span class="wallet-card-meta">
+              {{ wallet.balance > 0 ? 'Disponible' : (wallet.balance === 0 ? 'Sin saldo' : 'Sobregiro') }} · {{ wallet.txCount }} mov.
+            </span>
+          </button>
+        }
+      </div>
+    </section>
+  }
 
   <!-- TARJETAS DE KPIs (Grid Responsivo Inteligente) -->
   <nz-row [nzGutter]="{ xs: 12, sm: 16, md: 16, lg: 20 }" class="kpi-grid-row">

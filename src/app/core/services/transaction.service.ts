@@ -236,12 +236,21 @@ export class TransactionService {
     const userId = session.user.id;
     const workspaceId = await this.catalogService.getWorkspaceId();
 
+    const rawDesc = (transferData.description || '').trim();
+    const hasTransferKeyword = rawDesc.toLowerCase().includes('transferencia');
+    const normalizedExpenseDesc = !rawDesc
+      ? 'Transferencia enviada'
+      : (hasTransferKeyword ? rawDesc : `Transferencia: ${rawDesc}`);
+    const normalizedIncomeDesc = !rawDesc
+      ? 'Transferencia recibida'
+      : (hasTransferKeyword ? rawDesc : `Transferencia: ${rawDesc}`);
+
     // 2. Construcción de la Partida Doble
     const expenseTx = {
       type: 'EXPENSE',
       amount: transferData.amount,
       date: transferData.date,
-      description: transferData.description || 'Transferencia enviada',
+      description: normalizedExpenseDesc,
       payment_method_id: transferData.source_method_id,
       user_id: userId,
       workspace_id: workspaceId,
@@ -252,7 +261,7 @@ export class TransactionService {
       type: 'INCOME',
       amount: transferData.amount,
       date: transferData.date,
-      description: transferData.description || 'Transferencia recibida',
+      description: normalizedIncomeDesc,
       payment_method_id: transferData.destination_method_id,
       user_id: userId,
       workspace_id: workspaceId,

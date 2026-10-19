@@ -207,10 +207,10 @@
 
   </nz-layout>
 
-  <!-- BOTÓN FLOTANTE GLOBAL (FAB): REGISTRAR MOVIMIENTO DESDE CUALQUIER LUGAR -->
+  <!-- BOTÓN FLOTANTE GLOBAL (FAB DESKTOP): REGISTRAR MOVIMIENTO DESDE CUALQUIER LUGAR -->
   <button
     type="button"
-    class="global-fab-action-btn"
+    class="global-fab-action-btn hide-on-mobile"
     (click)="openGlobalTransactionModal()"
     id="global-fab-new-tx"
     aria-label="Registrar nuevo movimiento"
@@ -220,6 +220,69 @@
     </div>
     <span class="fab-text">Nuevo Movimiento</span>
   </button>
+
+  <!-- BARRA DE NAVEGACIÓN INFERIOR MÓVIL (4 SECCIONES + BOTÓN CENTRAL + REGISTRAR) -->
+  <nav class="mobile-bottom-nav" aria-label="Navegación principal móvil">
+    <a
+      routerLink="/dashboard/resumen"
+      routerLinkActive="active-tab"
+      class="mobile-nav-item"
+      id="mobile-tab-resumen"
+    >
+      <hugeicons-icon [icon]="DashboardIcon" [size]="20" [strokeWidth]="1.9" class="tab-icon"></hugeicons-icon>
+      <span class="tab-label">Resumen</span>
+    </a>
+
+    <a
+      routerLink="/dashboard/transacciones"
+      routerLinkActive="active-tab"
+      class="mobile-nav-item"
+      id="mobile-tab-transacciones"
+    >
+      <hugeicons-icon [icon]="TableIcon" [size]="20" [strokeWidth]="1.9" class="tab-icon"></hugeicons-icon>
+      <span class="tab-label">Movimientos</span>
+    </a>
+
+    <div class="mobile-nav-center-slot">
+      <button
+        type="button"
+        class="mobile-center-add-btn"
+        (click)="openGlobalTransactionModal()"
+        id="mobile-center-new-tx"
+        aria-label="Registrar movimiento"
+      >
+        <div class="center-plus-circle">
+          <hugeicons-icon [icon]="PlusIcon" [size]="22" [strokeWidth]="2.4"></hugeicons-icon>
+        </div>
+        <span class="center-add-label">Registrar</span>
+      </button>
+    </div>
+
+    <a
+      routerLink="/dashboard/pagos-programados"
+      routerLinkActive="active-tab"
+      class="mobile-nav-item"
+      id="mobile-tab-pagos"
+    >
+      <div class="tab-icon-wrap">
+        <hugeicons-icon [icon]="CalendarIcon" [size]="20" [strokeWidth]="1.9" class="tab-icon"></hugeicons-icon>
+        @if (scheduledPaymentService.urgentCount() > 0) {
+          <span class="mobile-tab-badge">{{ scheduledPaymentService.urgentCount() }}</span>
+        }
+      </div>
+      <span class="tab-label">Pagos</span>
+    </a>
+
+    <a
+      routerLink="/dashboard/configuracion"
+      routerLinkActive="active-tab"
+      class="mobile-nav-item"
+      id="mobile-tab-config"
+    >
+      <hugeicons-icon [icon]="SettingsIcon" [size]="20" [strokeWidth]="1.9" class="tab-icon"></hugeicons-icon>
+      <span class="tab-label">Ajustes</span>
+    </a>
+  </nav>
 
   <app-profile-modal></app-profile-modal>
 

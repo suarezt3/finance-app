@@ -559,7 +559,7 @@
   overflow-x: clip;
 
   @media (max-width: 767px) {
-    padding: 14px 12px;
+    padding: 14px 12px calc(86px + env(safe-area-inset-bottom, 0px)) 12px;
   }
 }
 
@@ -571,7 +571,7 @@
 }
 
 // ==========================================
-// 4. BOTÓN FLOTANTE GLOBAL (FAB)
+// 4. BOTÓN FLOTANTE GLOBAL (FAB DESKTOP)
 // ==========================================
 .global-fab-action-btn {
   position: fixed;
@@ -622,15 +622,168 @@
     transform: translateY(0) scale(0.98);
     box-shadow: 0 6px 16px -2px rgba(37, 99, 235, 0.4);
   }
+}
 
-  @media (max-width: 640px) {
-    bottom: max(18px, env(safe-area-inset-bottom, 18px));
-    right: 16px;
-    padding: 10px 14px 10px 10px;
+// ==========================================
+// 5. BARRA DE NAVEGACIÓN INFERIOR MÓVIL
+// ==========================================
+.mobile-bottom-nav {
+  display: none;
 
-    .fab-text {
-      font-size: 0.8rem;
+  @media (max-width: 767px) {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 995;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    align-items: center;
+    height: calc(64px + env(safe-area-inset-bottom, 0px));
+    padding: 0 6px env(safe-area-inset-bottom, 0px) 6px;
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-top: 1px solid var(--color-border);
+    box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.06);
+
+    html.dark & {
+      background: rgba(11, 19, 41, 0.95);
+      border-top-color: rgba(51, 65, 85, 0.75);
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.45);
+    }
+  }
+
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 54px;
+    border-radius: 10px;
+    color: var(--color-slate-muted);
+    text-decoration: none;
+    transition: all 0.18s ease;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+
+    .tab-icon-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tab-icon {
+      transition: transform 0.18s ease, color 0.18s ease;
+    }
+
+    .tab-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      line-height: 1.1;
+    }
+
+    .mobile-tab-badge {
+      position: absolute;
+      top: -5px;
+      right: -9px;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 9999px;
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 0.62rem;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1.5px solid var(--color-surface);
+    }
+
+    &.active-tab {
+      color: var(--color-blue-primary);
+
+      html.dark & {
+        color: #60a5fa;
+      }
+
+      .tab-icon {
+        transform: translateY(-1px);
+      }
+
+      .tab-label {
+        font-weight: 700;
+      }
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 2px;
+        width: 20px;
+        height: 3px;
+        border-radius: 9999px;
+        background: var(--color-blue-primary);
+
+        html.dark & {
+          background: #60a5fa;
+        }
+      }
+    }
+  }
+
+  .mobile-nav-center-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+
+  .mobile-center-add-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    cursor: pointer;
+    transform: translateY(-10px);
+    -webkit-tap-highlight-color: transparent;
+
+    .center-plus-circle {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.42);
+      border: 2.5px solid var(--color-surface);
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .center-add-label {
+      font-size: 0.66rem;
+      font-weight: 700;
+      color: var(--color-blue-primary);
+      letter-spacing: -0.01em;
+
+      html.dark & {
+        color: #93c5fd;
+      }
+    }
+
+    &:active .center-plus-circle {
+      transform: scale(0.93);
     }
   }
 }
+
 

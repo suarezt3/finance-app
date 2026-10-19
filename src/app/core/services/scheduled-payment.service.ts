@@ -242,7 +242,7 @@ export class ScheduledPaymentService {
   }
 
   private calculateNextDueDate(currentDueDateStr: string, recurrence: PaymentRecurrence): string {
-    const date = new Date(currentDueDateStr + 'T00:00:00');
+    const date = new Date(currentDueDateStr + 'T12:00:00');
 
     if (recurrence === 'MONTHLY') {
       date.setMonth(date.getMonth() + 1);
@@ -252,6 +252,9 @@ export class ScheduledPaymentService {
       date.setFullYear(date.getFullYear() + 1);
     }
 
-    return date.toISOString().split('T')[0];
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   }
 }

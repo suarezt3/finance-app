@@ -83,16 +83,34 @@ export class TransactionsComponent implements OnInit {
   private readonly filters = toSignal(this.filterForm.valueChanges, { initialValue: this.filterForm.value });
 
   // ==========================================
+  // UTILIDAD DE FECHAS EN HORA LOCAL (Previene desfase UTC-5)
+  // ==========================================
+  public parseLocalDate(dateStr: string | Date | null | undefined): Date {
+    if (!dateStr) return new Date();
+    if (dateStr instanceof Date) return dateStr;
+    const clean = String(dateStr).split('T')[0];
+    const parts = clean.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      return new Date(year, month, day, 12, 0, 0);
+    }
+    return new Date(dateStr);
+  }
+
+  // ==========================================
   // LÓGICA DE DOMINIO: Cashflow vs Ledger
   // ==========================================
 
   readonly enrichedTransactions = computed<TransactionView[]>(() => {
     const raw = this.transactions();
     const processed: TransactionView[] = [];
-    const transferPairs = new Map<string, { expense?: TransactionWithDetails, income?: TransactionWithDetails }>();
+    const transferGroups = new Map<string, { expenses: TransactionWithDetails[]; incomes: TransactionWithDetails[] }>();
 
     raw.forEach(tx => {
-      const isTransfer = !tx.category_id && !!tx.description?.toLowerCase().includes('transferencia');
+      const descLower = (tx.description || '').toLowerCase();
+      const isTransfer = !tx.category_id && (descLower.includes('transferencia') || descLower.includes('traspaso'));
 
       if (!isTransfer) {
         processed.push({
@@ -101,38 +119,43 @@ export class TransactionsComponent implements OnInit {
           displayCategory: tx.categories?.name || '---'
         });
       } else {
-        const matchKey = `${tx.date}_${tx.amount}`;
-        if (!transferPairs.has(matchKey)) {
-          transferPairs.set(matchKey, {});
+        const matchKey = `${tx.date}_${Number(tx.amount)}`;
+        if (!transferGroups.has(matchKey)) {
+          transferGroups.set(matchKey, { expenses: [], incomes: [] });
         }
 
-        const pair = transferPairs.get(matchKey)!;
-        if (tx.type === 'EXPENSE') pair.expense = tx;
-        if (tx.type === 'INCOME') pair.income = tx;
+        const group = transferGroups.get(matchKey)!;
+        if (tx.type === 'EXPENSE') group.expenses.push(tx);
+        if (tx.type === 'INCOME') group.incomes.push(tx);
       }
     });
 
-    transferPairs.forEach(pair => {
-      if (pair.expense && pair.income) {
-        processed.push({
-          ...pair.expense,
-          isTransfer: true,
-          isMergedTransfer: true,
-          linkedTransferId: pair.income.id,
-          sourceMethodName: pair.expense.payment_methods?.name || '---',
-          destinationMethodName: pair.income.payment_methods?.name || '---',
-          destinationMethodId: pair.income.payment_method_id,
-          displayCategory: 'Transferencia Interna'
-        });
-      } else {
-        const orphan = pair.expense || pair.income;
-        if (orphan) {
-          processed.push({ ...orphan, isTransfer: true, displayCategory: 'Transferencia (Anómala)' });
+    transferGroups.forEach(group => {
+      const maxLen = Math.max(group.expenses.length, group.incomes.length);
+      for (let i = 0; i < maxLen; i++) {
+        const exp = group.expenses[i];
+        const inc = group.incomes[i];
+        if (exp && inc) {
+          processed.push({
+            ...exp,
+            isTransfer: true,
+            isMergedTransfer: true,
+            linkedTransferId: inc.id,
+            sourceMethodName: exp.payment_methods?.name || '---',
+            destinationMethodName: inc.payment_methods?.name || '---',
+            destinationMethodId: inc.payment_method_id,
+            displayCategory: 'Transferencia Interna'
+          });
+        } else {
+          const orphan = exp || inc;
+          if (orphan) {
+            processed.push({ ...orphan, isTransfer: true, displayCategory: 'Transferencia (Anómala)' });
+          }
         }
       }
     });
 
-    return processed.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return processed.sort((a, b) => this.parseLocalDate(b.date).getTime() - this.parseLocalDate(a.date).getTime());
   });
 
   readonly filteredTransactions = computed(() => {
@@ -163,7 +186,7 @@ export class TransactionsComponent implements OnInit {
 
       let matchesDate = true;
       if (currentFilters.dateRange && currentFilters.dateRange.length === 2) {
-        const txDate = new Date(tx.date).getTime();
+        const txDate = this.parseLocalDate(tx.date).getTime();
         const startDate = new Date(currentFilters.dateRange[0]).setHours(0, 0, 0, 0);
         const endDate = new Date(currentFilters.dateRange[1]).setHours(23, 59, 59, 999);
         matchesDate = txDate >= startDate && txDate <= endDate;

@@ -2,7 +2,7 @@
 import { Component, inject, signal, computed, viewChild, OnInit, AfterViewInit, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { BreakpointObserver } from '@angular/cdk/layout';
-import { Router, RouterOutlet, RouterLink } from '@angular/router';
+import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 
 import { AuthService } from '../../core/services/auth.service';
@@ -52,6 +52,7 @@ import {
     CommonModule,
     RouterOutlet,
     RouterLink,
+    RouterLinkActive,
     HugeiconsIconComponent,
     NzLayoutModule,
     NzMenuModule,
