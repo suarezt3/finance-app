@@ -95,22 +95,7 @@
         }
       </div>
 
-      <!-- 2. SELECTOR DE CUENTAS / BILLETERA -->
-      <div class="wallet-filter-unified">
-        <nz-select
-          [ngModel]="selectedPaymentMethod()"
-          (ngModelChange)="selectedPaymentMethod.set($event)"
-          nzPlaceHolder="Todas las cuentas"
-          nzAllowClear
-          class="wallet-selector-compact"
-          [nzDropdownMatchSelectWidth]="false">
-          @for (method of paymentMethods(); track method.id) {
-            <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
-          }
-        </nz-select>
-      </div>
-
-      <!-- 3. ACCIÓN NUEVO MOVIMIENTO (Visible en Desktop, en móvil se utiliza la barra inferior) -->
+      <!-- 2. ACCIÓN NUEVO MOVIMIENTO (Visible en Desktop, en móvil se utiliza la barra inferior) -->
       <div class="desktop-action-wrap">
         <button nz-button nzType="primary" (click)="openModal()" class="btn-new-tx-compact">
           <hugeicons-icon [icon]="PlusIcon" [size]="15" [strokeWidth]="2"></hugeicons-icon>
@@ -121,17 +106,17 @@
     </div>
   </div>
 
-  <!-- CARRUSEL HORIZONTAL COMPACTO DE SALDOS POR BILLETERA -->
+  <!-- CARRUSEL HORIZONTAL COMPACTO DE SALDOS POR BILLETERA (Filtro Único Interactivo) -->
   @if (walletCardsSummary().length > 0) {
     <section class="wallet-carousel-section" aria-label="Saldos disponibles por billetera">
       <div class="wallet-carousel-header">
         <span class="carousel-section-label">Liquidez por Billetera / Cuenta</span>
         @if (selectedPaymentMethod()) {
           <button type="button" class="clear-wallet-filter-btn" (click)="onSelectWalletCard(null)">
-            Ver todas las cuentas
+            <span>Mostrar todas las cuentas</span>
           </button>
         } @else {
-          <span class="carousel-section-hint">Toca una cuenta para filtrar</span>
+          <span class="carousel-section-hint">Toca una tarjeta para filtrar el resumen</span>
         }
       </div>
 
@@ -148,11 +133,14 @@
               <hugeicons-icon [icon]="WalletIcon" [size]="16" [strokeWidth]="1.9"></hugeicons-icon>
             </div>
             <span class="wallet-card-name">Todas las Cuentas</span>
+            @if (selectedPaymentMethod() === null) {
+              <span class="wallet-active-dot" aria-hidden="true"></span>
+            }
           </div>
           <div class="wallet-card-amount tabular-nums" [class.negative]="totalLiquidityBalance() < 0">
             {{ currencySymbol() }}{{ totalLiquidityBalance() | number:'1.0-2':'es' }}
           </div>
-          <span class="wallet-card-meta">Saldo total disponible</span>
+          <span class="wallet-card-meta">Patrimonio líquido total</span>
         </button>
 
         <!-- Tarjetas Individuales por Billetera -->
@@ -165,10 +153,13 @@
             (click)="onSelectWalletCard(wallet.id)"
           >
             <div class="wallet-card-top">
-              <div class="wallet-card-icon" [class.negative]="wallet.balance < 0">
-                <hugeicons-icon [icon]="WalletIcon" [size]="15" [strokeWidth]="1.8"></hugeicons-icon>
+              <div class="wallet-card-icon" [class.negative]="wallet.balance < 0" [class.positive]="wallet.balance > 0">
+                <hugeicons-icon [icon]="WalletIcon" [size]="15" [strokeWidth]="1.9"></hugeicons-icon>
               </div>
               <span class="wallet-card-name" [title]="wallet.name">{{ wallet.name }}</span>
+              @if (selectedPaymentMethod() === wallet.id) {
+                <span class="wallet-active-dot" aria-hidden="true"></span>
+              }
             </div>
             <div class="wallet-card-amount tabular-nums" [class.negative]="wallet.balance < 0" [class.zero]="wallet.balance === 0">
               {{ currencySymbol() }}{{ wallet.balance | number:'1.0-2':'es' }}

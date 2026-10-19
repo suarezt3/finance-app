@@ -23,18 +23,23 @@
       </button>
 
       <button nz-button nzType="primary" (click)="openNewModal()" class="btn-action-new">
-        <span nz-icon nzType="plus"></span>
+        <hugeicons-icon [icon]="PlusIcon" [size]="15" [strokeWidth]="2"></hugeicons-icon>
         <span class="btn-text">Nuevo Movimiento</span>
       </button>
     </div>
   </header>
 
-  <!-- RESUMEN DE KPIs COMPACTO (4 Tarjetas) -->
-  <nz-row [nzGutter]="{ xs: 8, sm: 12, md: 16 }" class="kpi-row">
+  <!-- RESUMEN DE KPIs COMPACTO (4 Tarjetas con Iconografía Semántica) -->
+  <nz-row [nzGutter]="{ xs: 10, sm: 12, md: 16 }" class="kpi-row">
 
     <nz-col [nzXs]="12" [nzMd]="6" class="kpi-col">
       <nz-card nzSize="small" class="tx-kpi-card highlight-card" [nzBordered]="false">
-        <span class="kpi-title">Saldo Global</span>
+        <div class="kpi-head-inline">
+          <span class="kpi-title">Saldo Global</span>
+          <span class="kpi-mini-badge primary">
+            <hugeicons-icon [icon]="WalletIcon" [size]="13" [strokeWidth]="1.9"></hugeicons-icon>
+          </span>
+        </div>
         <div class="kpi-value-wrap">
           <span class="kpi-currency">$</span>
           <span class="kpi-num tabular-nums">{{ absoluteBalance() | number:'1.0-2':'es' }}</span>
@@ -44,7 +49,12 @@
 
     <nz-col [nzXs]="12" [nzMd]="6" class="kpi-col">
       <nz-card nzSize="small" class="tx-kpi-card" [nzBordered]="false">
-        <span class="kpi-title">Saldo (Filtro)</span>
+        <div class="kpi-head-inline">
+          <span class="kpi-title">Saldo (Filtro)</span>
+          <span class="kpi-mini-badge neutral">
+            <hugeicons-icon [icon]="TransferIcon" [size]="13" [strokeWidth]="1.9"></hugeicons-icon>
+          </span>
+        </div>
         <div class="kpi-value-wrap">
           <span class="kpi-currency">$</span>
           <span class="kpi-num tabular-nums" [class.negative]="filteredSummary().totalBalance < 0">
@@ -56,7 +66,12 @@
 
     <nz-col [nzXs]="12" [nzMd]="6" class="kpi-col">
       <nz-card nzSize="small" class="tx-kpi-card" [nzBordered]="false">
-        <span class="kpi-title">Ingresos (Filtro)</span>
+        <div class="kpi-head-inline">
+          <span class="kpi-title">Ingresos (Filtro)</span>
+          <span class="kpi-mini-badge income">
+            <hugeicons-icon [icon]="ArrowUpIcon" [size]="13" [strokeWidth]="2"></hugeicons-icon>
+          </span>
+        </div>
         <div class="kpi-value-wrap income">
           <span class="kpi-currency income">$</span>
           <span class="kpi-num income tabular-nums">{{ filteredSummary().totalIncome | number:'1.0-2':'es' }}</span>
@@ -66,7 +81,12 @@
 
     <nz-col [nzXs]="12" [nzMd]="6" class="kpi-col">
       <nz-card nzSize="small" class="tx-kpi-card" [nzBordered]="false">
-        <span class="kpi-title">Gastos (Filtro)</span>
+        <div class="kpi-head-inline">
+          <span class="kpi-title">Gastos (Filtro)</span>
+          <span class="kpi-mini-badge expense">
+            <hugeicons-icon [icon]="ArrowDownIcon" [size]="13" [strokeWidth]="2"></hugeicons-icon>
+          </span>
+        </div>
         <div class="kpi-value-wrap expense">
           <span class="kpi-currency expense">$</span>
           <span class="kpi-num expense tabular-nums">{{ filteredSummary().totalExpenses | number:'1.0-2':'es' }}</span>
@@ -120,7 +140,7 @@
         <!-- Botón Limpiar -->
         <nz-col [nzXs]="24" [nzSm]="8" [nzLg]="3" class="filter-actions">
           <button nz-button nzType="default" (click)="clearFilters()" nzBlock class="btn-clear-filters">
-            <span nz-icon nzType="clear"></span>
+            <hugeicons-icon [icon]="ClearIcon" [size]="14" [strokeWidth]="1.9"></hugeicons-icon>
             <span>Limpiar</span>
           </button>
         </nz-col>
@@ -168,7 +188,7 @@
                 @if (tx.isMergedTransfer) {
                   <div class="method-transfer-flow">
                     <span>{{ tx.sourceMethodName }}</span>
-                    <span nz-icon nzType="arrow-right" class="flow-arrow"></span>
+                    <hugeicons-icon [icon]="ArrowRightIcon" [size]="13" [strokeWidth]="2" class="flow-arrow"></hugeicons-icon>
                     <span>{{ tx.destinationMethodName }}</span>
                   </div>
                 } @else {
@@ -196,7 +216,7 @@
               <td nzAlign="center">
                 <div class="action-buttons-group">
                   <button nz-button nzType="text" nzSize="small" (click)="openEditModal(tx)" class="action-btn edit" [attr.aria-label]="'Editar transacción'">
-                    <span nz-icon nzType="edit" nzTheme="outline"></span>
+                    <hugeicons-icon [icon]="EditIcon" [size]="15" [strokeWidth]="1.8"></hugeicons-icon>
                   </button>
                   <button nz-button nzType="text" nzDanger nzSize="small" (click)="onDelete(tx)" class="action-btn delete" [attr.aria-label]="'Eliminar transacción'">
                     <span nz-icon nzType="delete" nzTheme="outline"></span>
@@ -209,17 +229,18 @@
       </nz-table>
     </div>
   } @else {
-    <!-- 2. VISTA MÓVIL: TARJETAS FINANCIERAS TÁCTILES + PAGINACIÓN CENTRADA DESPEJADA DEL FAB -->
+    <!-- 2. VISTA MÓVIL: TARJETAS FINANCIERAS TÁCTILES + PAGINACIÓN CENTRADA -->
     <div class="mobile-transactions-view">
       @if (filteredTransactions().length === 0) {
         <div class="mobile-empty-state">
           <div class="empty-icon-wrap">
-            <span nz-icon nzType="inbox" nzTheme="outline"></span>
+            <hugeicons-icon [icon]="EmptyIcon" [size]="28" [strokeWidth]="1.6"></hugeicons-icon>
           </div>
           <h4>No hay movimientos</h4>
           <p>No se encontraron registros con los filtros seleccionados.</p>
           <button nz-button nzType="primary" (click)="openNewModal()">
-            <span nz-icon nzType="plus"></span> Nuevo Movimiento
+            <hugeicons-icon [icon]="PlusIcon" [size]="15" [strokeWidth]="2"></hugeicons-icon>
+            <span>Nuevo Movimiento</span>
           </button>
         </div>
       } @else {
@@ -239,11 +260,11 @@
                   [class.transfer]="tx.isTransfer"
                 >
                   @if (tx.isTransfer) {
-                    <span nz-icon nzType="swap" nzTheme="outline"></span>
+                    <hugeicons-icon [icon]="TransferIcon" [size]="17" [strokeWidth]="1.9"></hugeicons-icon>
                   } @else if (tx.type === 'INCOME') {
-                    <span nz-icon nzType="arrow-down" nzTheme="outline"></span>
+                    <hugeicons-icon [icon]="ArrowDownIcon" [size]="17" [strokeWidth]="1.9"></hugeicons-icon>
                   } @else {
-                    <span nz-icon nzType="arrow-up" nzTheme="outline"></span>
+                    <hugeicons-icon [icon]="ArrowUpIcon" [size]="17" [strokeWidth]="1.9"></hugeicons-icon>
                   }
                 </div>
 
@@ -255,7 +276,7 @@
                     <span class="mobile-tag-category">{{ tx.displayCategory }}</span>
                     <span class="meta-dot">·</span>
                     <span class="mobile-tag-wallet">
-                      <span nz-icon nzType="wallet" class="wallet-mini-icon"></span>
+                      <hugeicons-icon [icon]="WalletIcon" [size]="12" [strokeWidth]="1.8" class="wallet-mini-icon"></hugeicons-icon>
                       @if (tx.isMergedTransfer) {
                         {{ tx.sourceMethodName }} → {{ tx.destinationMethodName }}
                       } @else {
@@ -281,7 +302,7 @@
               <!-- Botones de Acción Táctiles en Móvil -->
               <div class="mobile-card-actions">
                 <button type="button" class="mobile-action-btn btn-edit" (click)="openEditModal(tx)">
-                  <span nz-icon nzType="edit" nzTheme="outline"></span>
+                  <hugeicons-icon [icon]="EditIcon" [size]="14" [strokeWidth]="1.8"></hugeicons-icon>
                   <span>Editar</span>
                 </button>
                 <div class="action-divider"></div>
@@ -294,7 +315,7 @@
           }
         </div>
 
-        <!-- Paginación Móvil Centrada con holgura para el FAB -->
+        <!-- Paginación Móvil Centrada -->
         <div class="mobile-pagination-wrapper">
           <nz-pagination
             [nzPageIndex]="mobilePageIndex()"

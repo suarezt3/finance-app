@@ -128,24 +128,31 @@
 }
 
 .tx-kpi-card {
-  border-radius: 12px !important;
+  border-radius: 14px !important;
   border: 1px solid var(--color-border) !important;
   background-color: var(--color-surface) !important;
-  padding: 12px 16px !important;
-  transition: all 0.15s ease;
+  padding: 13px 16px !important;
+  transition: all 0.18s ease;
 
   &:hover {
-    border-color: #cbd5e1 !important;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+    border-color: rgba(37, 99, 235, 0.35) !important;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
   }
 
   &.highlight-card {
-    background-color: var(--color-surface-muted) !important;
-    border-color: var(--color-border) !important;
+    background: linear-gradient(180deg, rgba(37, 99, 235, 0.05) 0%, rgba(37, 99, 235, 0.01) 100%) !important;
+    border-color: rgba(37, 99, 235, 0.25) !important;
   }
 
   ::ng-deep .ant-card-body {
     padding: 0 !important;
+  }
+
+  .kpi-head-inline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
   }
 
   .kpi-title {
@@ -155,7 +162,35 @@
     color: var(--color-slate-muted);
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    margin-bottom: 4px;
+  }
+
+  .kpi-mini-badge {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    &.primary {
+      background: rgba(37, 99, 235, 0.12);
+      color: #2563eb;
+    }
+
+    &.neutral {
+      background: rgba(100, 116, 139, 0.12);
+      color: var(--color-slate-muted);
+    }
+
+    &.income {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+    }
+
+    &.expense {
+      background: rgba(239, 68, 68, 0.12);
+      color: #ef4444;
+    }
   }
 
   .kpi-value-wrap {
@@ -209,8 +244,8 @@
     }
 
     &.highlight-card {
-      background-color: #131d36 !important;
-      border-color: #1e293b !important;
+      background: linear-gradient(180deg, rgba(37, 99, 235, 0.16) 0%, rgba(15, 23, 42, 0.9) 100%) !important;
+      border-color: rgba(56, 189, 248, 0.3) !important;
     }
   }
 }
@@ -221,7 +256,7 @@
 .filters-card-wrapper {
   background-color: var(--color-surface-muted);
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 14px 16px;
   margin-bottom: 20px;
 
@@ -237,7 +272,7 @@
   }
 
   .btn-clear-filters {
-    border-radius: 8px;
+    border-radius: 10px;
     height: 38px;
     color: var(--color-slate-muted);
     border-color: var(--color-border);
@@ -246,7 +281,7 @@
 
     &:hover {
       color: var(--color-navy);
-      border-color: var(--color-border-focus);
+      border-color: var(--color-blue-primary);
     }
   }
 }

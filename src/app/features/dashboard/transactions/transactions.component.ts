@@ -17,6 +17,7 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzStatisticModule } from 'ng-zorro-antd/statistic';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzPaginationModule } from 'ng-zorro-antd/pagination';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 
 import { TransactionService } from '../../../core/services/transaction.service';
 import { TransactionWithDetails } from '../../../core/models/transaction.model';
@@ -24,6 +25,19 @@ import { CatalogService, PaymentMethod } from '../../../core/services/catalog.se
 import { ExportService } from '../../../core/services/export.service';
 
 import { TransactionModalComponent } from '../../../shared/components/transaction-modal/transaction-modal.component';
+
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import {
+  Wallet01Icon,
+  ArrowUp01Icon,
+  ArrowDown01Icon,
+  ArrowRight01Icon,
+  ArrowLeftRightIcon,
+  PlusSignIcon,
+  InboxIcon,
+  Edit02Icon,
+  Cancel01Icon
+} from '@hugeicons/core-free-icons';
 
 export interface TransactionView extends TransactionWithDetails {
   isTransfer: boolean;
@@ -40,9 +54,10 @@ export interface TransactionView extends TransactionWithDetails {
   standalone: true,
   imports: [
     ReactiveFormsModule, DatePipe, DecimalPipe,
+    HugeiconsIconComponent,
     NzTableModule, NzTagModule, NzButtonModule, NzIconModule,
     NzInputModule, NzDatePickerModule, NzSelectModule, NzGridModule,
-    NzStatisticModule, NzCardModule, NzPaginationModule,
+    NzStatisticModule, NzCardModule, NzPaginationModule, NzTooltipModule,
     NzModalModule,
     TransactionModalComponent
   ],
@@ -50,6 +65,16 @@ export interface TransactionView extends TransactionWithDetails {
   styleUrl: './transactions.component.scss'
 })
 export class TransactionsComponent implements OnInit {
+  readonly WalletIcon = Wallet01Icon;
+  readonly ArrowUpIcon = ArrowUp01Icon;
+  readonly ArrowDownIcon = ArrowDown01Icon;
+  readonly ArrowRightIcon = ArrowRight01Icon;
+  readonly TransferIcon = ArrowLeftRightIcon;
+  readonly PlusIcon = PlusSignIcon;
+  readonly EmptyIcon = InboxIcon;
+  readonly EditIcon = Edit02Icon;
+  readonly ClearIcon = Cancel01Icon;
+
   private readonly transactionService = inject(TransactionService);
   private readonly catalogService = inject(CatalogService);
   private readonly message = inject(NzMessageService);

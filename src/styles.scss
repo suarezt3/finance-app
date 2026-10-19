@@ -115,7 +115,7 @@ h1, h2, h3, h4, h5, h6 {
 
 // Tarjetas Unificadas (Single-Elevation)
 .ant-card {
-  border-radius: 12px !important;
+  border-radius: 14px !important;
   border: 1px solid var(--color-border) !important;
   background-color: var(--color-surface) !important;
   box-shadow: var(--shadow-card);
@@ -144,10 +144,10 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-// Botones Enterprise
+// Botones Modernos (Azul Financiero & Bordes Suaves)
 .ant-btn {
   font-family: var(--font-sans) !important;
-  border-radius: 6px !important;
+  border-radius: 10px !important;
   font-weight: 600 !important;
   font-size: 0.875rem !important;
   height: 38px !important;
@@ -155,41 +155,74 @@ h1, h2, h3, h4, h5, h6 {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 6px !important;
-  transition: all 0.15s ease !important;
+  gap: 7px !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
 
-  &.ant-btn-primary {
-    background-color: var(--color-navy) !important;
-    border-color: var(--color-navy) !important;
+  &.ant-btn-primary:not(.ant-btn-dangerous) {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    border-color: #2563eb !important;
     color: #ffffff !important;
-    box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.24) !important;
 
     &:hover, &:focus {
-      background-color: var(--color-navy-light) !important;
-      border-color: var(--color-navy-light) !important;
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+      border-color: #1d4ed8 !important;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.32) !important;
+      transform: translateY(-1px);
     }
 
     &:active {
-      background-color: var(--color-navy-dark) !important;
+      transform: translateY(0);
+      background: #1e40af !important;
     }
 
     &:disabled {
-      background-color: #e2e8f0 !important;
+      background: #e2e8f0 !important;
       border-color: #cbd5e1 !important;
       color: #94a3b8 !important;
+      box-shadow: none !important;
+      transform: none !important;
     }
   }
 
   &.ant-btn-default {
-    background-color: #ffffff !important;
+    background-color: var(--color-surface) !important;
     border-color: var(--color-border) !important;
     color: var(--color-slate-text) !important;
 
     &:hover, &:focus {
       background-color: var(--color-surface-hover) !important;
-      border-color: #cbd5e1 !important;
+      border-color: #94a3b8 !important;
       color: var(--color-navy) !important;
     }
+  }
+}
+
+// Menús Desplegables Globales (Selects y Dropdowns más amigables)
+.ant-select-dropdown,
+.ant-dropdown-menu {
+  border-radius: 12px !important;
+  padding: 6px !important;
+  box-shadow: var(--shadow-dropdown) !important;
+  border: 1px solid var(--color-border) !important;
+
+  .ant-select-item,
+  .ant-dropdown-menu-item {
+    border-radius: 8px !important;
+    margin-bottom: 2px;
+    padding: 8px 12px !important;
+    font-weight: 500;
+    transition: all 0.15s ease;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+    background-color: rgba(37, 99, 235, 0.08) !important;
+    color: #2563eb !important;
+    font-weight: 700 !important;
   }
 }
 
@@ -197,10 +230,15 @@ h1, h2, h3, h4, h5, h6 {
 .ant-radio-group-solid {
   background-color: #f1f5f9;
   padding: 3px;
-  border-radius: 9px;
+  border-radius: 10px;
   border: 1px solid var(--color-border);
   display: inline-flex;
   align-items: center;
+
+  html.dark & {
+    background-color: #111a33;
+    border-color: #1e293b;
+  }
 
   .ant-radio-button-wrapper {
     border: none !important;
@@ -211,7 +249,7 @@ h1, h2, h3, h4, h5, h6 {
     height: 30px !important;
     line-height: 30px !important;
     padding: 0 12px !important;
-    border-radius: 6px !important;
+    border-radius: 7px !important;
     transition: all 0.15s ease;
 
     &::before {
@@ -224,20 +262,26 @@ h1, h2, h3, h4, h5, h6 {
 
     &-checked:not(.ant-radio-button-wrapper-disabled) {
       background: #ffffff !important;
-      color: var(--color-navy) !important;
+      color: #2563eb !important;
       box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+
+      html.dark & {
+        background: #1e293b !important;
+        color: #38bdf8 !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important;
+      }
     }
   }
 }
 
-// Selectores e Inputs Enterprise con borde único y nítido (Sin doble línea)
+// Selectores e Inputs Enterprise con borde único y suave (10px)
 .ant-select-selector,
 .ant-picker,
 .ant-input-number,
 textarea.ant-input,
 .ant-input-affix-wrapper,
 input.ant-input {
-  border-radius: 6px !important;
+  border-radius: 10px !important;
   border: 1.5px solid #cbd5e1 !important;
   font-family: var(--font-sans) !important;
   font-size: 0.875rem !important;
@@ -265,11 +309,11 @@ input.ant-input {
   &.ant-input-number-focused,
   &.ant-input-affix-wrapper-focused {
     border-color: var(--color-blue-primary) !important;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14) !important;
 
     html.dark & {
       border-color: #38bdf8 !important;
-      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2) !important;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18) !important;
     }
   }
 }
