@@ -164,6 +164,37 @@ export class TransactionService {
   }
 
   /**
+   * Obtiene en una sola consulta el saldo global y el mapa de saldos desglosado por cada billetera (payment_method_id).
+   */
+  async getBalancesByAllPaymentMethods(): Promise<{ total: number; byMethod: Record<string, number> }> {
+    try {
+      const data = await this.executeWithClockSkewRetry<{ type: string; amount: number; payment_method_id: string | null }[]>(() =>
+        this.supabase
+          .from('transactions')
+          .select('type, amount, payment_method_id')
+      );
+
+      const byMethod: Record<string, number> = {};
+      let total = 0;
+
+      for (const tx of data || []) {
+        const amount = Number(tx.amount) || 0;
+        const delta = tx.type === 'INCOME' ? amount : -amount;
+        total += delta;
+
+        if (tx.payment_method_id) {
+          byMethod[tx.payment_method_id] = (byMethod[tx.payment_method_id] || 0) + delta;
+        }
+      }
+
+      return { total, byMethod };
+    } catch (e: any) {
+      console.warn('Error calculando saldos por billetera:', e?.message);
+      return { total: 0, byMethod: {} };
+    }
+  }
+
+  /**
    * Inserta una nueva transacción en la base de datos.
    */
   async createTransaction(transactionData: Partial<Transaction>): Promise<void> {

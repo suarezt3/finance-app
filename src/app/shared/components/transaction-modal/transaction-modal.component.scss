@@ -207,6 +207,16 @@
       box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
     }
 
+    &.input-error {
+      border-color: #dc2626 !important;
+      background-color: rgba(220, 38, 38, 0.03);
+      box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.14) !important;
+
+      .currency-symbol-label {
+        color: #dc2626 !important;
+      }
+    }
+
     .currency-symbol-label {
       font-family: var(--font-sans) !important;
       font-size: 1.35rem !important;
@@ -237,23 +247,83 @@
 }
 
 .insufficient-balance-alert {
+  margin-top: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background-color: rgba(220, 38, 38, 0.08);
+  border: 1px solid rgba(220, 38, 38, 0.25);
   font-weight: 600;
   color: #dc2626;
   font-size: 0.775rem;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  line-height: 1.35;
+
+  strong {
+    font-weight: 700;
+  }
 }
 
-// 3. INDICADOR DE SALDO
-.balance-indicator {
-  font-size: 0.75rem;
-  margin-top: 4px;
+// 3. INDICADOR DE SALDO Y OPCIONES DE BILLETERA
+.wallet-option-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  color: #64748b;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+
+  .wallet-option-name {
+    font-weight: 600;
+    color: var(--color-navy, #0f172a);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .wallet-option-balance {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #059669;
+    background: rgba(16, 185, 129, 0.1);
+    padding: 2px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+
+    &.zero-or-neg {
+      color: #dc2626;
+      background: rgba(220, 38, 38, 0.1);
+    }
+  }
+}
+
+::ng-deep nz-select.select-balance-error .ant-select-selector {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12) !important;
+}
+
+.balance-indicator {
+  font-size: 0.775rem;
+  margin-top: 6px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background-color: rgba(37, 99, 235, 0.06);
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #1e40af;
   font-weight: 500;
+  line-height: 1.35;
+
+  strong {
+    font-weight: 700;
+  }
+
+  .remaining-balance-hint {
+    color: #475569;
+    font-weight: 600;
+  }
 
   &.checking {
     color: #2563eb;
@@ -261,6 +331,8 @@
 
   &.alert {
     color: #dc2626;
+    background-color: rgba(220, 38, 38, 0.08);
+    border-color: rgba(220, 38, 38, 0.25);
     font-weight: 600;
   }
 }

@@ -201,8 +201,11 @@
       <!-- 2. MONTO (Jerarquía Visual Primaria con Formato de Miles en Vivo) -->
       <nz-form-item class="amount-field">
         <nz-form-label nzRequired>Monto a Registrar</nz-form-label>
-        <nz-form-control [nzErrorTip]="amountErrorTpl">
-          <div class="enterprise-amount-input-group">
+        <nz-form-control>
+          <div
+            class="enterprise-amount-input-group"
+            [class.input-error]="isInsufficientBalance() || amountSubmittedInvalid()"
+          >
             <span class="currency-symbol-label">{{ userPreferences.currencySymbol() }}</span>
             <input
               type="text"
@@ -215,21 +218,23 @@
               autocomplete="off"
             />
           </div>
+
+          @if (isInsufficientBalance()) {
+            <div class="insufficient-balance-alert" role="alert">
+              <hugeicons-icon [icon]="AlertIcon" [size]="15" [strokeWidth]="2"></hugeicons-icon>
+              <span>
+                Saldo insuficiente. Máximo disponible en billetera:
+                <strong class="tabular-nums">{{ userPreferences.currencySymbol() }}{{ availableBalance() | number:'1.0-2':'es' }}</strong>
+                (Excede por {{ userPreferences.currencySymbol() }}{{ missingBalanceAmount() | number:'1.0-2':'es' }})
+              </span>
+            </div>
+          } @else if (amountSubmittedInvalid() && currentAmount() <= 0) {
+            <div class="insufficient-balance-alert" role="alert">
+              <hugeicons-icon [icon]="AlertIcon" [size]="15" [strokeWidth]="2"></hugeicons-icon>
+              <span>El monto debe ser mayor a 0.</span>
+            </div>
+          }
         </nz-form-control>
-        <ng-template #amountErrorTpl let-control>
-          @if (control.errors?.['required']) {
-            <span>Ingrese el monto de la transacción.</span>
-          }
-          @if (control.errors?.['min']) {
-            <span>El monto debe ser mayor a 0.</span>
-          }
-          @if (control.errors?.['max']) {
-            <span class="insufficient-balance-alert">
-              <hugeicons-icon [icon]="AlertIcon" [size]="14" [strokeWidth]="1.8"></hugeicons-icon>
-              Saldo insuficiente. Máximo disponible: {{ userPreferences.currencySymbol() }}{{ availableBalance() | number:'1.0-2':'es' }}
-            </span>
-          }
-        </ng-template>
       </nz-form-item>
 
       <!-- 3. FECHA Y CATEGORÍA -->
@@ -282,22 +287,60 @@
                 formControlName="payment_method_id"
                 [nzPlaceHolder]="isLoadingCatalogs() ? 'Cargando billeteras...' : 'Ej. Cuenta Corriente, Tarjeta...'"
                 [nzLoading]="isLoadingCatalogs()"
+                [class.select-balance-error]="isInsufficientBalance()"
                 nzAllowClear
                 nzSize="large">
                 @for (method of paymentMethods(); track method.id) {
-                  <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
+                  <nz-option [nzValue]="method.id" [nzLabel]="getMethodOptionLabel(method)" nzCustomContent>
+                    <div class="wallet-option-row">
+                      <span class="wallet-option-name">{{ method.name }}</span>
+                      <span
+                        class="wallet-option-balance tabular-nums"
+                        [class.zero-or-neg]="getEffectiveWalletBalance(method.id) <= 0"
+                      >
+                        {{ userPreferences.currencySymbol() }}{{ getEffectiveWalletBalance(method.id) | number:'1.0-2':'es' }}
+                      </span>
+                    </div>
+                  </nz-option>
                 }
               </nz-select>
 
-              <!-- Indicador Inteligente de Saldo Disponible -->
-              @if (isCheckingBalance()) {
+              <!-- Indicador Inteligente de Saldo Disponible en Tiempo Real -->
+              @if (availableBalance() !== null) {
+                @if (isInsufficientBalance()) {
+                  <div class="balance-indicator alert" role="alert">
+                    <hugeicons-icon [icon]="AlertIcon" [size]="14" [strokeWidth]="2"></hugeicons-icon>
+                    <span>
+                      Fondos insuficientes · Saldo disponible:
+                      <strong class="tabular-nums">{{ userPreferences.currencySymbol() }}{{ availableBalance() | number:'1.0-2':'es' }}</strong>
+                      (Faltan {{ userPreferences.currencySymbol() }}{{ missingBalanceAmount() | number:'1.0-2':'es' }})
+                    </span>
+                  </div>
+                } @else if ((selectedType() === 'EXPENSE' || selectedType() === 'TRANSFER') && availableBalance()! <= 0) {
+                  <div class="balance-indicator alert" role="alert">
+                    <hugeicons-icon [icon]="AlertIcon" [size]="14" [strokeWidth]="2"></hugeicons-icon>
+                    <span>
+                      Sin fondos disponibles en esta billetera · Saldo:
+                      <strong class="tabular-nums">{{ userPreferences.currencySymbol() }}{{ availableBalance() | number:'1.0-2':'es' }}</strong>
+                    </span>
+                  </div>
+                } @else {
+                  <div class="balance-indicator">
+                    <hugeicons-icon [icon]="InfoIcon" [size]="14" [strokeWidth]="1.8"></hugeicons-icon>
+                    <span>
+                      Saldo disponible:
+                      <strong class="tabular-nums">{{ userPreferences.currencySymbol() }}{{ availableBalance() | number:'1.0-2':'es' }}</strong>
+                      @if (currentAmount() > 0 && (selectedType() === 'EXPENSE' || selectedType() === 'TRANSFER')) {
+                        <span class="remaining-balance-hint tabular-nums">
+                          · Quedará: {{ userPreferences.currencySymbol() }}{{ projectedRemainingBalance() | number:'1.0-2':'es' }}
+                        </span>
+                      }
+                    </span>
+                  </div>
+                }
+              } @else if (isCheckingBalance()) {
                 <div class="balance-indicator checking">
                   <nz-spin nzSimple></nz-spin> Verificando saldo...
-                </div>
-              } @else if (availableBalance() !== null) {
-                <div class="balance-indicator" [class.alert]="availableBalance()! <= 0">
-                  <hugeicons-icon [icon]="availableBalance()! <= 0 ? AlertIcon : InfoIcon" [size]="14" [strokeWidth]="1.8"></hugeicons-icon>
-                  Saldo disponible: $ {{ availableBalance() | number:'1.0-2':'es' }}
                 </div>
               }
             </nz-form-control>
@@ -317,7 +360,17 @@
                   nzAllowClear
                   nzSize="large">
                   @for (method of availableDestinationMethods(); track method.id) {
-                    <nz-option [nzValue]="method.id" [nzLabel]="method.name"></nz-option>
+                    <nz-option [nzValue]="method.id" [nzLabel]="getMethodOptionLabel(method)" nzCustomContent>
+                      <div class="wallet-option-row">
+                        <span class="wallet-option-name">{{ method.name }}</span>
+                        <span
+                          class="wallet-option-balance tabular-nums"
+                          [class.zero-or-neg]="getEffectiveWalletBalance(method.id) <= 0"
+                        >
+                          {{ userPreferences.currencySymbol() }}{{ getEffectiveWalletBalance(method.id) | number:'1.0-2':'es' }}
+                        </span>
+                      </div>
+                    </nz-option>
                   }
                 </nz-select>
               </nz-form-control>

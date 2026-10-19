@@ -116,7 +116,10 @@ export class TransactionModalComponent implements OnInit {
 
   // Formato y máscara en vivo de monto a registrar
   readonly displayAmount = signal<string>('');
+  readonly currentAmount = signal<number>(0);
 
+  // Mapa reactivo de saldos por cada billetera (payment_method_id -> saldo)
+  readonly walletBalances = signal<Record<string, number>>({});
   readonly availableBalance = signal<number | null>(null);
   readonly isCheckingBalance = signal<boolean>(false);
 
@@ -124,10 +127,16 @@ export class TransactionModalComponent implements OnInit {
   readonly totalAvailableBalance = signal<number | null>(null);
   readonly isLoadingTotalBalance = signal<boolean>(false);
 
+  // Estado de validación visual del campo monto cuando se intenta guardar sin monto
+  readonly amountSubmittedInvalid = signal<boolean>(false);
+
   constructor() {
+    this.setupFormListeners();
+
     effect(() => {
       const visible = this.isVisible();
       if (visible) {
+        this.amountSubmittedInvalid.set(false);
         this.loadTotalBalance();
         const editTx = this.transactionToEdit();
         if (editTx) {
@@ -137,6 +146,12 @@ export class TransactionModalComponent implements OnInit {
         if (this.categories().length === 0 || this.paymentMethods().length === 0) {
           this.loadCatalogs();
         }
+        // Sincronizar validación de saldo si ya hay una billetera seleccionada
+        const currentMethodId = this.transactionForm.controls['payment_method_id'].value;
+        const currentType = this.transactionForm.controls['type'].value;
+        if (currentMethodId) {
+          this.refreshSelectedWalletBalance(currentType, currentMethodId);
+        }
       }
     });
   }
@@ -144,13 +159,56 @@ export class TransactionModalComponent implements OnInit {
   async loadTotalBalance(): Promise<void> {
     this.isLoadingTotalBalance.set(true);
     try {
-      const total = await this.transactionService.getTotalBalance();
+      const { total, byMethod } = await this.transactionService.getBalancesByAllPaymentMethods();
       this.totalAvailableBalance.set(total);
+      this.walletBalances.set(byMethod);
+
+      // Si ya hay una billetera seleccionada en el formulario, actualizar su saldo disponible de inmediato
+      const selectedMethodId = this.transactionForm.controls['payment_method_id']?.value;
+      const currentType = this.transactionForm.controls['type']?.value;
+      if (selectedMethodId) {
+        const effectiveBalance = this.getEffectiveWalletBalance(selectedMethodId, byMethod[selectedMethodId] ?? 0);
+        this.availableBalance.set(effectiveBalance);
+        this.applyAmountValidators(currentType, effectiveBalance);
+      }
     } catch (e) {
-      console.warn('Error cargando saldo total disponible:', e);
+      console.warn('Error cargando saldos disponibles:', e);
     } finally {
       this.isLoadingTotalBalance.set(false);
     }
+  }
+
+  /**
+   * Calcula el saldo efectivo de una billetera, sumando el monto original si se está editando
+   * un gasto previamente descontado de esa misma billetera.
+   */
+  public getEffectiveWalletBalance(methodId: string | null | undefined, baseBalance?: number): number {
+    if (!methodId) return 0;
+    const raw = baseBalance !== undefined ? baseBalance : (this.walletBalances()[methodId] ?? 0);
+    const editTarget = this.transactionToEdit();
+    if (editTarget && editTarget.type === 'EXPENSE' && editTarget.payment_method_id === methodId) {
+      return raw + Number(editTarget.amount);
+    }
+    return raw;
+  }
+
+  /**
+   * Etiqueta enriquecida para el selector de billetera con su saldo actual.
+   */
+  public getMethodOptionLabel(method: PaymentMethod): string {
+    const balance = this.getEffectiveWalletBalance(method.id);
+    const sym = this.userPreferences.currencySymbol();
+    const formatted = this.formatSignedCurrency(balance);
+    return `${method.name} · ${sym}${formatted}`;
+  }
+
+  public formatSignedCurrency(val: number | null | undefined): string {
+    if (val == null || isNaN(val)) return '0';
+    const absVal = Math.abs(val);
+    const parts = absVal.toFixed(2).split('.');
+    const intFormatted = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    const decPart = parts[1] === '00' ? '' : `,${parts[1]}`;
+    return `${val < 0 ? '-' : ''}${intFormatted}${decPart}`;
   }
 
   // -- FORMULARIO REACTIVO --
@@ -185,6 +243,43 @@ export class TransactionModalComponent implements OnInit {
     return this.paymentMethods().filter(m => m.id !== source);
   });
 
+  // Señal computada en tiempo real: indica si el monto ingresado supera el saldo disponible de la billetera
+  readonly isInsufficientBalance = computed(() => {
+    const type = this.selectedType();
+    if (type !== 'EXPENSE' && type !== 'TRANSFER') {
+      return false;
+    }
+    const methodId = this.selectedSourceMethod();
+    if (!methodId) {
+      return false;
+    }
+    const balance = this.availableBalance();
+    if (balance === null) {
+      return false;
+    }
+    const amount = this.currentAmount();
+    return amount > 0 && amount > balance;
+  });
+
+  // Diferencia faltante cuando el monto supera el saldo disponible
+  readonly missingBalanceAmount = computed(() => {
+    if (!this.isInsufficientBalance()) return 0;
+    const balance = Math.max(0, this.availableBalance() ?? 0);
+    return Math.max(0, this.currentAmount() - balance);
+  });
+
+  // Saldo restante proyectado luego del gasto/transferencia
+  readonly projectedRemainingBalance = computed(() => {
+    const balance = this.availableBalance();
+    if (balance === null) return null;
+    const type = this.selectedType();
+    const amount = this.currentAmount();
+    if (type === 'INCOME') {
+      return balance + amount;
+    }
+    return balance - amount;
+  });
+
   // ==========================================
   // FORMATO EN VIVO DE MONTO (Separador de miles)
   // ==========================================
@@ -213,6 +308,10 @@ export class TransactionModalComponent implements OnInit {
     const numVal = parseFloat(formatted.replace(/\./g, '').replace(',', '.')) || 0;
 
     this.displayAmount.set(formatted);
+    this.currentAmount.set(numVal);
+    if (numVal > 0) {
+      this.amountSubmittedInvalid.set(false);
+    }
     input.value = formatted;
 
     // Preservar la posición del cursor de forma natural
@@ -224,17 +323,23 @@ export class TransactionModalComponent implements OnInit {
       } catch {}
     }, 0);
 
-    this.transactionForm.controls['amount'].setValue(numVal, { emitEvent: false });
-    this.transactionForm.controls['amount'].markAsDirty();
+    const amountControl = this.transactionForm.controls['amount'];
+    amountControl.setValue(numVal);
+    amountControl.markAsDirty();
+    amountControl.markAsTouched();
+    amountControl.updateValueAndValidity();
   }
 
   onAmountInputBlur(): void {
     const currentNum = this.transactionForm.controls['amount'].value;
     if (!currentNum || currentNum === 0) {
       this.displayAmount.set('');
+      this.currentAmount.set(0);
     } else {
       this.displayAmount.set(this.formatNumberToThousands(currentNum));
+      this.currentAmount.set(Number(currentNum));
     }
+    this.transactionForm.controls['amount'].markAsTouched();
   }
 
   public formatNumberToThousands(num: number | null | undefined): string {
@@ -551,6 +656,8 @@ export class TransactionModalComponent implements OnInit {
     if (data.amount && Number(data.amount) > 0) {
       const num = Number(data.amount);
       patchObj['amount'] = num;
+      this.currentAmount.set(num);
+      this.amountSubmittedInvalid.set(false);
       this.displayAmount.set(this.formatNumberToThousands(num));
     }
 
@@ -611,7 +718,6 @@ export class TransactionModalComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.loadCatalogs();
-    this.setupFormListeners();
   }
 
   public async loadCatalogs(force = false): Promise<void> {
@@ -646,24 +752,73 @@ export class TransactionModalComponent implements OnInit {
     }
   }
 
+  private applyAmountValidators(type: string, balance: number | null): void {
+    const amountControl = this.transactionForm.controls['amount'];
+    if ((type === 'EXPENSE' || type === 'TRANSFER') && balance !== null) {
+      amountControl.setValidators([Validators.required, Validators.min(0.01), Validators.max(balance)]);
+    } else {
+      amountControl.setValidators([Validators.required, Validators.min(0.01)]);
+    }
+    amountControl.updateValueAndValidity({ emitEvent: false });
+  }
+
+  private async refreshSelectedWalletBalance(type: string, methodId: string | null): Promise<void> {
+    if (!methodId) {
+      this.availableBalance.set(null);
+      this.applyAmountValidators(type, null);
+      return;
+    }
+
+    // 1. Actualización inmediata desde el mapa de saldos en memoria (sin latencia visual)
+    const cachedMap = this.walletBalances();
+    if (methodId in cachedMap) {
+      const instantBalance = this.getEffectiveWalletBalance(methodId, cachedMap[methodId]);
+      this.availableBalance.set(instantBalance);
+      this.applyAmountValidators(type, instantBalance);
+    }
+
+    // 2. Verificación estricta contra base de datos para máxima precisión
+    this.isCheckingBalance.set(true);
+    try {
+      const dbBalance = await this.transactionService.getBalanceByPaymentMethod(methodId);
+      // Actualizar caché local para esta billetera
+      this.walletBalances.update(prev => ({ ...prev, [methodId]: dbBalance }));
+
+      // Confirmar que el usuario sigue teniendo seleccionada la misma billetera
+      if (this.transactionForm.controls['payment_method_id'].value === methodId) {
+        const effectiveBalance = this.getEffectiveWalletBalance(methodId, dbBalance);
+        this.availableBalance.set(effectiveBalance);
+        this.applyAmountValidators(this.transactionForm.controls['type'].value, effectiveBalance);
+      }
+    } catch (error) {
+      console.error('Error validando fondos:', error);
+      // Fallback al saldo en memoria si la consulta puntual falla
+      const fallbackBalance = this.getEffectiveWalletBalance(methodId);
+      this.availableBalance.set(fallbackBalance);
+      this.applyAmountValidators(type, fallbackBalance);
+    } finally {
+      this.isCheckingBalance.set(false);
+    }
+  }
+
   private setupFormListeners(): void {
     this.transactionForm.controls['type'].valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((type) => {
-        if (this.isVisible()) {
-          const destControl = this.transactionForm.controls['destination_method_id'];
-          const catControl = this.transactionForm.controls['category_id'];
+        const destControl = this.transactionForm.controls['destination_method_id'];
+        const catControl = this.transactionForm.controls['category_id'];
 
-          catControl.setValue(null);
-          destControl.setValue(null);
+        catControl.setValue(null);
+        destControl.setValue(null);
 
-          if (type === 'TRANSFER') {
-            destControl.setValidators([Validators.required]);
-          } else {
-            destControl.clearValidators();
-          }
-          destControl.updateValueAndValidity();
+        if (type === 'TRANSFER') {
+          destControl.setValidators([Validators.required]);
+          catControl.clearValidators();
+        } else {
+          destControl.clearValidators();
         }
+        destControl.updateValueAndValidity();
+        catControl.updateValueAndValidity();
       });
 
     combineLatest([
@@ -672,36 +827,14 @@ export class TransactionModalComponent implements OnInit {
     ])
     .pipe(takeUntilDestroyed(this.destroyRef))
     .subscribe(async ([type, methodId]) => {
-      const amountControl = this.transactionForm.controls['amount'];
-
-      if ((type === 'EXPENSE' || type === 'TRANSFER') && methodId && this.isVisible()) {
-        this.isCheckingBalance.set(true);
-        try {
-          let balance = await this.transactionService.getBalanceByPaymentMethod(methodId);
-
-          const editTarget = this.transactionToEdit();
-          if (editTarget && editTarget.type === 'EXPENSE' && editTarget.payment_method_id === methodId) {
-            balance += Number(editTarget.amount);
-          }
-
-          this.availableBalance.set(balance);
-          amountControl.setValidators([Validators.required, Validators.min(0.01), Validators.max(balance)]);
-        } catch (error) {
-          console.error('Error validando fondos:', error);
-        } finally {
-          this.isCheckingBalance.set(false);
-          amountControl.updateValueAndValidity({ emitEvent: false });
-        }
-      } else {
-        this.availableBalance.set(null);
-        amountControl.setValidators([Validators.required, Validators.min(0.01)]);
-        amountControl.updateValueAndValidity({ emitEvent: false });
-      }
+      await this.refreshSelectedWalletBalance(type, methodId);
     });
   }
 
   public openForEdit(tx: TransactionWithDetails): void {
     const numAmount = Number(tx.amount);
+    this.currentAmount.set(numAmount);
+    this.displayAmount.set(this.formatNumberToThousands(numAmount));
     this.transactionForm.patchValue({
       type: tx.type,
       amount: numAmount,
@@ -710,7 +843,6 @@ export class TransactionModalComponent implements OnInit {
       category_id: tx.category_id || null,
       payment_method_id: tx.payment_method_id || null
     });
-    this.displayAmount.set(this.formatNumberToThousands(numAmount));
   }
 
   public async onCapturePhoto(): Promise<void> {
@@ -764,6 +896,8 @@ export class TransactionModalComponent implements OnInit {
       };
 
       if (data.amount > 0) {
+        this.currentAmount.set(Number(data.amount));
+        this.amountSubmittedInvalid.set(false);
         this.displayAmount.set(this.formatNumberToThousands(data.amount));
       }
 
@@ -826,6 +960,8 @@ export class TransactionModalComponent implements OnInit {
       type: 'EXPENSE', amount: 0, date: new Date(), description: '', category_id: null, payment_method_id: null, destination_method_id: null
     });
     this.displayAmount.set('');
+    this.currentAmount.set(0);
+    this.amountSubmittedInvalid.set(false);
     this.stopVoiceRecording();
     this.availableBalance.set(null);
     this.clearScannedReceipt();
@@ -837,7 +973,14 @@ export class TransactionModalComponent implements OnInit {
   }
 
   async onSubmit(): Promise<void> {
-    if (this.transactionForm.valid) {
+    // Asegurar sincronización de validadores de saldo antes de validar el formulario
+    const currentType = this.transactionForm.controls['type'].value;
+    const currentMethodId = this.transactionForm.controls['payment_method_id'].value;
+    if (currentMethodId && this.availableBalance() !== null) {
+      this.applyAmountValidators(currentType, this.availableBalance());
+    }
+
+    if (this.transactionForm.valid && !this.isInsufficientBalance()) {
       this.isSubmitting.set(true);
       try {
         const rawValues = this.transactionForm.getRawValue();
@@ -901,9 +1044,36 @@ export class TransactionModalComponent implements OnInit {
       Object.values(this.transactionForm.controls).forEach(control => {
         if (control.invalid) {
           control.markAsDirty();
+          control.markAsTouched();
           control.updateValueAndValidity({ onlySelf: true });
         }
       });
+
+      const amountVal = this.currentAmount();
+      if (!amountVal || amountVal <= 0) {
+        this.amountSubmittedInvalid.set(true);
+      }
+
+      await this.nativeDeviceService.triggerHaptic('error');
+
+      // Mostrar alerta explicativa clara según la causa del bloqueo
+      if (this.isInsufficientBalance() || this.transactionForm.controls['amount'].errors?.['max']) {
+        const sym = this.userPreferences.currencySymbol();
+        const avail = this.formatSignedCurrency(this.availableBalance() ?? 0);
+        const entered = this.formatSignedCurrency(amountVal);
+        const selectedMethod = this.paymentMethods().find(m => m.id === currentMethodId);
+        const walletName = selectedMethod ? `"${selectedMethod.name}"` : 'la billetera seleccionada';
+        this.message.error(
+          `Saldo insuficiente en ${walletName}. Disponible: ${sym}${avail} · Intentaste registrar: ${sym}${entered}`,
+          { nzDuration: 5000 }
+        );
+      } else if (!amountVal || amountVal <= 0) {
+        this.message.warning('Por favor ingresa un monto mayor a 0 para registrar el movimiento.');
+      } else if (!currentMethodId) {
+        this.message.warning('Por favor selecciona la billetera o cuenta del movimiento.');
+      } else if (currentType === 'TRANSFER' && !this.transactionForm.controls['destination_method_id'].value) {
+        this.message.warning('Por favor selecciona la cuenta destino para la transferencia.');
+      }
     }
   }
 }
