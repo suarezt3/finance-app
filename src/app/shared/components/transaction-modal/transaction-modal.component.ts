@@ -111,8 +111,14 @@ export class TransactionModalComponent implements OnInit {
   readonly voiceLiveTranscript = signal<string>('');
   private speechRecognition: any = null;
   private mediaRecorder: MediaRecorder | null = null;
+  private mediaStream: MediaStream | null = null;
   private audioChunks: Blob[] = [];
-  private voiceSilenceTimer: any = null;
+  private voiceRestartTimer: any = null;
+  private manualStopRequested = false;
+  private voiceCancelled = false;
+  private hasProcessedCurrentVoiceSession = false;
+  private accumulatedVoiceTranscript = '';
+  private currentSegmentTranscript = '';
 
   // Formato y máscara en vivo de monto a registrar
   readonly displayAmount = signal<string>('');
@@ -367,8 +373,42 @@ export class TransactionModalComponent implements OnInit {
     }
   }
 
+  /**
+   * Une dos tramos de transcripción evitando repeticiones por superposición en motores móviles (Android Chrome / iOS).
+   */
+  private combineTranscriptSegments(accumulated: string, nextSegment: string): string {
+    const a = (accumulated || '').trim();
+    const b = (nextSegment || '').trim();
+    if (!a) return b;
+    if (!b) return a;
+
+    const aLower = a.toLowerCase();
+    const bLower = b.toLowerCase();
+
+    // Si el nuevo segmento ya contiene todo el acumulado al inicio
+    if (bLower.startsWith(aLower)) {
+      return b;
+    }
+    // Si el acumulado ya termina exactamente con el nuevo segmento
+    if (aLower.endsWith(bLower)) {
+      return a;
+    }
+    return `${a} ${b}`.replace(/\s+/g, ' ').trim();
+  }
+
   private async startVoiceRecording(): Promise<void> {
+    if (this.voiceRestartTimer) {
+      clearTimeout(this.voiceRestartTimer);
+      this.voiceRestartTimer = null;
+    }
+
+    this.manualStopRequested = false;
+    this.voiceCancelled = false;
+    this.hasProcessedCurrentVoiceSession = false;
+    this.accumulatedVoiceTranscript = '';
+    this.currentSegmentTranscript = '';
     this.voiceLiveTranscript.set('');
+
     await this.nativeDeviceService.triggerHaptic('light');
 
     // Intentar SpeechRecognition nativo primero (Chrome, Edge, Safari, Android)
@@ -377,67 +417,144 @@ export class TransactionModalComponent implements OnInit {
       try {
         this.speechRecognition = new SpeechRecognition();
         this.speechRecognition.lang = 'es-CO';
-        this.speechRecognition.continuous = true; // Escucha continua sin corte prematuro a los 5 segundos
+        this.speechRecognition.continuous = true;
         this.speechRecognition.interimResults = true;
 
         this.speechRecognition.onstart = () => {
-          this.isRecordingVoice.set(true);
+          if (!this.manualStopRequested && !this.voiceCancelled) {
+            this.isRecordingVoice.set(true);
+          }
         };
 
         this.speechRecognition.onresult = (event: any) => {
-          let currentTranscript = '';
-          for (let i = 0; i < event.results.length; i++) {
-            currentTranscript += event.results[i][0].transcript;
-          }
-          this.voiceLiveTranscript.set(currentTranscript);
+          if (this.voiceCancelled) return;
 
-          // Pausa inteligente: si el usuario deja de hablar por 3.5 segundos, finaliza de forma natural
-          if (this.voiceSilenceTimer) {
-            clearTimeout(this.voiceSilenceTimer);
+          let sessionText = '';
+          for (let i = 0; i < event.results.length; i++) {
+            const piece = (event.results[i][0]?.transcript || '').trim();
+            if (!piece) continue;
+            sessionText = this.combineTranscriptSegments(sessionText, piece);
           }
-          this.voiceSilenceTimer = setTimeout(() => {
-            if (this.isRecordingVoice() && this.voiceLiveTranscript().trim()) {
-              this.stopVoiceRecording();
-            }
-          }, 3500);
+
+          this.currentSegmentTranscript = sessionText;
+          const fullText = this.combineTranscriptSegments(
+            this.accumulatedVoiceTranscript,
+            this.currentSegmentTranscript
+          );
+          this.voiceLiveTranscript.set(fullText);
         };
 
         this.speechRecognition.onend = () => {
+          // 1. Consolidar lo dictado en este tramo dentro del acumulador continuo
+          if (this.currentSegmentTranscript.trim()) {
+            this.accumulatedVoiceTranscript = this.combineTranscriptSegments(
+              this.accumulatedVoiceTranscript,
+              this.currentSegmentTranscript
+            );
+            this.currentSegmentTranscript = '';
+            this.voiceLiveTranscript.set(this.accumulatedVoiceTranscript);
+          }
+
+          // 2. Si el usuario canceló la grabación, limpiar estado y salir
+          if (this.voiceCancelled) {
+            this.isRecordingVoice.set(false);
+            return;
+          }
+
+          // 3. En móviles (Android/iOS), el navegador dispara onend tras una breve pausa de silencio.
+          // Mientras el usuario NO haya presionado "Listo" o "Detener", reiniciamos automáticamente la escucha.
+          if (!this.manualStopRequested) {
+            this.isRecordingVoice.set(true);
+            if (this.voiceRestartTimer) {
+              clearTimeout(this.voiceRestartTimer);
+            }
+            this.voiceRestartTimer = setTimeout(() => {
+              if (!this.manualStopRequested && !this.voiceCancelled && this.speechRecognition) {
+                try {
+                  this.speechRecognition.start();
+                } catch {
+                  // Segundo intento breve si el canal de audio del móvil seguía liberándose
+                  setTimeout(() => {
+                    if (!this.manualStopRequested && !this.voiceCancelled && this.speechRecognition) {
+                      try {
+                        this.speechRecognition.start();
+                      } catch {}
+                    }
+                  }, 220);
+                }
+              }
+            }, 90);
+            return;
+          }
+
+          // 4. El usuario sí presionó "Listo" o "Detener": finalizar y enviar todo el texto acumulado
           this.isRecordingVoice.set(false);
-          if (this.voiceSilenceTimer) {
-            clearTimeout(this.voiceSilenceTimer);
-            this.voiceSilenceTimer = null;
-          }
-          const finalTranscript = this.voiceLiveTranscript().trim();
-          if (finalTranscript && !this.isProcessingVoice()) {
-            this.processVoiceTranscript(finalTranscript);
-          }
+          this.finalizeSpeechRecognitionSession();
         };
 
         this.speechRecognition.onerror = (err: any) => {
+          const errorCode = err?.error || '';
+          // En móvil, 'no-speech' y 'aborted' ocurren cuando el usuario hace una pausa larga;
+          // los ignoramos para que onend reactive la escucha de forma continua.
+          if (errorCode === 'no-speech' || errorCode === 'aborted') {
+            return;
+          }
+
           console.warn('SpeechRecognition error:', err);
-          if (err.error !== 'no-speech') {
+          if (errorCode === 'not-allowed' || errorCode === 'service-not-allowed') {
+            this.manualStopRequested = true;
+            this.voiceCancelled = true;
             this.isRecordingVoice.set(false);
-            if (!this.voiceLiveTranscript()) {
-              this.startMediaRecorderFallback();
-            }
+            this.message.error('Permiso de micrófono denegado. Habilita el micrófono en tu navegador.');
+            return;
+          }
+
+          if (!this.voiceLiveTranscript() && !this.manualStopRequested) {
+            this.speechRecognition = null;
+            this.startMediaRecorderFallback();
           }
         };
 
         this.speechRecognition.start();
+        this.isRecordingVoice.set(true);
         return;
       } catch (e) {
         console.warn('SpeechRecognition no pudo iniciar, pasando a MediaRecorder:', e);
+        this.speechRecognition = null;
       }
     }
 
-    // Fallback con MediaRecorder y audio a Gemini
+    // Fallback con MediaRecorder y audio continuo a Gemini
     await this.startMediaRecorderFallback();
+  }
+
+  private finalizeSpeechRecognitionSession(): void {
+    if (this.hasProcessedCurrentVoiceSession || this.voiceCancelled) {
+      return;
+    }
+    if (this.currentSegmentTranscript.trim()) {
+      this.accumulatedVoiceTranscript = this.combineTranscriptSegments(
+        this.accumulatedVoiceTranscript,
+        this.currentSegmentTranscript
+      );
+      this.currentSegmentTranscript = '';
+      this.voiceLiveTranscript.set(this.accumulatedVoiceTranscript);
+    }
+
+    const finalTranscript = this.voiceLiveTranscript().trim();
+    this.hasProcessedCurrentVoiceSession = true;
+
+    if (finalTranscript && !this.isProcessingVoice()) {
+      this.processVoiceTranscript(finalTranscript);
+    } else if (!finalTranscript) {
+      this.message.info('No se detectó voz. Intenta hablar más cerca del micrófono y presiona "Listo".');
+    }
   }
 
   private async startMediaRecorderFallback(): Promise<void> {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.mediaStream = stream;
       this.audioChunks = [];
       this.mediaRecorder = new MediaRecorder(stream);
 
@@ -450,6 +567,13 @@ export class TransactionModalComponent implements OnInit {
       this.mediaRecorder.onstop = async () => {
         this.isRecordingVoice.set(false);
         stream.getTracks().forEach(t => t.stop());
+        this.mediaStream = null;
+
+        if (this.voiceCancelled) {
+          this.audioChunks = [];
+          return;
+        }
+
         const audioBlob = new Blob(this.audioChunks, { type: this.mediaRecorder?.mimeType || 'audio/webm' });
         if (audioBlob.size > 0) {
           await this.processVoiceAudioBlob(audioBlob);
@@ -465,21 +589,73 @@ export class TransactionModalComponent implements OnInit {
     }
   }
 
+  /**
+   * Finaliza manualmente el dictado (cuando el usuario presiona "Listo" o "Detener")
+   * y envía todo el texto o audio acumulado a Gemini AI.
+   */
   public stopVoiceRecording(): void {
-    if (this.voiceSilenceTimer) {
-      clearTimeout(this.voiceSilenceTimer);
-      this.voiceSilenceTimer = null;
+    this.manualStopRequested = true;
+    this.voiceCancelled = false;
+
+    if (this.voiceRestartTimer) {
+      clearTimeout(this.voiceRestartTimer);
+      this.voiceRestartTimer = null;
     }
+
     if (this.speechRecognition) {
       try {
         this.speechRecognition.stop();
       } catch {}
+      // Garantizar procesamiento incluso si SpeechRecognition estaba en medio de una pausa entre tramos
+      setTimeout(() => {
+        this.isRecordingVoice.set(false);
+        this.finalizeSpeechRecognitionSession();
+      }, 160);
     }
+
     if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
       try {
         this.mediaRecorder.stop();
       } catch {}
     }
+
+    this.isRecordingVoice.set(false);
+  }
+
+  /**
+   * Cancela el dictado en curso descartando el texto o audio sin enviarlo a Gemini AI.
+   */
+  public cancelVoiceRecording(): void {
+    this.manualStopRequested = true;
+    this.voiceCancelled = true;
+    this.hasProcessedCurrentVoiceSession = true;
+
+    if (this.voiceRestartTimer) {
+      clearTimeout(this.voiceRestartTimer);
+      this.voiceRestartTimer = null;
+    }
+
+    if (this.speechRecognition) {
+      try {
+        this.speechRecognition.abort?.() || this.speechRecognition.stop();
+      } catch {}
+      this.speechRecognition = null;
+    }
+
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      try {
+        this.mediaRecorder.stop();
+      } catch {}
+    }
+
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(t => t.stop());
+      this.mediaStream = null;
+    }
+
+    this.accumulatedVoiceTranscript = '';
+    this.currentSegmentTranscript = '';
+    this.voiceLiveTranscript.set('');
     this.isRecordingVoice.set(false);
   }
 
@@ -962,7 +1138,7 @@ export class TransactionModalComponent implements OnInit {
     this.displayAmount.set('');
     this.currentAmount.set(0);
     this.amountSubmittedInvalid.set(false);
-    this.stopVoiceRecording();
+    this.cancelVoiceRecording();
     this.availableBalance.set(null);
     this.clearScannedReceipt();
   }

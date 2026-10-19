@@ -100,28 +100,45 @@
 
               @if (isRecordingVoice()) {
                 <div class="voice-listening-card">
-                  <div class="voice-wave-container">
-                    <div class="voice-wave-bar wave-1"></div>
-                    <div class="voice-wave-bar wave-2"></div>
-                    <div class="voice-wave-bar wave-3"></div>
-                    <div class="voice-wave-bar wave-4"></div>
-                    <div class="voice-wave-bar wave-5"></div>
-                  </div>
-                  <div class="voice-listening-content">
-                    <div class="voice-status-line">
-                      <span class="recording-badge-pulse"></span>
-                      <strong>Escuchando tu dictado...</strong>
+                  <div class="voice-listening-top">
+                    <div class="voice-wave-container">
+                      <div class="voice-wave-bar wave-1"></div>
+                      <div class="voice-wave-bar wave-2"></div>
+                      <div class="voice-wave-bar wave-3"></div>
+                      <div class="voice-wave-bar wave-4"></div>
+                      <div class="voice-wave-bar wave-5"></div>
                     </div>
-                    <span class="voice-hint-text">Ejemplo: "Gasté 50 mil pesos en supermercado con Nequi"</span>
-                    @if (voiceLiveTranscript()) {
-                      <div class="voice-transcript-bubble">
-                        "{{ voiceLiveTranscript() }}"
+                    <div class="voice-listening-content">
+                      <div class="voice-status-line">
+                        <span class="recording-badge-pulse"></span>
+                        <strong>Escuchando... habla con tranquilidad</strong>
                       </div>
-                    }
+                      <span class="voice-hint-text">Haz las pausas que necesites y presiona "Listo" al terminar</span>
+                    </div>
+                    <div class="voice-action-btns">
+                      <button
+                        type="button"
+                        class="voice-cancel-btn"
+                        (click)="cancelVoiceRecording()"
+                        title="Cancelar dictado"
+                        aria-label="Cancelar dictado"
+                      >
+                        <hugeicons-icon [icon]="CloseIcon" [size]="16" [strokeWidth]="2"></hugeicons-icon>
+                      </button>
+                      <button
+                        type="button"
+                        class="voice-stop-btn"
+                        (click)="stopVoiceRecording()"
+                      >
+                        Listo
+                      </button>
+                    </div>
                   </div>
-                  <button type="button" class="voice-stop-btn" (click)="stopVoiceRecording()">
-                    Listo
-                  </button>
+                  @if (voiceLiveTranscript()) {
+                    <div class="voice-transcript-bubble">
+                      "{{ voiceLiveTranscript() }}"
+                    </div>
+                  }
                 </div>
               } @else if (isProcessingVoice()) {
                 <div class="ai-scanning-card voice-processing">
